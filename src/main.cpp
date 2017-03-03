@@ -6,6 +6,7 @@
 #include <boost/filesystem.hpp>
 #include "band_structure.hpp"
 #include "self_energy.hpp"
+#include "greens_function.hpp"
 #include "dmft_model.hpp"
 #include "bare_hamiltonian.hpp"
 #include "hybridization_function.hpp"
@@ -212,13 +213,15 @@ tuple<string, int, bool> handle_command_line(po::variables_map vm, po::options_d
      } else if (vm.count("compute_bubble")) {
 	  cout << "Computing bubble\n";
 	  computation_type = 4;
-     } else if (vm.count("from_alps3")) {
-	     from_alps3 = true;
-	     cout << "Taking ***MATRIX RESULT*** as input format\n";
      } else {
 	  cout << desc << "\n";
 	  exit(1);
      }
+     if (vm.count("from_alps3")) {
+	from_alps3 = true;
+	cout << "Taking ***MATRIX RESULT*** as input format\n";
+     }
+
      string input_file(vm["input-file"].as<string>());
      return tuple<string, int, bool>(input_file, computation_type, from_alps3);
 }
@@ -361,8 +364,11 @@ int main(int argc, char** argv) {
 		} else {
 			// Computation with Alps3 input format
 			// Need to read GF and compute Dyson equation
+			boost::shared_ptr<Greensfunction> greens_function(
+				new Greensfunction(parms, world_rank, h5_archive, h5_group_name, true));
 			
 		}
+		
 	} else if (computation_type == 1) {
 		// perform "mix" action
 		if (world_rank == 0) {
