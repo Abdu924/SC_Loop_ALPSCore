@@ -38,6 +38,6 @@ Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
 	cout << "test element :" << test2[0][0][0] << endl;
 
 	typedef array_type::index_range range;
-	array_type::array_view<3>::type myview =
+	cplx_array_type::array_view<3>::type myview =
 		test2[ boost::indices[range(0,2)][range(1,3)][range(0,4,2)] ];
 }
