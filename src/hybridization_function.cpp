@@ -529,39 +529,41 @@ void HybFunction::dump_delta() {
 
 
 void HybFunction::dump_delta_for_matrix() {
-     if (world_rank_ == 0) {
-	  ofstream out(imaginary_time_dump_name_for_matrix, ofstream::out);
-	  out.precision(output_precision);
-	  out << fixed << setprecision(output_precision);
-	  //out.open(imaginary_time_dump_name_for_matrix);
-	  out << fixed << setprecision(output_precision);
-	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
-	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
-		    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
-			 for (size_t tau_index = 0; tau_index < delta_tau.size(); tau_index++) {
-			      // CAREFUL! delta_tau has been extended to include tau = beta
-			      // it has one more element than should be for a proper definition of
-			      // tau_value:
-			      out << tau_index << "  " << orb1 << "  "
-				  << orb2 << "  "  
-				  << -real(delta_tau[tau_index].block(
-						site_index * per_site_orbital_size,
-						site_index * per_site_orbital_size,
-						per_site_orbital_size,
-						per_site_orbital_size)(orb1, orb2)) << "  "
-				  << -imag(delta_tau[tau_index].block(
-						site_index * per_site_orbital_size,
-						site_index * per_site_orbital_size,
-						per_site_orbital_size,
-						per_site_orbital_size)(orb1, orb2)) << endl;
-			 }
-			 out << endl;
-		    }
-	       }
-	  }
-	  out.close();
-	  // dump bare GF in Matsubara frequencies
-     }
+	if (world_rank_ == 0) {
+		ofstream out(imaginary_time_dump_name_for_matrix, ofstream::out);
+		out.precision(output_precision);
+		out << fixed << setprecision(output_precision);
+		//out.open(imaginary_time_dump_name_for_matrix);
+		out << fixed << setprecision(output_precision);
+		for(size_t site_index = 0; site_index < n_sites; site_index++) {
+			for (size_t tau_index = 0; tau_index < delta_tau.size(); tau_index++) {
+				for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+					for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+						// CAREFUL! delta_tau has been extended to include tau = beta
+						// it has one more element than should be for a proper definition of
+						// tau_value:
+						// Also note: sign convention is different between our QMC,
+						// and ALps3 QMC for hybridization function, hence the sign difference
+						// below
+						out << tau_index << "  " << orb1 << "  "
+						    << orb2 << "  "  
+						    << real(delta_tau[tau_index].block(
+								     site_index * per_site_orbital_size,
+								     site_index * per_site_orbital_size,
+								     per_site_orbital_size,
+								     per_site_orbital_size)(orb1, orb2)) << "  "
+						    << imag(delta_tau[tau_index].block(
+								     site_index * per_site_orbital_size,
+								     site_index * per_site_orbital_size,
+								     per_site_orbital_size,
+								     per_site_orbital_size)(orb1, orb2)) << endl;
+					}
+				}
+			}
+		}
+		out.close();
+		// dump bare GF in Matsubara frequencies
+	}
 }
 
 void HybFunction::dump_delta_hdf5() {
