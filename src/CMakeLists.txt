@@ -40,7 +40,7 @@ set(CMAKE_BUILD_TYPE Release)
 
 
 add_executable(${PROJECT_NAME} main.cpp band_structure.cpp self_energy.cpp
-  dmft_model.cpp hybridization_function.cpp tail_manager.cpp)
+  dmft_model.cpp hybridization_function.cpp tail_manager.cpp greens_function.cpp)
 # For Metacentrum
 #
 # For Everest

@@ -527,7 +527,6 @@ void HybFunction::dump_delta() {
      }
 }
 
-
 void HybFunction::dump_delta_for_matrix() {
 	if (world_rank_ == 0) {
 		ofstream out(imaginary_time_dump_name_for_matrix, ofstream::out);
