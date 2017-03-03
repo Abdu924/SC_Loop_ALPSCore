@@ -77,6 +77,7 @@ HybFunction::HybFunction(const alps::params &parms,
      elementary_compute_delta_tau();
      dump_delta();
      dump_delta_hdf5();
+     dump_delta_for_matrix();
      cout << "hybridization time: ";
 }
 
@@ -526,6 +527,43 @@ void HybFunction::dump_delta() {
      }
 }
 
+
+void HybFunction::dump_delta_for_matrix() {
+     if (world_rank_ == 0) {
+	  ofstream out(imaginary_time_dump_name_for_matrix, ofstream::out);
+	  out.precision(output_precision);
+	  out << fixed << setprecision(output_precision);
+	  //out.open(imaginary_time_dump_name_for_matrix);
+	  out << fixed << setprecision(output_precision);
+	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
+	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+		    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+			 for (size_t tau_index = 0; tau_index < delta_tau.size(); tau_index++) {
+			      // CAREFUL! delta_tau has been extended to include tau = beta
+			      // it has one more element than should be for a proper definition of
+			      // tau_value:
+			      out << tau_index << "  " << orb1 << "  "
+				  << orb2 << "  "  
+				  << -real(delta_tau[tau_index].block(
+						site_index * per_site_orbital_size,
+						site_index * per_site_orbital_size,
+						per_site_orbital_size,
+						per_site_orbital_size)(orb1, orb2)) << "  "
+				  << -imag(delta_tau[tau_index].block(
+						site_index * per_site_orbital_size,
+						site_index * per_site_orbital_size,
+						per_site_orbital_size,
+						per_site_orbital_size)(orb1, orb2)) << endl;
+			 }
+			 out << endl;
+		    }
+	       }
+	  }
+	  out.close();
+	  // dump bare GF in Matsubara frequencies
+     }
+}
+
 void HybFunction::dump_delta_hdf5() {
      if (world_rank_ == 0) {
 	  double beta = sigma_->get_beta();
@@ -807,7 +845,8 @@ const size_t HybFunction::tail_fit_length = 10;
 const size_t HybFunction::max_expansion_order = 3;
 const string HybFunction::matsubara_frequency_dump_name = "c_delta.w";
 const string HybFunction::matsubara_bare_gf_dump_name = "c_gw";
-const string HybFunction::imaginary_time_dump_name = "c_delta.tau";
+const string HybFunction::imaginary_time_dump_name = "ec_delta.tau";
+const string HybFunction::imaginary_time_dump_name_for_matrix = "ec_delta.tau";
 const string HybFunction::imaginary_time_hdf5_root = "c_delta";
 const string HybFunction::bubble_hdf5_root = "c_bubble";
 const string HybFunction::shift_dump_name = "c_shift.tmp";

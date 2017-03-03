@@ -35,6 +35,7 @@ public:
      void compute_hybridization_function(complex<double> mu);
      void display_asymptotics();
      void dump_delta();
+     void dump_delta_for_matrix();
      void dump_delta_hdf5();
      void dump_bubble_hdf5();
      void compute_local_bubble();
@@ -80,6 +81,7 @@ private:
      static const size_t max_expansion_order;
      static const string matsubara_frequency_dump_name;
      static const string imaginary_time_dump_name;
+     static const string imaginary_time_dump_name_for_matrix;     
      static const string imaginary_time_hdf5_root;
      static const string bubble_hdf5_root;
      static const string matsubara_bare_gf_dump_name;
