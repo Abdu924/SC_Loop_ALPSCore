@@ -15,12 +15,7 @@ using namespace std;
 
 Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
 			       alps::hdf5::archive &h5_archive)
-     :world_rank_(world_rank) {
-     //typedef boost::multi_array<double, 4> array_type;
-     //array_type test(boost::extents[4][4][40][2]);
-     //h5_archive["G1_LEGENDRE"] >> test;
-     //cout << "test element :" << test[0][0][0][0] << endl;
-     //typedef array_type::index index;     
+     :world_rank_(world_rank) {   
      basic_init(parms);
      read_bare_gf();
      read_single_site_full_gf(h5_archive);
@@ -69,6 +64,13 @@ void Greensfunction::read_bare_gf() {
 }
 
 void Greensfunction::read_single_site_full_gf(alps::hdf5::archive &h5_archive) {
+
+     typedef boost::multi_array<complex<double>, 4> array_type;
+     array_type test(boost::extents[4][4][40][2]);
+     h5_archive["G1_LEGENDRE"] >> test;
+     cout << "test element :" << test[0][0][0][0] << endl;
+     //typedef array_type::index index; 
+     
      typedef boost::multi_array<complex<double> , 3> cplx_array_type;
      typedef cplx_array_type::index_range range;
 
@@ -79,39 +81,37 @@ void Greensfunction::read_single_site_full_gf(alps::hdf5::archive &h5_archive) {
      cplx_array_type::array_view<3>::type myview =
 	  raw_full_gf[ boost::indices[range(0,2)][range(1,3)][range(0,4,2)] ];
 
-     std::vector<std::complex<double>> temp_data;
-     temp_data.resize(2 * n_matsubara_freqs);
-     for (size_t block_index = 0; block_index < n_blocks; block_index++) {
-	  size_t cur_index = 0;
-	  for (size_t orb1 = 0; orb1 < blocks[block_index].size(); orb1++) {
-	       for (size_t orb2 = 0; orb2 < blocks[block_index].size(); orb2++) {
-		    cur_index = blocks[block_index][orb2] *  blocks[block_index].size() +
-			 blocks[block_index][orb1];
-		    std::stringstream orbital_path;
-		    orbital_path << rootpath << "/" +
-			 boost::lexical_cast<std::string>(block_index) +
-			 "/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
-		    h5_archive >> alps::make_pvp(orbital_path.str(),
-						 temp_data);
-		    for (size_t freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
-			 values_[freq_index].block(site_index * per_site_orbital_size,
-						   site_index * per_site_orbital_size,
-						   per_site_orbital_size,
-						   per_site_orbital_size)
-			      (blocks[block_index][orb1],
-			       blocks[block_index][orb2]) =
-			      temp_data[freq_index];
-			 neg_values_[freq_index].block(site_index * per_site_orbital_size,
-						       site_index * per_site_orbital_size,
-						       per_site_orbital_size,
-						       per_site_orbital_size)
-			      (blocks[block_index][orb1],
-			       blocks[block_index][orb2]) =
-			      temp_data[n_matsubara_freqs + freq_index];
-		    }
-	       }
-	  }
-     }
+     // std::vector<std::complex<double> > temp_data;
+     // temp_data.resize(2 * n_matsubara_freqs);
+     // size_t cur_index = 0;
+     // for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+     // 	  for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+     // 	       cur_index = blocks[block_index][orb2] *  blocks[block_index].size() +
+     // 		    blocks[block_index][orb1];
+     // 	       std::stringstream orbital_path;
+     // 	       orbital_path << rootpath << "/" +
+     // 		    boost::lexical_cast<std::string>(block_index) +
+     // 		    "/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
+     // 	       h5_archive >> alps::make_pvp(orbital_path.str(),
+     // 					    temp_data);
+     // 	       for (size_t freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+     // 		    values_[freq_index].block(site_index * per_site_orbital_size,
+     // 					      site_index * per_site_orbital_size,
+     // 					      per_site_orbital_size,
+     // 					      per_site_orbital_size)
+     // 			 (blocks[block_index][orb1],
+     // 			  blocks[block_index][orb2]) =
+     // 			 temp_data[freq_index];
+     // 		    neg_values_[freq_index].block(site_index * per_site_orbital_size,
+     // 						  site_index * per_site_orbital_size,
+     // 						  per_site_orbital_size,
+     // 						  per_site_orbital_size)
+     // 			 (blocks[block_index][orb1],
+     // 			  blocks[block_index][orb2]) =
+     // 			 temp_data[n_matsubara_freqs + freq_index];
+     // 	       }
+     // 	  }
+     // }
 }
 
 void Greensfunction::init_gf_container() {

@@ -8,6 +8,7 @@
 #include <cmath>
 #include <alps/params.hpp>
 #include "chemical_potential.hpp"
+#include <boost/math/special_functions/bessel.hpp>
 
 using namespace std;
 
@@ -42,5 +43,14 @@ protected:
 private:
      int world_rank_;
 };
+
+//transformation matrix from Legendre to Matsubara basis
+inline std::complex<double> t(int n, int l){
+     std::complex<double> i_c(0., 1.);
+     return (std::sqrt(static_cast<double>(2 * l + 1)) /
+	     std::sqrt(static_cast<double>(2 * n + 1))) *
+	  std::exp(i_c * (n + 0.5) * M_PI) * std::pow(i_c, l) *
+	  boost::math::cyl_bessel_j(l + 0.5,(n + 0.5) * M_PI);
+}
 
 #endif //GREENS_FUNCTION__
