@@ -9,9 +9,23 @@
 #include <alps/hdf5/complex.hpp>
 #include <alps/hdf5/multi_array.hpp>
 #include "greens_function.hpp"
-
+#include <math.h>
+#include <gsl/gsl_sf_bessel.h>
 
 using namespace std;
+
+std::complex<double> legendre_coeff(int n, int l) {
+     // transformation matrix from Legendre to Matsubara basis
+     std::complex<double> i_c(0., 1.);
+     //std::complex<double>  testzzz = boost::math::cyl_bessel_j(l + 0.5, (n + 0.5) * M_PI);
+     double testzzz = jn(l, static_cast<double>(0.5 * (2 * n + 1) * M_PI));
+     return (sqrt(2 * l + 1) / sqrt(2 * n + 1)) *
+	  exp(i_c * (n + 0.5) * M_PI) * pow(i_c, l);
+     // return (std::sqrt(2 * l + 1) / std::sqrt(2 * n + 1)) *
+     // 	  std::exp(i_c * (n + 0.5) * M_PI) * std::pow(i_c, l) *
+     // 	  boost::math::cyl_bessel_j(l + 0.5, (n + 0.5) * M_PI);
+}
+
 
 Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
 			       alps::hdf5::archive &h5_archive)
@@ -64,15 +78,15 @@ void Greensfunction::read_bare_gf() {
 }
 
 void Greensfunction::read_single_site_full_gf(alps::hdf5::archive &h5_archive) {
+     typedef boost::multi_array<double, 4> array_type;
+     typedef boost::multi_array<complex<double> , 3> cplx_array_type;
+     typedef cplx_array_type::index_range range;
 
-     typedef boost::multi_array<complex<double>, 4> array_type;
      array_type test(boost::extents[4][4][40][2]);
      h5_archive["G1_LEGENDRE"] >> test;
      cout << "test element :" << test[0][0][0][0] << endl;
      //typedef array_type::index index; 
      
-     typedef boost::multi_array<complex<double> , 3> cplx_array_type;
-     typedef cplx_array_type::index_range range;
 
      cplx_array_type raw_full_gf(
 	  boost::extents[n_matsubara_freqs][per_site_orbital_size][per_site_orbital_size]);

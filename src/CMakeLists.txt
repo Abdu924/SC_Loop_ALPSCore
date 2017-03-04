@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+
 # enable C and C++ compilers
 # enable_language(C CXX)
 
@@ -14,12 +15,13 @@ INCLUDE_DIRECTORIES ("$ENV{EIGEN3_INCLUDE_DIR}")
 find_package(ALPSCore REQUIRED)
 message(STATUS "Found ALPSCore")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 
 
 # Manage MPI Compilation
 find_package(MPI)
 find_package(Boost REQUIRED system thread timer chrono regex)
+FIND_PACKAGE(GSL REQUIRED)
 
 include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
 
@@ -40,7 +42,9 @@ set(CMAKE_BUILD_TYPE Release)
 
 
 add_executable(${PROJECT_NAME} main.cpp band_structure.cpp self_energy.cpp
-  dmft_model.cpp hybridization_function.cpp tail_manager.cpp greens_function.cpp)
+  dmft_model.cpp hybridization_function.cpp tail_manager.cpp
+  greens_function.cpp
+  legendre.cpp)
 # For Metacentrum
 #
 # For Everest
@@ -50,10 +54,12 @@ message ("Compiler Id: " ${CMAKE_CXX_COMPILER_ID})
 #if (CMAKE_COMPILER_IS_GNUCC)
 if(${CMAKE_HOST_SYSTEM} STREQUAL "Linux-3.2.0-0.bpo.4-amd64" )
   # This is tested
-  target_link_libraries(${PROJECT_NAME} ${ALPSCore_LIBRARIES} ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} ${ALPSCore_LIBRARIES}
+    ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES} ${GSL_LIBRARIES})
 else()
   set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-deprecated)
-  target_link_libraries(${PROJECT_NAME} ${ALPSCore_LIBRARIES} ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})  
+  target_link_libraries(${PROJECT_NAME} ${ALPSCore_LIBRARIES}
+    ${MPI_CXX_LIBRARIES}  ${GSL_LIBRARIES} ${Boost_LIBRARIES})
 endif ()
 
 set_target_properties(${PROJECT_NAME}

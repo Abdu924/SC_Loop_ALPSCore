@@ -63,7 +63,7 @@ protected:
      // The average of the dispersion over the k lattice.
      Eigen::MatrixXcd epsilon_bar;
      Eigen::MatrixXcd epsilon_squared_bar;
-     std::vector<std::vector<double>> k_lattice_;
+     std::vector<std::vector<double> > k_lattice_;
      std::vector<Eigen::VectorXd> proc_k_lattice_;
      // Lattice for bseq
      std::vector<Eigen::VectorXd> secondary_q_lattice_;
