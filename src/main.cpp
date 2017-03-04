@@ -365,7 +365,7 @@ int main(int argc, char** argv) {
 			// Computation with Alps3 input format
 			// Need to read GF and compute Dyson equation
 			boost::shared_ptr<Greensfunction> greens_function(
-				new Greensfunction(parms, world_rank, h5_archive, h5_group_name, true));
+				new Greensfunction(parms, world_rank, h5_archive));
 			
 		}
 		

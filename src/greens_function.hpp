@@ -18,15 +18,29 @@ class Greensfunction {
 	 */
 public:
 	Greensfunction(const alps::params &parms, int world_rank,
-		       alps::hdf5::archive &h5_archive, string h5_group_name,
-		       bool verbose=false);
+		       alps::hdf5::archive &h5_archive);
      
 	virtual ~Greensfunction() {}
      
 protected:
-	boost::multi_array<std::complex<double>, 3> raw_gf_data;//(boost::extents[n_flavors][n_flavors][n_legendre]);
+     void read_single_site_full_gf(alps::hdf5::archive &h5_archive);
+     void read_bare_gf();
+     void basic_init(const alps::params &parms);
+     void init_gf_container();
+     
+     Eigen::VectorXcd matsubara_frequencies_;
+     size_t n_blocks;
+     size_t n_sites;
+     size_t per_site_orbital_size;
+     size_t tot_orbital_size;
+     double beta;
+     size_t n_matsubara_freqs;
+     int ref_site_index;
+     
+     std::vector<Eigen::MatrixXcd> bare_gf_values_;
+     std::vector<Eigen::MatrixXcd> full_gf_values_;
 private:
-	int world_rank_;
+     int world_rank_;
 };
 
 #endif //GREENS_FUNCTION__
