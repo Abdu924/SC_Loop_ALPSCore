@@ -43,7 +43,8 @@ void Greensfunction::basic_init(const alps::params &parms) {
      per_site_orbital_size = parms.exists("N_ORBITALS") ?
 	  static_cast<size_t>(parms["N_ORBITALS"]) : 2;
      tot_orbital_size = per_site_orbital_size * n_sites;
-     n_matsubara_freqs = static_cast<size_t>(parms["N_MATSUBARA"]);
+     n_matsubara = static_cast<int>(parms["N_MATSUBARA"]);
+     n_legendre = static_cast<int>(parms["N_LEGENDRE"]);
      beta = static_cast<double>(parms["BETA"]);
      init_gf_container();
 }
@@ -59,7 +60,7 @@ void Greensfunction::read_bare_gf() {
 	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
 		    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
 			 for (size_t freq_index = 0;
-			      freq_index < n_matsubara_freqs; freq_index++) {
+			      freq_index < n_matsubara; freq_index++) {
 			      std::string line;
 			      std::getline(infile, line);
 			      std::istringstream iss(line);
@@ -77,19 +78,42 @@ void Greensfunction::read_bare_gf() {
      }
 }
 
-void Greensfunction::read_single_site_full_gf(alps::hdf5::archive &h5_archive) {
+void Greensfunction::read_single_site_full_gf(alps::hdf5::archive &h5_archive, int site_index) {
      typedef boost::multi_array<double, 4> array_type;
      typedef boost::multi_array<complex<double> , 3> cplx_array_type;
      typedef cplx_array_type::index_range range;
 
-     array_type test(boost::extents[4][4][40][2]);
-     h5_archive["G1_LEGENDRE"] >> test;
-     cout << "test element :" << test[0][0][0][0] << endl;
+     array_type legendre_data(boost::extents[4][4][40][2]);
+     h5_archive["G1_LEGENDRE"] >> legendre_data;
      //typedef array_type::index index; 
      
+     /*
+      * Initialize LegendreTransformer
+      */
+     LegendreTransformer legendre_transformer(n_matsubara, n_legendre);
+     const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl(legendre_transformer.Tnl());
+     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
+	  tmp_mat(n_legendre, 1), tmp_mat2(n_matsubara, 1);
+
+     for (int flavor = 0; flavor < per_site_orbital_size; ++flavor) {
+	  for (int flavor2 = 0; flavor2 < per_site_orbital_size; ++flavor2) {
+	       for (int il = 0; il < n_legendre; ++il) {
+		    tmp_mat(il, 0) = std::complex<double>(legendre_data[flavor][flavor2][il][0],
+							  legendre_data[flavor][flavor2][il][1]);
+	       }
+	       tmp_mat2 = Tnl * tmp_mat;
+	       for (int freq_index = 0; freq_index < n_matsubara; ++freq_index) {
+		    full_gf_values_[freq_index].block(site_index * per_site_orbital_size,
+						      site_index * per_site_orbital_size,
+						      per_site_orbital_size,
+						      per_site_orbital_size)(flavor, flavor2) =
+			 tmp_mat2(freq_index, 0);
+	       }
+	  }
+     }
 
      cplx_array_type raw_full_gf(
-	  boost::extents[n_matsubara_freqs][per_site_orbital_size][per_site_orbital_size]);
+	  boost::extents[n_matsubara][per_site_orbital_size][per_site_orbital_size]);
      h5_archive["/gf/data"] >> raw_full_gf;
 
      cplx_array_type::array_view<3>::type myview =
@@ -129,10 +153,13 @@ void Greensfunction::read_single_site_full_gf(alps::hdf5::archive &h5_archive) {
 }
 
 void Greensfunction::init_gf_container() {
-     bare_gf_values_.resize(n_matsubara_freqs);
+     bare_gf_values_.resize(n_matsubara);
+     full_gf_values_.resize(n_matsubara);
      //initialize self-energy
-     for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+     for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  bare_gf_values_[freq_index] =
+	       Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
+	  full_gf_values_[freq_index] =
 	       Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      }
 }

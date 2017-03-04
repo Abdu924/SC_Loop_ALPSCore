@@ -8,6 +8,7 @@
 #include <cmath>
 #include <alps/params.hpp>
 #include "chemical_potential.hpp"
+#include "legendre.hpp"
 
 using namespace std;
 
@@ -23,7 +24,8 @@ public:
 	virtual ~Greensfunction() {}
      
 protected:
-     void read_single_site_full_gf(alps::hdf5::archive &h5_archive);
+     void read_single_site_full_gf(alps::hdf5::archive &h5_archive,
+				   int site_index=0);
      void read_bare_gf();
      void basic_init(const alps::params &parms);
      void init_gf_container();
@@ -34,7 +36,8 @@ protected:
      size_t per_site_orbital_size;
      size_t tot_orbital_size;
      double beta;
-     size_t n_matsubara_freqs;
+     int n_matsubara;
+     int n_legendre;
      int ref_site_index;
      
      std::vector<Eigen::MatrixXcd> bare_gf_values_;
