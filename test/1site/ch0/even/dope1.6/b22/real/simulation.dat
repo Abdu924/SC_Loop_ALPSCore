@@ -1,0 +1,26 @@
+simulation details:
+average sign: 1
+average Re(phase): 1
+average Im(phase): 1.18447e-14
+total number of Monte Carlo updates: 816000000
+total number of Monte Carlo measurements: 50500
+total number of imaginary time measurements: 808000000
+number of thermalization sweeps: 500
+inverse temperature: 22
+perturbation order:
+orbital 0: 2.35441
+orbital 1: 1.42462
+orbital 2: 2.34746
+orbital 3: 1.43045
+
+|------ Simulation details (master only) after 51000 sweeps ------|
+  Total acceptance rate = 17.02%
+  Individual acceptance rate for update 
+     change zero state    = 0.00% (proposal rate = 2.00%)
+     insert segment       = 5.08% (proposal rate = 29.00%)
+     remove segment       = 5.08% (proposal rate = 28.99%)
+     insert anti-segment  = 3.43% (proposal rate = 20.01%)
+     remove anti-segment  = 3.43% (proposal rate = 20.00%)
+     swap segment         = 0.00% (proposal rate = 0.00%)
+     global flip          = 0.00% (proposal rate = 0.00%)
+|-----------------------------------------------------------------|
