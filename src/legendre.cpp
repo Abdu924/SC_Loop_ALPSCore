@@ -54,16 +54,10 @@ void LegendreTransformer::compute_legendre(const std::vector<double> &xval,
 #endif
      for (int l = 0; l < n_legendre_; l++) {
 	  if (l == 0) {
-#ifdef __clang__
-#pragma clang loop vectorize(enable)
-#endif
 	       for (int ix = 0; ix < nx; ++ix) {
 		    val[l][ix] = 1;
 	       }
 	  } else if (l == 1) {
-#ifdef __clang__
-#pragma clang loop vectorize(enable)
-#endif
 	       for (int ix = 0; ix < nx; ++ix) {
 		    val[l][ix] = xval[ix];
 	       }
@@ -72,9 +66,6 @@ void LegendreTransformer::compute_legendre(const std::vector<double> &xval,
 	       //val[ix][l] = ((2 * l - 1) * xval[ix]*val[ix][l - 1] - (l - 1) * val[ix][l - 2]) * inv_l_[l];//l
 	       //}
 	       const double inv_l_tmp = inv_l_[l];
-#ifdef __clang__
-#pragma clang loop vectorize(enable)
-#endif
 	       for (int ix = 0; ix < nx; ++ix) {
 		    val[l][ix] = ((2 * l - 1) * xval[ix] *
 				  val[l - 1][ix] - (l - 1) * val[l - 2][ix]) * inv_l_tmp;//l

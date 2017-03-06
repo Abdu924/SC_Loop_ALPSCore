@@ -42,6 +42,7 @@ protected:
      
      std::vector<Eigen::MatrixXcd> bare_gf_values_;
      std::vector<Eigen::MatrixXcd> full_gf_values_;
+     std::vector<Eigen::MatrixXcd> full_gf_neg_values_;
 private:
      int world_rank_;
 };
