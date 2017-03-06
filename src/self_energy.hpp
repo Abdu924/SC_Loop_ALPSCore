@@ -7,6 +7,7 @@
 #include <cmath>
 #include <alps/params.hpp>
 #include "chemical_potential.hpp"
+#include "greens_function.hpp"
 
 using namespace std;
 
@@ -22,6 +23,10 @@ public:
 		boost::shared_ptr<Chemicalpotential> chempot,
 		int ref_site_index,
 		alps::hdf5::archive h5_archive, bool verbose=false);
+     Selfenergy(const alps::params &parms, int world_rank,
+		boost::shared_ptr<Chemicalpotential> chempot,
+		int ref_site_index,
+		boost::shared_ptr<Greensfunction> greens_function);
      void display_asymptotics();
      double get_beta();
      size_t get_n_matsubara_freqs();
@@ -71,9 +76,9 @@ protected:
      void read_input_sigma(const alps::params &parms,
 			   alps::hdf5::archive h5_archive,
 			   string h5_group_name);
-     void basic_init(const alps::params &parms, bool verbose);
-     void read_qmc_sigma(int ref_site_index,
-			 const alps::params &parms, alps::hdf5::archive h5_archive);
+     void basic_init(const alps::params &parms, bool verbose=false);
+     void read_qmc_sigma(int ref_site_index, alps::hdf5::archive h5_archive);
+     void read_qmc_sigma(int ref_site_index, boost::shared_ptr<Greensfunction> greens_function);
      void init_sigma_container();
      void get_single_site_hdf5_data(size_t site_index,
 				    alps::hdf5::archive h5_archive,
@@ -94,7 +99,10 @@ private:
      std::vector<Eigen::MatrixXcd> qmc_tail;
      boost::shared_ptr<Chemicalpotential> chempot_;
      bool enforce_real;
-
+     bool is_alps3;
+     
+     void run_dyson_equation(int ref_site_index,
+			     boost::shared_ptr<Greensfunction> greens_function);
      void symmetrize_tail_params(int ref_site_index);
      void symmetrize_qmc_sigma(int ref_site_index);
      void symmetrize_matrix_elements(int ref_site_index);

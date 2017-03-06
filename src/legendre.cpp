@@ -7,9 +7,9 @@ LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre):
      for (int im = 0; im < n_matsubara_; ++im) {
 	  std::complex<double> ztmp(0.0, 1.0);
 	  for (int il = 0; il < n_legendre_; ++il) {
-	       gsl_sf_result tmp;
-	       gsl_sf_bessel_jl_e(il, 0.5 * (2 * im + 1) * M_PI, &tmp);
-	       Tnl_(im, il) = sign_tmp * ztmp * std::sqrt(2 * il + 1.0) * tmp.val;
+	       //gsl_sf_result tmp;
+	       //gsl_sf_bessel_jl_e(il, 0.5 * (2 * im + 1) * M_PI, &tmp);
+	       //Tnl_(im, il) = sign_tmp * ztmp * std::sqrt(2 * il + 1.0) * tmp.val;
 	       ztmp *= std::complex<double>(0.0, 1.0);
 	  }
 	  sign_tmp *= -1;

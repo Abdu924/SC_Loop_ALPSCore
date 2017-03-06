@@ -6,8 +6,8 @@
 #include<assert.h>
 #include "boost/multi_array.hpp"
 #include <math.h>
-#include <gsl/gsl_sf_bessel.h>
-#include <gsl/gsl_errno.h> 
+//#include <gsl/gsl_sf_bessel.h>
+//#include <gsl/gsl_errno.h> 
 
 #include<Eigen/Dense>
 

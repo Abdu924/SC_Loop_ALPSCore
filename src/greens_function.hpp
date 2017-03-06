@@ -13,19 +13,22 @@
 using namespace std;
 
 class Greensfunction {
-	/*
-	 * class providing interface for the Green's function,
-	 * but not much more than an accessor to Alps3 data
-	 */
+     /*
+      * class providing interface for the Green's function,
+      * but not much more than an accessor to Alps3 data
+      */
 public:
-	Greensfunction(const alps::params &parms, int world_rank,
-		       alps::hdf5::archive &h5_archive);
+     Greensfunction(const alps::params &parms, int world_rank,
+		    alps::hdf5::archive &h5_archive);
+     Eigen::MatrixXcd get_dyson_result(int freq_index, bool is_negative);
      
-	virtual ~Greensfunction() {}
+     virtual ~Greensfunction() {}
      
 protected:
-     void read_single_site_full_gf(alps::hdf5::archive &h5_archive,
-				   int site_index=0);
+     void read_single_site_full_gf_legendre(alps::hdf5::archive &h5_archive,
+					    int site_index=0);
+     void read_single_site_full_gf_matsubara(alps::hdf5::archive &h5_archive,
+					     int site_index=0);
      void read_bare_gf();
      void basic_init(const alps::params &parms);
      void init_gf_container();
@@ -37,10 +40,12 @@ protected:
      size_t tot_orbital_size;
      double beta;
      int n_matsubara;
+     int n_matsubara_for_alps2;
      int n_legendre;
      int ref_site_index;
-     
+
      std::vector<Eigen::MatrixXcd> bare_gf_values_;
+     std::vector<Eigen::MatrixXcd> bare_gf_neg_values_;
      std::vector<Eigen::MatrixXcd> full_gf_values_;
      std::vector<Eigen::MatrixXcd> full_gf_neg_values_;
 private:

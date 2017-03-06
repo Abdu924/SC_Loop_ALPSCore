@@ -21,7 +21,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 # Manage MPI Compilation
 find_package(MPI)
 find_package(Boost REQUIRED system thread timer chrono regex)
-FIND_PACKAGE(GSL REQUIRED)
+#FIND_PACKAGE(GSL REQUIRED)
 
 include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
 
@@ -55,11 +55,13 @@ message ("Compiler Id: " ${CMAKE_CXX_COMPILER_ID})
 if(${CMAKE_HOST_SYSTEM} STREQUAL "Linux-3.2.0-0.bpo.4-amd64" )
   # This is tested
   target_link_libraries(${PROJECT_NAME} ${ALPSCore_LIBRARIES}
-    ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES} ${GSL_LIBRARIES})
+    #${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES} ${GSL_LIBRARIES})
+    ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
 else()
   set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-deprecated)
   target_link_libraries(${PROJECT_NAME} ${ALPSCore_LIBRARIES}
-    ${MPI_CXX_LIBRARIES}  ${GSL_LIBRARIES} ${Boost_LIBRARIES})
+    ${MPI_CXX_LIBRARIES}  ${Boost_LIBRARIES})
+#    ${MPI_CXX_LIBRARIES}  ${GSL_LIBRARIES} ${Boost_LIBRARIES})
 endif ()
 
 set_target_properties(${PROJECT_NAME}
