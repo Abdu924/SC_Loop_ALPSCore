@@ -342,6 +342,10 @@ void Selfenergy::basic_init(const alps::params &parms, bool verbose) {
      // Read orbital and block structure
      // This is necessary, because it defines the
      // structure of the text file where the self-energy is stored.
+          // Sensitive parameter - if too large, the noise at high frequency is translated
+     // into shifts in the Legendre representation, and badly wrong estimates
+     // of the tails.
+     matsubara_tail_estimate_region = std::round(2.0 * static_cast<double>(parms["C_MIN"]));
      n_blocks = static_cast<size_t>(parms["N_BLOCKS"]);
      n_sites = parms.exists("N_SITES") ?
 	  static_cast<size_t>(parms["N_SITES"]) : 1;
@@ -616,7 +620,7 @@ void Selfenergy::feed_tail_params(int ref_site_index,
 
 void Selfenergy::compute_tail_coeffs(int ref_site_index) {
      if (is_alps3) {
-	  size_t N_max = 40;
+	  size_t N_max = matsubara_tail_estimate_region;
 	  for (size_t freq_index = N_max - tail_fit_length;
 	       freq_index < N_max; freq_index++) {
 	       Sigma_0_.block(ref_site_index * per_site_orbital_size,
