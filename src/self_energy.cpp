@@ -111,8 +111,9 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      cout << "<n_i n_j> :" << endl << "Unknown (ALPS3)" << endl;
      compute_tail_coeffs(ref_site_index);
      compute_qmc_tail(ref_site_index);
-     // No need to append tails when data comes from Legenre
-     //append_qmc_tail(ref_site_index, parms);
+     // No need to append tails when data comes from Legendre
+     // Oh YESS we do! :)
+     append_qmc_tail(ref_site_index, parms);
      symmetrize_sites(ref_site_index);
      // precompute some matsubara frequency sums for later use
      // in the Fourier transforms.
@@ -615,9 +616,9 @@ void Selfenergy::feed_tail_params(int ref_site_index,
 
 void Selfenergy::compute_tail_coeffs(int ref_site_index) {
      if (is_alps3) {
-	  size_t N_max = n_matsubara_freqs;
-	  for (size_t freq_index = n_matsubara_freqs - tail_fit_length;
-	       freq_index < n_matsubara_freqs; freq_index++) {
+	  size_t N_max = 40;
+	  for (size_t freq_index = N_max - tail_fit_length;
+	       freq_index < N_max; freq_index++) {
 	       Sigma_0_.block(ref_site_index * per_site_orbital_size,
 			      ref_site_index * per_site_orbital_size,
 			      per_site_orbital_size,
