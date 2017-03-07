@@ -9,6 +9,7 @@
 #include <alps/hdf5/complex.hpp>
 #include <alps/hdf5/multi_array.hpp>
 #include "greens_function.hpp"
+#include "hybridization_function.hpp"
 #include <math.h>
 //#include <gsl/gsl_sf_bessel.h>
 
@@ -54,10 +55,9 @@ void Greensfunction::basic_init(const alps::params &parms) {
 }
 
 void Greensfunction::read_bare_gf() {
-     std::string matsubara_bare_gf_dump_name = "c_gw";
-     std::ifstream infile(matsubara_bare_gf_dump_name.c_str());
+     std::ifstream infile(HybFunction::bare_gf_no_shift_dump_name.c_str());
      if(!infile.good()) {
-	  std::cerr << "Could not find file " << matsubara_bare_gf_dump_name << endl;
+	  std::cerr << "Could not find file " << HybFunction::bare_gf_no_shift_dump_name << endl;
 	  throw std::runtime_error("pb reading bare GF in txt format");
      } else {
 	  for (size_t site_index = 0; site_index < n_sites; site_index++) {

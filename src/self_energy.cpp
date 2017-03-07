@@ -623,25 +623,26 @@ void Selfenergy::compute_tail_coeffs(int ref_site_index) {
 			      per_site_orbital_size,
 			      per_site_orbital_size) += 0.5 *
 		    (values_[freq_index].block(ref_site_index * per_site_orbital_size,
-			      ref_site_index * per_site_orbital_size,
-			      per_site_orbital_size,
-			      per_site_orbital_size) +
+					       ref_site_index * per_site_orbital_size,
+					       per_site_orbital_size,
+					       per_site_orbital_size) +
 		     values_[freq_index].block(ref_site_index * per_site_orbital_size,
+					       ref_site_index * per_site_orbital_size,
+					       per_site_orbital_size,
+					       per_site_orbital_size).transpose().conjugate()) / tail_fit_length;
+	       Sigma_1_.block(ref_site_index * per_site_orbital_size,
 			      ref_site_index * per_site_orbital_size,
 			      per_site_orbital_size,
-			      per_site_orbital_size).transpose().conjugate()) / tail_fit_length;
-	       Sigma_1_.block(ref_site_index * per_site_orbital_size,
-					ref_site_index * per_site_orbital_size,
-					per_site_orbital_size,
-					per_site_orbital_size) +=
+			      per_site_orbital_size) +=
+		    //0.5 * get_matsubara_frequency(freq_index) *
 		    0.5 * get_matsubara_frequency(freq_index) *
 		    (values_[freq_index].block(ref_site_index * per_site_orbital_size,
-			      ref_site_index * per_site_orbital_size,
-			      per_site_orbital_size,
-			      per_site_orbital_size) -
+					       ref_site_index * per_site_orbital_size,
+					       per_site_orbital_size,
+					       per_site_orbital_size) -
 		     values_[freq_index].block(ref_site_index * per_site_orbital_size,
-			      ref_site_index * per_site_orbital_size,
-			      per_site_orbital_size,
+					       ref_site_index * per_site_orbital_size,
+					       per_site_orbital_size,
 			      per_site_orbital_size).transpose().conjugate()) / tail_fit_length;
 	  }
      } else {

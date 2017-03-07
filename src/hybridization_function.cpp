@@ -158,6 +158,7 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
      // initialize quantities to be computed
      hybridization_function.clear();
      bare_greens_function.clear();
+     no_shift_bare_greens_function.clear();
      
      Eigen::MatrixXcd local_greens_function =
 	  Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
@@ -250,6 +251,11 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 	       (tot_orbital_size,
 		sigma_->get_matsubara_frequency(freq_index));
 	  hybridization_function.push_back(inverse_gf);
+	  inverse_gf.diagonal() -= Eigen::VectorXcd::Constant
+	       (tot_orbital_size,
+		sigma_->get_matsubara_frequency(freq_index));
+	  inverse_gf.diagonal() -= mu_tilde.diagonal();
+	  no_shift_bare_greens_function.push_back(-inverse_gf.inverse());
      }
 }
 
@@ -500,6 +506,30 @@ void HybFunction::dump_delta() {
 					       per_site_orbital_size,
 					       per_site_orbital_size)(orb1, orb2)) << "     "
 				  << imag(bare_greens_function[freq_index].block(
+					       site_index * per_site_orbital_size,
+					       site_index * per_site_orbital_size,
+					       per_site_orbital_size,
+					       per_site_orbital_size)(orb1, orb2)) << endl;
+			 }
+		    }
+	       }
+	  }
+	  out.close();
+	  // dump non shifted bare GF in Matsubara frequencies
+	  out.open(bare_gf_no_shift_dump_name, ofstream::out);
+	  out.precision(output_precision);
+	  out << fixed << setprecision(output_precision);
+	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
+	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+		    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+			 for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+			      out << imag(sigma_->get_matsubara_frequency(freq_index)) << "     "
+				  << real(no_shift_bare_greens_function[freq_index].block(
+					       site_index * per_site_orbital_size,
+					       site_index * per_site_orbital_size,
+					       per_site_orbital_size,
+					       per_site_orbital_size)(orb1, orb2)) << "     "
+				  << imag(no_shift_bare_greens_function[freq_index].block(
 					       site_index * per_site_orbital_size,
 					       site_index * per_site_orbital_size,
 					       per_site_orbital_size,
@@ -846,6 +876,7 @@ const size_t HybFunction::tail_fit_length = 10;
 const size_t HybFunction::max_expansion_order = 3;
 const string HybFunction::matsubara_frequency_dump_name = "c_delta.w";
 const string HybFunction::matsubara_bare_gf_dump_name = "c_gw";
+const string HybFunction::bare_gf_no_shift_dump_name = "c_bare_gf";
 const string HybFunction::imaginary_time_dump_name = "c_delta.tau";
 const string HybFunction::imaginary_time_dump_name_for_matrix = "ec_delta.tau";
 const string HybFunction::imaginary_time_hdf5_root = "c_delta";

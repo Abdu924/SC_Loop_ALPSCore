@@ -32,6 +32,7 @@ public:
 		 boost::shared_ptr<Selfenergy> const &sigma,
 		 complex<double> chemical_potential,
 		 int world_rank, bool compute_bubble, bool verbose=false);
+     
      void compute_hybridization_function(complex<double> mu);
      void display_asymptotics();
      void dump_delta();
@@ -42,12 +43,15 @@ public:
      void compute_lattice_bubble();
      virtual ~HybFunction() {}
 
+     static const string bare_gf_no_shift_dump_name;
+     
 private:
      bool compute_bubble;
      boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::shared_ptr<Selfenergy> sigma_;
      vector<Eigen::MatrixXcd> hybridization_function;
      vector<Eigen::MatrixXcd> bare_greens_function;
+     vector<Eigen::MatrixXcd> no_shift_bare_greens_function;
      vector<Eigen::MatrixXcd> world_local_gf;
      vector<vector<Eigen::MatrixXcd> > world_local_bubble;
      // dims for lattice bubble:  boson, q_index, nu_index,
