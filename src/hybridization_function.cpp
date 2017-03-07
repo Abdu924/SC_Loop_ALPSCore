@@ -234,6 +234,7 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 	  }
 	  // No need to site-project - sigma is site diagonal
 	  inverse_gf -= sigma_->values_[freq_index];
+	  no_shift_bare_greens_function.push_back(-inverse_gf.inverse());
 	  inverse_gf.diagonal() += mu_tilde.diagonal();
 	  // TODO This follows the Fortran code, which uses a
 	  // "shift" quantity, saved in a specified file shift.tmp,
@@ -255,7 +256,6 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 	       (tot_orbital_size,
 		sigma_->get_matsubara_frequency(freq_index));
 	  inverse_gf.diagonal() -= mu_tilde.diagonal();
-	  no_shift_bare_greens_function.push_back(-inverse_gf.inverse());
      }
 }
 
