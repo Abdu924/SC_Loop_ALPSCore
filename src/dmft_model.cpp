@@ -40,8 +40,9 @@ DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
      Eigen::MatrixXcd sigma_0 = sigma->get_sigma_0();
      Eigen::MatrixXcd sigma_1 = sigma->get_sigma_1();
      Eigen::VectorXcd freqs = sigma->get_matsubara_frequencies();
-     tail_manager = boost::make_shared<TailManager>(
-	  TailManager(sigma_0, sigma_1, freqs, world_rank_));
+     boost::shared_ptr<TailManager> temp_tail_manager(
+	  new TailManager(sigma_0, sigma_1, freqs, world_rank_));
+     tail_manager = temp_tail_manager;
 }
 
 tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_mu,

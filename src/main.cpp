@@ -374,13 +374,13 @@ int main(int argc, char** argv) {
 							old_h5_group_name, false));
 		    boost::shared_ptr<Selfenergy> qmc_self_energy;
 		    if (from_alps3) {
-			 boost::shared_ptr<Greensfunction> greens_function;
-			 greens_function = boost::make_shared<Greensfunction>(parms, world_rank, h5_archive);
-			 qmc_self_energy = boost::make_shared<Selfenergy>(parms, world_rank, chempot, ref_site_index,
-									  greens_function);
+			 boost::shared_ptr<Greensfunction>
+			      greens_function(new Greensfunction(parms, world_rank, h5_archive));
+			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
+							       greens_function));
 		    } else {
-			 qmc_self_energy = boost::make_shared<Selfenergy>(parms, world_rank, chempot, ref_site_index,
-									  h5_archive, false);
+			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
+							       h5_archive, false));
 		    }
 		    //(new Selfenergy(parms, world_rank, chempot, ref_site_index,
 		    //				h5_archive, false));
