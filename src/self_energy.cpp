@@ -8,6 +8,7 @@
 #include <alps/hdf5/archive.hpp>
 #include <alps/hdf5/pointer.hpp>
 #include <alps/hdf5/complex.hpp>
+#include <alps/hdf5/multi_array.hpp>
 #include "self_energy.hpp"
 
 /*
@@ -83,6 +84,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       boost::shared_ptr<Chemicalpotential> chempot,
 		       int ref_site_index,
+		       alps::hdf5::archive h5_archive,
 		       boost::shared_ptr<Greensfunction> greens_function)
      :world_rank_(world_rank), chempot_(chempot), is_alps3(true) {
      basic_init(parms);
@@ -107,8 +109,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      read_symmetry_definition(symmetry_file);
      read_qmc_sigma(ref_site_index, greens_function);
      // Smooth the noisy tail
-     //feed_tail_params(ref_site_index, parms, h5_archive);
-     cout << "<n_i n_j> :" << endl << "Unknown (ALPS3)" << endl;
+     feed_tail_params(ref_site_index, parms, h5_archive);
      compute_tail_coeffs(ref_site_index);
      compute_qmc_tail(ref_site_index);
      // No need to append tails when data comes from Legendre
@@ -333,8 +334,6 @@ void Selfenergy::run_dyson_equation(int ref_site_index,
 					per_site_orbital_size) =
 	       greens_function->get_dyson_result(freq_index, true);
      }
-     cout << "matsu matsu - 1 " << values_[n_matsubara_freqs - 1] << endl;
-     cout << "matsu 0 " << values_[0] << endl;
 }
 
 // Initialize structures common to qmc- and dmft-style objects
@@ -525,7 +524,7 @@ std::vector<double> Selfenergy::get_u_elements(const alps::params &parms) {
 
 void Selfenergy::feed_tail_params(int ref_site_index,
 				  const alps::params &parms,
-				  alps::hdf5::archive h5_archive) {
+				  alps::hdf5::archive &h5_archive) {
      // a_dagger_b is picked from the
      // values of G(tau = beta)
      // density density correlation
@@ -533,6 +532,7 @@ void Selfenergy::feed_tail_params(int ref_site_index,
      // HERE - maybe not
 	// Convention issue: no need to worry about it with interaction matrix,
 	// since it is symmetric for density-density interactions.
+     // TODO : get rid of u_pd in Alps3
      std::vector<double> u_elements = get_u_elements(parms);
      int cur_index = 0;
      for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
@@ -544,70 +544,137 @@ void Selfenergy::feed_tail_params(int ref_site_index,
 		    u_elements[cur_index];
 	  }
      }
-     std::string gtau_path("/od_hyb_G_tau/");
-     std::vector<std::complex<double> > temp_data;
-     temp_data.resize(boost::lexical_cast<int>(parms["N_TAU"]) + 1);
-     double cur_dd_correl;
-     for(int block_index = 0; block_index < n_blocks; ++block_index) {
-	  int cur_index = 0;
-	  for(int line_idx = 0; line_idx < blocks[block_index].size(); ++line_idx) {
-	       for(int col_idx = 0; col_idx < blocks[block_index].size();
-		   ++col_idx) {
-		    std::stringstream orbital_path;
-		    std::stringstream density_path;
-		    // ATTENTION here: convention of QMC is F_ij = -T<c_i c^dag_j>,
-		    // but DMFT is looking for  c^dag_i c_j
-		    cur_index = line_idx + col_idx * blocks[block_index].size();
-		    orbital_path << gtau_path << boost::lexical_cast<std::string>(block_index) +
-			 "/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
-		    if (line_idx == col_idx) {
-			 density_path << "/simulation/results/density_" <<
-			      boost::lexical_cast<std::string>(line_idx) + "/mean/value";
-		    } else {
-			 if (line_idx > col_idx) {
-			      density_path << "/simulation/results/nn_" <<
-				   boost::lexical_cast<std::string>(line_idx) + "_" +
-				   boost::lexical_cast<std::string>(col_idx)
-				   + "/mean/value";
-			 } else {
-			      density_path << "/simulation/results/nn_" <<
-				   boost::lexical_cast<std::string>(col_idx) + "_" +
-				   boost::lexical_cast<std::string>(line_idx)
-				   + "/mean/value";
-			 }
-		    }
-		    // VERY CAREFUL HERE
-		    // What comes out of QMC is G_{kl} =  -<T c_k(tau) c^dagger_l(tau')>
-		    // we need c^\dagger_k c_l here, so transpose -
-		    // see above in the construction!!
-		    h5_archive >> alps::make_pvp(density_path.str(), cur_dd_correl);
-		    //std::map<std::string,boost::any> tmp_ar;
-		    //boost::multi_array<std::complex<double>, 1> multi_tmp_data(boost::extents[temp_data.size()]);
-		    h5_archive >> alps::make_pvp(orbital_path.str(), temp_data);
-		    //tmp_ar[orbital_path.str()] = multi_tmp_data;
-		    //for(std::map<std::string,boost::any>::const_iterator it = tmp_ar.begin();
-		    //	it != tmp_ar.end(); ++it) {
-		    //	 h5_archive["/" + it->first] << it->second;
-		    //}
-		    //h5_archive[orbital_path.str()] << temp_data;
-		    a_dagger_b.block(ref_site_index * per_site_orbital_size,
-				     ref_site_index * per_site_orbital_size,
-				     per_site_orbital_size,
-				     per_site_orbital_size)
-			 (blocks[block_index][line_idx],
-			  blocks[block_index][col_idx]) =
-			 // ATTENTION: DIFFERENT SIGN CONVENTION FROM FORTRAN
-			 // HERE
-			 -temp_data.back();
+     if (is_alps3) {
+	  // density density data
+	  typedef boost::multi_array<double, 3> array_type;
+	  int n_tau_for_density = boost::lexical_cast<int>(parms["measurement.nn_corr.n_tau"]);
+	  int n_orbital_pairs_for_density = per_site_orbital_size * (per_site_orbital_size + 1) / 2;
+	  array_type density_data(
+	       boost::extents[n_orbital_pairs_for_density][n_tau_for_density][2]);
+	  h5_archive[density_density_result_name] >> density_data;
+	  // Build density density data
+	  std::string fname = boost::lexical_cast<std::string>(parms["measurement.nn_corr.def"]);
+	  std::ifstream infile(fname.c_str());
+	  if(!infile.good()) {
+	       cout << "Could not find file " << fname <<
+		    " for definition of density density data" << endl;
+	       throw runtime_error("Bad input for density density calcs !");
+	  } else {
+	       double cur_dd_correl;
+	       int data_index, orb1, orb2, nb_lines;
+	       std::string line;
+	       std::getline(infile, line);
+	       std::istringstream iss(line);
+	       iss >> nb_lines;
+	       for (int i = 0; i < nb_lines; i++) {
+		    std::string line2;
+		    std::getline(infile, line2);
+		    std::istringstream iss2(line2);
+		    iss2 >> data_index >> orb1 >> orb2;
+		    cur_dd_correl = density_data[data_index][0][0];
 		    density_density_correl.block(ref_site_index * per_site_orbital_size,
 						 ref_site_index * per_site_orbital_size,
 						 per_site_orbital_size,
-						 per_site_orbital_size)
-			 (blocks[block_index][line_idx],
-			  blocks[block_index][col_idx]) = cur_dd_correl;
+						 per_site_orbital_size)(orb1, orb2)
+			 = cur_dd_correl;
+		    density_density_correl.block(ref_site_index * per_site_orbital_size,
+						 ref_site_index * per_site_orbital_size,
+						 per_site_orbital_size,
+						 per_site_orbital_size)(orb2, orb1)
+			 = cur_dd_correl;
 	       }
 	  }
+	  // g(tau) data
+	  int n_tau = boost::lexical_cast<int>(parms["measurement.G1.n_tau"]) + 1;
+	  typedef boost::multi_array<complex<double> , 3> cplx_array_type;	  
+	  cplx_array_type raw_full_gf(
+	       boost::extents[n_tau][per_site_orbital_size][per_site_orbital_size]);	  
+	  h5_archive["/gtau/data"] >> raw_full_gf;
+	  // Build a_dagger_b data
+	  for(int block_index = 0; block_index < n_blocks; ++block_index) {
+	       for(int line_idx = 0; line_idx < blocks[block_index].size(); ++line_idx) {
+		    for(int col_idx = 0; col_idx < blocks[block_index].size(); ++col_idx) {
+			 // ATTENTION here: convention of QMC is F_ij = -T<c_i c^dag_j>,
+			 // but DMFT is looking for  c^dag_i c_j
+			 // VERY CAREFUL HERE
+			 // What comes out of QMC is G_{kl} =  -<T c_k(tau) c^dagger_l(tau')>
+			 // we need c^\dagger_k c_l here, so transpose -
+			 a_dagger_b.block(ref_site_index * per_site_orbital_size,
+					  ref_site_index * per_site_orbital_size,
+					  per_site_orbital_size,
+					  per_site_orbital_size)
+			      (blocks[block_index][line_idx],
+			       blocks[block_index][col_idx]) =
+			      // ATTENTION: DIFFERENT SIGN CONVENTION FROM FORTRAN
+			      // HERE
+			      -raw_full_gf[n_tau - 1][line_idx][col_idx];
+		    }
+	       }
+	  }
+     } else {
+	  int n_tau = boost::lexical_cast<int>(parms["N_TAU"]) + 1;
+	  std::string gtau_path("/od_hyb_G_tau/");
+	  std::vector<std::complex<double> > temp_data;
+	  temp_data.resize(n_tau);
+	  double cur_dd_correl;
+	  for(int block_index = 0; block_index < n_blocks; ++block_index) {
+	       int cur_index = 0;
+	       for(int line_idx = 0; line_idx < blocks[block_index].size(); ++line_idx) {
+		    for(int col_idx = 0; col_idx < blocks[block_index].size();
+			++col_idx) {
+			 std::stringstream orbital_path;
+			 std::stringstream density_path;
+			 // ATTENTION here: convention of QMC is F_ij = -T<c_i c^dag_j>,
+			 // but DMFT is looking for  c^dag_i c_j
+			 cur_index = line_idx + col_idx * blocks[block_index].size();
+			 orbital_path << gtau_path << boost::lexical_cast<std::string>(block_index) +
+			      "/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
+			 if (line_idx == col_idx) {
+			      density_path << "/simulation/results/density_" <<
+				   boost::lexical_cast<std::string>(line_idx) + "/mean/value";
+			 } else {
+			      if (line_idx > col_idx) {
+				   density_path << "/simulation/results/nn_" <<
+					boost::lexical_cast<std::string>(line_idx) + "_" +
+					boost::lexical_cast<std::string>(col_idx)
+					+ "/mean/value";
+			      } else {
+				   density_path << "/simulation/results/nn_" <<
+					boost::lexical_cast<std::string>(col_idx) + "_" +
+					boost::lexical_cast<std::string>(line_idx)
+					+ "/mean/value";
+			      }
+			 }
+			 // VERY CAREFUL HERE
+			 // What comes out of QMC is G_{kl} =  -<T c_k(tau) c^dagger_l(tau')>
+			 // we need c^\dagger_k c_l here, so transpose -
+			 // see above in the construction!!
+			 h5_archive >> alps::make_pvp(density_path.str(), cur_dd_correl);
+			 h5_archive >> alps::make_pvp(orbital_path.str(), temp_data);
+			 a_dagger_b.block(ref_site_index * per_site_orbital_size,
+					  ref_site_index * per_site_orbital_size,
+					  per_site_orbital_size,
+					  per_site_orbital_size)
+			      (blocks[block_index][line_idx],
+			       blocks[block_index][col_idx]) =
+			      // ATTENTION: DIFFERENT SIGN CONVENTION FROM FORTRAN
+			      // HERE
+			      -temp_data.back();
+			 density_density_correl.block(ref_site_index * per_site_orbital_size,
+						      ref_site_index * per_site_orbital_size,
+						      per_site_orbital_size,
+						      per_site_orbital_size)
+			      (blocks[block_index][line_idx],
+			       blocks[block_index][col_idx]) = cur_dd_correl;
+		    }
+	       }
+	  } 
      }
+     cout << "<a_i^* a_j> :" << endl << a_dagger_b.block(
+	  ref_site_index * per_site_orbital_size,
+	  ref_site_index * per_site_orbital_size,
+	  per_site_orbital_size,
+	  per_site_orbital_size) << endl;
      symmetrize_tail_params(ref_site_index);
      // Print out some log for convergence check against
      // similar output from dmft
@@ -618,123 +685,123 @@ void Selfenergy::feed_tail_params(int ref_site_index,
 	  per_site_orbital_size).real() << endl;
 }
 
+void Selfenergy::fit_tails(int ref_site_index) {
+     size_t N_max = matsubara_tail_estimate_region;
+     for (size_t freq_index = N_max - tail_fit_length;
+	  freq_index < N_max; freq_index++) {
+	  Sigma_0_.block(ref_site_index * per_site_orbital_size,
+			 ref_site_index * per_site_orbital_size,
+			 per_site_orbital_size,
+			 per_site_orbital_size) += 0.5 *
+	       (values_[freq_index].block(ref_site_index * per_site_orbital_size,
+					  ref_site_index * per_site_orbital_size,
+					  per_site_orbital_size,
+					  per_site_orbital_size) +
+		values_[freq_index].block(ref_site_index * per_site_orbital_size,
+					  ref_site_index * per_site_orbital_size,
+					  per_site_orbital_size,
+					  per_site_orbital_size).transpose().conjugate()) / tail_fit_length;
+	  Sigma_1_.block(ref_site_index * per_site_orbital_size,
+			 ref_site_index * per_site_orbital_size,
+			 per_site_orbital_size,
+			 per_site_orbital_size) +=
+	       //0.5 * get_matsubara_frequency(freq_index) *
+	       0.5 * get_matsubara_frequency(freq_index) *
+	       (values_[freq_index].block(ref_site_index * per_site_orbital_size,
+					  ref_site_index * per_site_orbital_size,
+					  per_site_orbital_size,
+					  per_site_orbital_size) -
+		values_[freq_index].block(ref_site_index * per_site_orbital_size,
+					  ref_site_index * per_site_orbital_size,
+					  per_site_orbital_size,
+					  per_site_orbital_size).transpose().conjugate()) / tail_fit_length;
+     }
+}
+
 void Selfenergy::compute_tail_coeffs(int ref_site_index) {
-     if (is_alps3) {
-	  size_t N_max = matsubara_tail_estimate_region;
-	  for (size_t freq_index = N_max - tail_fit_length;
-	       freq_index < N_max; freq_index++) {
+     // 0.5 factor stems from the fact that the formal expression
+     // of the Hamiltonian is without order in the thesis, while it has
+     // order (a before b) in the papers ==> equivalent to specifying U/2
+     // in the papers
+     // For details of derivation of formulae, see Gull thesis,
+     // Appendix B.4, or hopefully even better, my own thesis, appendices.
+     // Sell also Ferber's thesis for order 3 coeff.
+     Sigma_0_.block(ref_site_index * per_site_orbital_size,
+		    ref_site_index * per_site_orbital_size,
+		    per_site_orbital_size,
+		    per_site_orbital_size) =
+	  -0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
+					   ref_site_index * per_site_orbital_size,
+					   per_site_orbital_size,
+					   per_site_orbital_size) +
+		  interaction_matrix.block(ref_site_index * per_site_orbital_size,
+					   ref_site_index * per_site_orbital_size,
+					   per_site_orbital_size,
+					   per_site_orbital_size).transpose())
+	  .cwiseProduct(a_dagger_b.block(
+			     ref_site_index * per_site_orbital_size,
+			     ref_site_index * per_site_orbital_size,
+			     per_site_orbital_size,
+			     per_site_orbital_size));
+     // Now deal with diagonal terms
+     Sigma_0_.block(ref_site_index * per_site_orbital_size,
+		    ref_site_index * per_site_orbital_size,
+		    per_site_orbital_size,
+		    per_site_orbital_size).diagonal() =
+	  Eigen::VectorXcd::Zero(per_site_orbital_size);
+     for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
+	  for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
+	       // HERE Note that there is some possible discrepancy to remove between
+	       // dmft and qmc: on the dmft side, the crystal field is
+	       // input via the diagonal elements of the hopping matrix,
+	       // while on the qmc side it is blent with mu in MUvector.
+	       // as a consequence, the energy of each orbital in the present code
+	       // is indeed the \epsilon_k needed in the formula from my thesis.
 	       Sigma_0_.block(ref_site_index * per_site_orbital_size,
 			      ref_site_index * per_site_orbital_size,
 			      per_site_orbital_size,
-			      per_site_orbital_size) += 0.5 *
-		    (values_[freq_index].block(ref_site_index * per_site_orbital_size,
-					       ref_site_index * per_site_orbital_size,
-					       per_site_orbital_size,
-					       per_site_orbital_size) +
-		     values_[freq_index].block(ref_site_index * per_site_orbital_size,
-					       ref_site_index * per_site_orbital_size,
-					       per_site_orbital_size,
-					       per_site_orbital_size).transpose().conjugate()) / tail_fit_length;
-	       Sigma_1_.block(ref_site_index * per_site_orbital_size,
-			      ref_site_index * per_site_orbital_size,
-			      per_site_orbital_size,
-			      per_site_orbital_size) +=
-		    //0.5 * get_matsubara_frequency(freq_index) *
-		    0.5 * get_matsubara_frequency(freq_index) *
-		    (values_[freq_index].block(ref_site_index * per_site_orbital_size,
-					       ref_site_index * per_site_orbital_size,
-					       per_site_orbital_size,
-					       per_site_orbital_size) -
-		     values_[freq_index].block(ref_site_index * per_site_orbital_size,
-					       ref_site_index * per_site_orbital_size,
-					       per_site_orbital_size,
-			      per_site_orbital_size).transpose().conjugate()) / tail_fit_length;
-	  }
-     } else {
-	  // 0.5 factor stems from the fact that the formal expression
-	  // of the Hamiltonian is without order in the thesis, while it has
-	  // order (a before b) in the papers ==> equivalent to specifying U/2
-	  // in the papers
-	  // For details of derivation of formulae, see Gull thesis,
-	  // Appendix B.4, or hopefully even better, my own thesis, appendices.
-	  // Sell also Ferber's thesis for order 3 coeff.
-	  Sigma_0_.block(ref_site_index * per_site_orbital_size,
-			 ref_site_index * per_site_orbital_size,
-			 per_site_orbital_size,
-			 per_site_orbital_size) =
-	       -0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						ref_site_index * per_site_orbital_size,
-						per_site_orbital_size,
-						per_site_orbital_size) +
-		       interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						ref_site_index * per_site_orbital_size,
-						per_site_orbital_size,
-						per_site_orbital_size).transpose())
-	       .cwiseProduct(a_dagger_b.block(
-				  ref_site_index * per_site_orbital_size,
-				  ref_site_index * per_site_orbital_size,
-				  per_site_orbital_size,
-				  per_site_orbital_size));
-	  // Now deal with diagonal terms
-	  Sigma_0_.block(ref_site_index * per_site_orbital_size,
-			 ref_site_index * per_site_orbital_size,
-			 per_site_orbital_size,
-			 per_site_orbital_size).diagonal() =
-	       Eigen::VectorXcd::Zero(per_site_orbital_size);
-	  for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
-	       for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
-		    // HERE Note that there is some possible discrepancy to remove between
-		    // dmft and qmc: on the dmft side, the crystal field is
-		    // input via the diagonal elements of the hopping matrix,
-		    // while on the qmc side it is blent with mu in MUvector.
-		    // as a consequence, the energy of each orbital in the present code
-		    // is indeed the \epsilon_k needed in the formula from my thesis.
-		    Sigma_0_.block(ref_site_index * per_site_orbital_size,
+			      per_site_orbital_size)(line_idx, line_idx) +=
+		    0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
+						    ref_site_index * per_site_orbital_size,
+						    per_site_orbital_size,
+						    per_site_orbital_size)(line_idx, col_idx) +
+			   interaction_matrix.block(ref_site_index * per_site_orbital_size,
+						    ref_site_index * per_site_orbital_size,
+						    per_site_orbital_size,
+						    per_site_orbital_size)(col_idx, line_idx))*
+		    density_density_correl.block(ref_site_index * per_site_orbital_size,
+						 ref_site_index * per_site_orbital_size,
+						 per_site_orbital_size,
+						 per_site_orbital_size)(col_idx, col_idx);
+	       for(int ter_idx = 0; ter_idx < per_site_orbital_size; ++ter_idx) {
+		    Sigma_1_.block(ref_site_index * per_site_orbital_size,
 				   ref_site_index * per_site_orbital_size,
 				   per_site_orbital_size,
 				   per_site_orbital_size)(line_idx, line_idx) +=
-			 0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
-							 ref_site_index * per_site_orbital_size,
-							 per_site_orbital_size,
-							 per_site_orbital_size)(line_idx, col_idx) +
-				interaction_matrix.block(ref_site_index * per_site_orbital_size,
-							 ref_site_index * per_site_orbital_size,
-							 per_site_orbital_size,
-							 per_site_orbital_size)(col_idx, line_idx))*
-			 density_density_correl.block(ref_site_index * per_site_orbital_size,
-						      ref_site_index * per_site_orbital_size,
-						      per_site_orbital_size,
-						      per_site_orbital_size)(col_idx, col_idx);
-		    for(int ter_idx = 0; ter_idx < per_site_orbital_size; ++ter_idx) {
-			 Sigma_1_.block(ref_site_index * per_site_orbital_size,
-					ref_site_index * per_site_orbital_size,
-					per_site_orbital_size,
-					per_site_orbital_size)(line_idx, line_idx) +=
-			      interaction_matrix.block(ref_site_index * per_site_orbital_size,
+			 interaction_matrix.block(ref_site_index * per_site_orbital_size,
+						  ref_site_index * per_site_orbital_size,
+						  per_site_orbital_size,
+						  per_site_orbital_size)(line_idx, col_idx) *
+			 interaction_matrix.block(ref_site_index * per_site_orbital_size,
+						  ref_site_index * per_site_orbital_size,
+						  per_site_orbital_size,
+						  per_site_orbital_size)(line_idx, ter_idx) *
+			 (density_density_correl.block(ref_site_index * per_site_orbital_size,
 						       ref_site_index * per_site_orbital_size,
 						       per_site_orbital_size,
-						       per_site_orbital_size)(line_idx, col_idx) *
-			      interaction_matrix.block(ref_site_index * per_site_orbital_size,
+						       per_site_orbital_size)(ter_idx, col_idx) -
+			  density_density_correl.block(ref_site_index * per_site_orbital_size,
 						       ref_site_index * per_site_orbital_size,
 						       per_site_orbital_size,
-						       per_site_orbital_size)(line_idx, ter_idx) *
-			      (density_density_correl.block(ref_site_index * per_site_orbital_size,
-							    ref_site_index * per_site_orbital_size,
-							    per_site_orbital_size,
-							    per_site_orbital_size)(ter_idx, col_idx) -
-			       density_density_correl.block(ref_site_index * per_site_orbital_size,
-							    ref_site_index * per_site_orbital_size,
-							    per_site_orbital_size,
-							    per_site_orbital_size)(ter_idx, ter_idx) *
-			       density_density_correl.block(ref_site_index * per_site_orbital_size,
-							    ref_site_index * per_site_orbital_size,
-							    per_site_orbital_size,
-							    per_site_orbital_size)(col_idx, col_idx));
-		    }
+						       per_site_orbital_size)(ter_idx, ter_idx) *
+			  density_density_correl.block(ref_site_index * per_site_orbital_size,
+						       ref_site_index * per_site_orbital_size,
+						       per_site_orbital_size,
+						       per_site_orbital_size)(col_idx, col_idx));
 	       }
 	  }
      }
-     // log for sigma asymptotics
+// log for sigma asymptotics
      cout << "QMC Sigma asymptotics : site " << ref_site_index << endl
 	  << "Sigma_inf "<< endl << endl;
      cout << Sigma_0_.block(ref_site_index * per_site_orbital_size,
@@ -1112,3 +1179,4 @@ void Selfenergy::hdf5_dump_tail(alps::hdf5::archive h5_archive, string h5_group_
 }
 
 const size_t Selfenergy::tail_fit_length = 10;
+const std::string Selfenergy::density_density_result_name = "DENSITY_DENSITY_CORRELATION_FUNCTIONS";

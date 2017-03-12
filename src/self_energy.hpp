@@ -25,7 +25,7 @@ public:
 		alps::hdf5::archive h5_archive, bool verbose=false);
      Selfenergy(const alps::params &parms, int world_rank,
 		boost::shared_ptr<Chemicalpotential> chempot,
-		int ref_site_index,
+		int ref_site_index, alps::hdf5::archive h5_archive, 
 		boost::shared_ptr<Greensfunction> greens_function);
      void display_asymptotics();
      double get_beta();
@@ -111,10 +111,14 @@ private:
      void read_symmetry_definition(std::string symmetry_file);
      std::vector<double> get_u_elements(const alps::params &parms);
      void feed_tail_params(int ref_site_index,
-			   const alps::params &parms, alps::hdf5::archive h5_archive);
+			   const alps::params &parms,
+			   alps::hdf5::archive &h5_archive);
      void compute_tail_coeffs(int ref_site_index);
+     void fit_tails(int ref_site_index);
      void compute_qmc_tail(int ref_site_index);
      void append_qmc_tail(int ref_site_index, const alps::params &parms);
+
+     static const std::string density_density_result_name;
 };
 
 #endif //SELF_ENERGY__

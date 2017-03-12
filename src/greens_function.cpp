@@ -97,19 +97,6 @@ void Greensfunction::read_bare_gf() {
 Eigen::MatrixXcd Greensfunction::get_dyson_result(int freq_index, bool is_negative_freq) {
      assert(freq_index < n_matsubara_for_alps2);
      if (!is_negative_freq) {
-	  if (freq_index == 0) {
-	       cout << "in dyson with index freq 0 " << endl;
-	       cout << "full gf"  << endl << full_gf_values_[freq_index].
-		    block(ref_site_index * per_site_orbital_size,
-			  ref_site_index * per_site_orbital_size,
-			  per_site_orbital_size,
-			  per_site_orbital_size) << endl;
-	       cout << "bare gf"  << endl << bare_gf_values_[freq_index].
-		    block(ref_site_index * per_site_orbital_size,
-			  ref_site_index * per_site_orbital_size,
-			  per_site_orbital_size,
-			  per_site_orbital_size) << endl;
-	  }
 	  return (-full_gf_values_[freq_index].block(ref_site_index * per_site_orbital_size,
 						     ref_site_index * per_site_orbital_size,
 						     per_site_orbital_size,

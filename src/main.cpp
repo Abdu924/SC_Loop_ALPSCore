@@ -129,6 +129,9 @@ void define_parameters(alps::params &parameters) {
 	  .define<int >("L", 200, "Number of Brillouin Zone points")
 	  .define<double>("t", 1.0, "Hopping element: nearest neighbor")
 	  .define<double>("tprime", 0.0, "Hopping element: next-nearest neighbor")
+	  .define<int >("measurement.nn_corr.n_tau", 3, "number of pts for density-density correlation functions.")
+	  .define<int >("measurement.G1.n_tau", 1800, "number of pts for G(tau).")
+	  .define<std::string>("measurement.nn_corr.def","definition of density-density correlation functions.")
 	  ;
 }
 
@@ -222,9 +225,6 @@ int main(int argc, char** argv) {
      int computation_type;
      bool from_alps3(false);
      string tmp_file_name;
-     //alps::params parms;
-     cout << "try for parms" << endl;
-     //alps::params parms(argc, argv);
      alps::params parms(argc, (const char**)argv, "/parameters");
      define_parameters(parms);
      // Declare the supported options.
@@ -331,13 +331,11 @@ int main(int argc, char** argv) {
 			 boost::shared_ptr<Greensfunction>
 			      greens_function(new Greensfunction(parms, world_rank, h5_archive));
 			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
-							       greens_function));
+							      h5_archive, greens_function));
 		    } else {
 			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
-							       h5_archive, false));
+							      h5_archive, false));
 		    }
-		    //(new Selfenergy(parms, world_rank, chempot, ref_site_index,
-		    //				h5_archive, false));
 		    h5_archive.close();
 		    // save old sigma
 		    alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
@@ -356,7 +354,6 @@ int main(int argc, char** argv) {
 			 alpha = 1.0;
 			 cout << "Old self-energy not found => Forcing alpha to 1.0" << endl;
 		    }
-		    //cout << "alpha is " << endl;
 		    cout << "Using alpha = " << alpha << " for mixing " << endl;
 		    // apply mix with parameter alpha
 		    qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
