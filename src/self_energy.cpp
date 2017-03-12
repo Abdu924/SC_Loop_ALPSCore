@@ -604,7 +604,9 @@ void Selfenergy::feed_tail_params(int ref_site_index,
 			       blocks[block_index][col_idx]) =
 			      // ATTENTION: DIFFERENT SIGN CONVENTION FROM FORTRAN
 			      // HERE
-			      -raw_full_gf[n_tau - 1][line_idx][col_idx];
+			      // AND NEED TO SYMMETRIZE FOR DATA FROM ALPS3
+			      -0.5 * (raw_full_gf[n_tau - 1][line_idx][col_idx]
+				      + std::conj(raw_full_gf[n_tau - 1][col_idx][line_idx]));
 		    }
 	       }
 	  }
