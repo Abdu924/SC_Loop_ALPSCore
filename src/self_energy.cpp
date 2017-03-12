@@ -341,7 +341,7 @@ void Selfenergy::basic_init(const alps::params &parms, bool verbose) {
      // Read orbital and block structure
      // This is necessary, because it defines the
      // structure of the text file where the self-energy is stored.
-          // Sensitive parameter - if too large, the noise at high frequency is translated
+     // Sensitive parameter - if too large, the noise at high frequency is translated
      // into shifts in the Legendre representation, and badly wrong estimates
      // of the tails.
      matsubara_tail_estimate_region = std::round(2.0 * static_cast<double>(parms["C_MIN"]));
@@ -352,12 +352,9 @@ void Selfenergy::basic_init(const alps::params &parms, bool verbose) {
 	  static_cast<size_t>(parms["N_ORBITALS"]) : 2;
      tot_orbital_size = per_site_orbital_size * n_sites;
      if (parms.exists("REAL_DELTA")) {
-	  if (static_cast<bool>(parms["REAL_DELTA"])) {
-	       enforce_real = true;
-	  } else {
-	       enforce_real = false;
-	  }
+	  enforce_real = static_cast<bool>(parms["REAL_DELTA"]);
      } else {
+	  cout << "REAL_DELTA not found in params file ---> reverting to true" << endl;
 	  // arguably counter intuitive behavior,
 	  // enforced for backwards compatibility.
 	  enforce_real = true;
