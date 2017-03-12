@@ -11,7 +11,6 @@
 #include "bare_hamiltonian.hpp"
 #include "hybridization_function.hpp"
 #include <fstream>
-#include <boost/regex.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/timer/timer.hpp>
 #include <boost/program_options.hpp>
@@ -133,54 +132,13 @@ void define_parameters(alps::params &parameters) {
 	  ;
 }
 
-bool testMatch(const boost::regex &ex, const std::string st)  {
-     if (boost::regex_match(st, ex)) {
-	  return true;
-     } else {
-	  return false;
-     }
-}
-
-tuple<bool, string> get_match_from_file(const boost::regex regexp, string &search_file_name) {
-     string output = "";
-     bool found_elem = false;
-     vector<string> matches;
-     boost::char_separator<char> sep("\n");
-
-     if (boost::filesystem::exists(search_file_name)) {
-	  if (boost::filesystem::is_regular_file(search_file_name)) {
-	       std::ifstream latest_log_file(search_file_name);
-	       std::string text((std::istreambuf_iterator<char>(latest_log_file)),
-				std::istreambuf_iterator<char>());
-	       boost::tokenizer<boost::char_separator<char>> tokens(text, sep);
-	       for(auto val : tokens) {
-		    if (testMatch(regexp, val))  {
-			 found_elem = true;
-			 matches.push_back(val);
-		    }
-	       }
-	  }
-     }
-     if (found_elem) {
-	  output = matches.back();
-     }
-     return tuple<bool, string>(found_elem, output);
-}
-
 tuple<bool, double, double> get_old_mu(string &backup_file_name) {
      double max_mu_increment = 1.0;
      double min_mu_increment = 0.001;
-     static const boost::regex mu_expression(".*:MU.*");
      bool found_mu = false;
      double old_mu(1.1);
      double old_derivative(1.0);
      string last_match;
-     tie(found_mu, last_match) = get_match_from_file(mu_expression, backup_file_name);
-     if (found_mu) {
-	  string dummy;
-	  std::istringstream iss(last_match);
-	  iss >> dummy >> old_mu >> old_derivative;
-     }
      old_derivative *= 4.0;
      old_derivative = min(max_mu_increment, max(min_mu_increment, abs(old_derivative)));
      return tuple<bool, double, double>(found_mu, old_mu, old_derivative);
@@ -308,10 +266,6 @@ int main(int argc, char** argv) {
 				  parms, world_rank));
 	       // Restrict reading to process 0, then broadcast.
 	       if (world_rank == 0) {
-		    // HERE mu should be retrieved directly from crystal
-		    // field indo + bare hamiltonian energies
-		    tie(found_old_mu, old_chemical_potential, dn_dmu) =
-			 get_old_mu(old_output_file_name);
 		    // HERE Horrible bug fix in order to align crystal
 		    // field and value in scf file!! Has to be changed, and old_chemical_potential
 		    // only retrieved from crystal_field.h5
