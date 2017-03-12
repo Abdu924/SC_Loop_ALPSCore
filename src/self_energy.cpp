@@ -670,12 +670,6 @@ void Selfenergy::feed_tail_params(int ref_site_index,
 	       }
 	  } 
      }
-     cout << "<a_i^* a_j> :" << endl << a_dagger_b.block(
-	  ref_site_index * per_site_orbital_size,
-	  ref_site_index * per_site_orbital_size,
-	  per_site_orbital_size,
-	  per_site_orbital_size) << endl;
-     symmetrize_tail_params(ref_site_index);
      // Print out some log for convergence check against
      // similar output from dmft
      cout << "<n_i n_j> :" << endl << density_density_correl.block(
