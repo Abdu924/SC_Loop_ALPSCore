@@ -64,9 +64,12 @@ public:
      }
 
      void dump_values() {
-	  alps::hdf5::archive ar(mufilename_, alps::hdf5::archive::WRITE);
-	  ar << alps::make_pvp("/MUvector", val_);
-	  ar.close();
+	  if(world_rank_ == 0) {
+	       alps::hdf5::archive ar(mufilename_, alps::hdf5::archive::WRITE);
+	       ar << alps::make_pvp("/MUvector", val_);
+	       ar.close();
+	  }
+	  MPI_Barrier(MPI_COMM_WORLD);
      }
      
 private:

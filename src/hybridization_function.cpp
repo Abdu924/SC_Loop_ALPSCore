@@ -341,6 +341,7 @@ void HybFunction::compute_local_bubble() {
 	  } // boson
 	  std::cout << "local bubble time : " << std::endl;
      } // world_rank_
+     MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void HybFunction::compute_lattice_bubble() {
@@ -555,6 +556,7 @@ void HybFunction::dump_delta() {
 	  }
 	  out.close();
      }
+     MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void HybFunction::dump_delta_for_matrix() {
@@ -593,6 +595,7 @@ void HybFunction::dump_delta_for_matrix() {
 		out.close();
 		// dump bare GF in Matsubara frequencies
 	}
+	MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void HybFunction::dump_delta_hdf5() {
@@ -636,6 +639,7 @@ void HybFunction::dump_delta_hdf5() {
 	       }
 	  }
      }
+     MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void HybFunction::dump_bubble_hdf5() {
@@ -743,6 +747,7 @@ void HybFunction::dump_bubble_hdf5() {
 	  }
 	  bubble_output << alps::make_pvp(h5_group_name_2, temp_data);
      }
+     MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void HybFunction::elementary_compute_delta_tau() {

@@ -124,7 +124,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 void Selfenergy::read_symmetry_definition(std::string symmetry_file) {
      //Read symmetry definition file
      // HERE This does not really work, insofar as we cannot
-     // pick site 1 as a reference siet and applyt the symmetry:
+     // pick site 1 as a reference site and apply the symmetry:
      // site 1 itself would be impacted...
      std::ifstream infile(symmetry_file.c_str());
      if(!infile.good()) {

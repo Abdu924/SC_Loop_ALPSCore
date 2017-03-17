@@ -463,8 +463,7 @@ void Bandstructure::dump_bare_dos() {
      if (world_rank_ == 0) {
 	  double delta_omega = freq_cutoff / static_cast<double>(nb_freq_points);
 	  std::ofstream out(bare_dos_dump_name);
-	  out << fixed << setprecision(output_precision);
-	  
+	  out << fixed << setprecision(output_precision);	  
 	  for (int orb_index = 0; orb_index < orbital_size_; orb_index++) {
 	       out << "#  " << orb_index + 1 << endl;
 	       for (int freq_index = 0; freq_index < bare_dos.size(); freq_index++) {

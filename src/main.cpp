@@ -262,14 +262,14 @@ int main(int argc, char** argv) {
 	  {
 	       boost::timer::auto_cpu_timer all_loop;
 	       boost::shared_ptr<DMFTModel> dmft_model(
-		    new DMFTModel(bare_band, self_energy,
-				  parms, world_rank));
+		    new DMFTModel(bare_band, self_energy, parms, world_rank));
 	       // Restrict reading to process 0, then broadcast.
 	       if (world_rank == 0) {
 		    // HERE Horrible bug fix in order to align crystal
 		    // field and value in scf file!! Has to be changed, and old_chemical_potential
 		    // only retrieved from crystal_field.h5
 		    old_chemical_potential = (*chempot)[0];
+		    found_old_mu == true;
 	       }
 	       MPI_Bcast(&found_old_mu, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
 	       MPI_Bcast(&old_chemical_potential, 1, MPI::DOUBLE, 0, MPI_COMM_WORLD);
@@ -303,6 +303,7 @@ int main(int argc, char** argv) {
 	       bare_band->dump_bare_dos();
 	       chempot->dump_values();
 	       bool verbose(false);
+	       MPI_Barrier(MPI_COMM_WORLD);
 	       boost::shared_ptr<HybFunction> hybridization_function(
 		    new HybFunction(parms, bare_band, self_energy,
 				    new_chemical_potential, world_rank,
@@ -336,6 +337,7 @@ int main(int argc, char** argv) {
 			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
 							      h5_archive, false));
 		    }
+		    MPI_Barrier(MPI_COMM_WORLD);
 		    h5_archive.close();
 		    // save old sigma
 		    alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
@@ -376,6 +378,7 @@ int main(int argc, char** argv) {
 			 w_h5_archive.close();
 		    }
 	       }
+	       MPI_Barrier(MPI_COMM_WORLD);
      } else if (computation_type == 2) {
 	  // dump hamiltonian
 	  boost::shared_ptr<Bandstructure> bare_band(
