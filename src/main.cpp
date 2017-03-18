@@ -271,6 +271,7 @@ int main(int argc, char** argv) {
 		    // only retrieved from crystal_field.h5
 		    old_chemical_potential = (*chempot)[0];
 		    found_old_mu == true;
+		    dn_dmu = chempot->get_dn_dmu();
 	       }
 	       MPI_Bcast(&found_old_mu, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
 	       MPI_Bcast(&old_chemical_potential, 1, MPI::DOUBLE, 0, MPI_COMM_WORLD);
@@ -283,6 +284,7 @@ int main(int argc, char** argv) {
 			 dmft_model->get_mu_from_density_bisec(old_chemical_potential, dn_dmu);
 	       } else {
 		    dn_dmu = new_dn_dmu;
+		    chempot->set_dn_dmu(dn_dmu);
 	       }
 	       if ((newton_success == false) && (bisec_success == false)) {
 		    if (world_rank == 0) {

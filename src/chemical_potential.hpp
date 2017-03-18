@@ -39,6 +39,7 @@ public:
 		    //attempt to read from h5 archive
 		    alps::hdf5::archive ar(mufilename_, alps::hdf5::archive::READ);
 		    ar >> alps::make_pvp("/MUvector", val_);
+		    ar >> alps::make_pvp("/dndmu", dn_dmu_);
 	       } else {
 		    // read from text file
 		    std::ifstream mu_file(mufilename_.c_str());
@@ -59,11 +60,20 @@ public:
      std::size_t n_orbitals(void)const {
 	  return val_.size();
      }
+
+     double get_dn_dmu() {
+	  return dn_dmu_;
+     }     
+
+     void set_dn_dmu(double in_dn_dmu) {
+	  dn_dmu_ = in_dn_dmu;
+     }     
+
      
      const double &operator[] (std::size_t flavor)const {
 	  return val_[flavor];
      }
-     
+
      void apply_shift(const double shift){
 	  for(std::size_t i = 0; i < n_orbitals(); ++i)
 	       val_[i] += shift; //apply shift
@@ -74,6 +84,7 @@ public:
 	       // save hdf5 file for sc_loop
 	       alps::hdf5::archive ar(mufilename_, alps::hdf5::archive::WRITE);
 	       ar << alps::make_pvp("/MUvector", val_);
+	       ar << alps::make_pvp("/dndmu", dn_dmu_);
 	       ar.close();
 	       if (is_alps3) {
 		    // save txt file for Alps3
@@ -112,6 +123,7 @@ public:
 private:
      bool is_alps3;
      std::vector<double> val_;
+     double dn_dmu_;
      int world_rank_;
      std::string mufilename_;
      std::string alps3_mufilename_;
