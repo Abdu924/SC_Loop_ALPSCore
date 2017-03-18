@@ -96,7 +96,6 @@ public:
 					   << -val_[orb_index] << " " << 0.0 << endl;
 			      fileout << correct_line.str().c_str();
 			 } else {
-			      cout << "tmp " << strTemp;
 			      strTemp += "\n";
 			      fileout << strTemp;
 			 }
