@@ -637,6 +637,7 @@ void HybFunction::dump_delta_hdf5() {
 			 delta_output << alps::make_pvp(h5_group_name.str(), delta_function);
 		    }
 	       }
+	       delta_output.close();
 	  }
      }
      MPI_Barrier(MPI_COMM_WORLD);
@@ -746,6 +747,7 @@ void HybFunction::dump_bubble_hdf5() {
 	       temp_data[q_index] = std::complex<double>(q_point(0), q_point(1));
 	  }
 	  bubble_output << alps::make_pvp(h5_group_name_2, temp_data);
+	  bubble_output.close();
      }
      MPI_Barrier(MPI_COMM_WORLD);
 }
