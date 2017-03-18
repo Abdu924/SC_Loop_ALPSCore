@@ -80,6 +80,7 @@ void define_parameters(alps::params &parameters) {
 	  .define<bool>("cthyb.DELTA_IN_HDF5",false,"true if hybridization function file is in hdf5 format")
 	  .define<std::string>("DISPFILE", "path for bare dispersion file")
 	  .define<std::string>("HOPPINGFILE", "path for hopping description file")
+	  .define<std::string>("model.hopping_matrix_input_file", "path for local hopping description file")
 	  .define<bool >("REAL_DELTA", false, "if true, we force the hybridization function to be real")
 	  .define<double>("N_ELECTRONS", "electronic density")
 	  .define<int >("N_ORBITALS", "total number of spin-orbitals")
@@ -250,7 +251,7 @@ int main(int argc, char** argv) {
      // result of previous runs for sigma.
      alps::hdf5::archive h5_archive(input_file, alps::hdf5::archive::READ);
      boost::shared_ptr<Chemicalpotential> chempot(
-	  new Chemicalpotential(parms, world_rank));
+	  new Chemicalpotential(parms, from_alps3, world_rank));
      // Compute hybridization function
      if ((computation_type == 0) || (computation_type == 4)) {
 	  bool compute_bubble(computation_type == 4 ? true : false);
