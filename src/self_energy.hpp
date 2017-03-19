@@ -100,6 +100,7 @@ private:
      boost::shared_ptr<Chemicalpotential> chempot_;
      bool enforce_real;
      bool is_alps3;
+     bool is_analytic_tail;
      int matsubara_tail_estimate_region;
      
      void run_dyson_equation(int ref_site_index,

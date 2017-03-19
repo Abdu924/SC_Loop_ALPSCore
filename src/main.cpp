@@ -100,6 +100,7 @@ void define_parameters(alps::params &parameters) {
 	  .define<bool>("cthyb.MEASURE_nnw",false, "measure density-density correlation functions in frequency domain")
 	  .define<bool>("cthyb.MEASURE_sector_statistics",false, "measure sector statistics")
 	  .define<bool>("cthyb.MEASURE_time",false, "measure in the time domain")
+	  .define<bool>("model.analytic_sigma_tail", "decide whether to calculate of fit the self energy tail")
 	  .define<double>("MU", "chemical potential / orbital energy values")
 	  .define<std::string>("MU_VECTOR", "file name for file with chemical potential / orbital energy values")
 	  .define<bool>("MU_IN_HDF5", false,"true if the file MU_VECTOR points to a hdf5 file")

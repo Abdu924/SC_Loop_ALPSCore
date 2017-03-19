@@ -29,7 +29,7 @@ double square_inverse(complex<double> omega) {
 Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       alps::hdf5::archive h5_archive, string h5_group_name,
 		       bool verbose)
-     :world_rank_(world_rank), is_alps3(false) {
+     :world_rank_(world_rank), is_alps3(false), is_analytic_tail(true) {
      basic_init(parms, verbose);
      read_input_sigma(parms, h5_archive, h5_group_name);
      if (verbose) {
@@ -46,7 +46,8 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       boost::shared_ptr<Chemicalpotential> chempot,
 		       int ref_site_index,
 		       alps::hdf5::archive h5_archive, bool verbose)
-     :world_rank_(world_rank), chempot_(chempot), is_alps3(false) {
+     :world_rank_(world_rank), chempot_(chempot), is_alps3(false),
+      is_analytic_tail(true){
      basic_init(parms, verbose);
      std::string symmetry_file;
      if (parms.exists("SITE_SYMMETRY")) {
@@ -88,6 +89,11 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       boost::shared_ptr<Greensfunction> greens_function)
      :world_rank_(world_rank), chempot_(chempot), is_alps3(true) {
      basic_init(parms);
+     if (!parms.defined("model.analytic_sigma_tail")) {
+	  is_analytic_tail = true;
+     } else {
+	  is_analytic_tail = static_cast<bool>(parms["model.analytic_sigma_tail"]);
+     }
      std::string symmetry_file;
      if (parms.exists("SITE_SYMMETRY")) {
 	  std::string fname = parms["SITE_SYMMETRY"];
@@ -110,6 +116,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      read_qmc_sigma(ref_site_index, greens_function);
      // Smooth the noisy tail
      feed_tail_params(ref_site_index, parms, h5_archive);
+     
      compute_tail_coeffs(ref_site_index);
      compute_qmc_tail(ref_site_index);
      // No need to append tails when data comes from Legendre
@@ -719,80 +726,84 @@ void Selfenergy::compute_tail_coeffs(int ref_site_index) {
      // For details of derivation of formulae, see Gull thesis,
      // Appendix B.4, or hopefully even better, my own thesis, appendices.
      // Sell also Ferber's thesis for order 3 coeff.
-     Sigma_0_.block(ref_site_index * per_site_orbital_size,
-		    ref_site_index * per_site_orbital_size,
-		    per_site_orbital_size,
-		    per_site_orbital_size) =
-	  -0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
-					   ref_site_index * per_site_orbital_size,
-					   per_site_orbital_size,
-					   per_site_orbital_size) +
-		  interaction_matrix.block(ref_site_index * per_site_orbital_size,
-					   ref_site_index * per_site_orbital_size,
-					   per_site_orbital_size,
-					   per_site_orbital_size).transpose())
-	  .cwiseProduct(a_dagger_b.block(
-			     ref_site_index * per_site_orbital_size,
-			     ref_site_index * per_site_orbital_size,
-			     per_site_orbital_size,
-			     per_site_orbital_size));
-     // Now deal with diagonal terms
-     Sigma_0_.block(ref_site_index * per_site_orbital_size,
-		    ref_site_index * per_site_orbital_size,
-		    per_site_orbital_size,
-		    per_site_orbital_size).diagonal() =
-	  Eigen::VectorXcd::Zero(per_site_orbital_size);
-     for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
-	  for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
-	       // HERE Note that there is some possible discrepancy to remove between
-	       // dmft and qmc: on the dmft side, the crystal field is
-	       // input via the diagonal elements of the hopping matrix,
-	       // while on the qmc side it is blent with mu in MUvector.
-	       // as a consequence, the energy of each orbital in the present code
-	       // is indeed the \epsilon_k needed in the formula from my thesis.
-	       Sigma_0_.block(ref_site_index * per_site_orbital_size,
-			      ref_site_index * per_site_orbital_size,
-			      per_site_orbital_size,
-			      per_site_orbital_size)(line_idx, line_idx) +=
-		    0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						    ref_site_index * per_site_orbital_size,
-						    per_site_orbital_size,
-						    per_site_orbital_size)(line_idx, col_idx) +
-			   interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						    ref_site_index * per_site_orbital_size,
-						    per_site_orbital_size,
-						    per_site_orbital_size)(col_idx, line_idx))*
-		    density_density_correl.block(ref_site_index * per_site_orbital_size,
-						 ref_site_index * per_site_orbital_size,
-						 per_site_orbital_size,
-						 per_site_orbital_size)(col_idx, col_idx);
-	       for(int ter_idx = 0; ter_idx < per_site_orbital_size; ++ter_idx) {
-		    Sigma_1_.block(ref_site_index * per_site_orbital_size,
+     if (is_analytic_tail == true) {
+	  Sigma_0_.block(ref_site_index * per_site_orbital_size,
+			 ref_site_index * per_site_orbital_size,
+			 per_site_orbital_size,
+			 per_site_orbital_size) =
+	       -0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
+						ref_site_index * per_site_orbital_size,
+						per_site_orbital_size,
+						per_site_orbital_size) +
+		       interaction_matrix.block(ref_site_index * per_site_orbital_size,
+						ref_site_index * per_site_orbital_size,
+						per_site_orbital_size,
+						per_site_orbital_size).transpose())
+	       .cwiseProduct(a_dagger_b.block(
+				  ref_site_index * per_site_orbital_size,
+				  ref_site_index * per_site_orbital_size,
+				  per_site_orbital_size,
+				  per_site_orbital_size));
+	  // Now deal with diagonal terms
+	  Sigma_0_.block(ref_site_index * per_site_orbital_size,
+			 ref_site_index * per_site_orbital_size,
+			 per_site_orbital_size,
+			 per_site_orbital_size).diagonal() =
+	       Eigen::VectorXcd::Zero(per_site_orbital_size);
+	  for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
+	       for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
+		    // HERE Note that there is some possible discrepancy to remove between
+		    // dmft and qmc: on the dmft side, the crystal field is
+		    // input via the diagonal elements of the hopping matrix,
+		    // while on the qmc side it is blent with mu in MUvector.
+		    // as a consequence, the energy of each orbital in the present code
+		    // is indeed the \epsilon_k needed in the formula from my thesis.
+		    Sigma_0_.block(ref_site_index * per_site_orbital_size,
 				   ref_site_index * per_site_orbital_size,
 				   per_site_orbital_size,
 				   per_site_orbital_size)(line_idx, line_idx) +=
-			 interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						  ref_site_index * per_site_orbital_size,
-						  per_site_orbital_size,
-						  per_site_orbital_size)(line_idx, col_idx) *
-			 interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						  ref_site_index * per_site_orbital_size,
-						  per_site_orbital_size,
-						  per_site_orbital_size)(line_idx, ter_idx) *
-			 (density_density_correl.block(ref_site_index * per_site_orbital_size,
+			 0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
+							 ref_site_index * per_site_orbital_size,
+							 per_site_orbital_size,
+							 per_site_orbital_size)(line_idx, col_idx) +
+				interaction_matrix.block(ref_site_index * per_site_orbital_size,
+							 ref_site_index * per_site_orbital_size,
+							 per_site_orbital_size,
+							 per_site_orbital_size)(col_idx, line_idx))*
+			 density_density_correl.block(ref_site_index * per_site_orbital_size,
+						      ref_site_index * per_site_orbital_size,
+						      per_site_orbital_size,
+						      per_site_orbital_size)(col_idx, col_idx);
+		    for(int ter_idx = 0; ter_idx < per_site_orbital_size; ++ter_idx) {
+			 Sigma_1_.block(ref_site_index * per_site_orbital_size,
+					ref_site_index * per_site_orbital_size,
+					per_site_orbital_size,
+					per_site_orbital_size)(line_idx, line_idx) +=
+			      interaction_matrix.block(ref_site_index * per_site_orbital_size,
 						       ref_site_index * per_site_orbital_size,
 						       per_site_orbital_size,
-						       per_site_orbital_size)(ter_idx, col_idx) -
-			  density_density_correl.block(ref_site_index * per_site_orbital_size,
+						       per_site_orbital_size)(line_idx, col_idx) *
+			      interaction_matrix.block(ref_site_index * per_site_orbital_size,
 						       ref_site_index * per_site_orbital_size,
 						       per_site_orbital_size,
-						       per_site_orbital_size)(ter_idx, ter_idx) *
-			  density_density_correl.block(ref_site_index * per_site_orbital_size,
-						       ref_site_index * per_site_orbital_size,
-						       per_site_orbital_size,
-						       per_site_orbital_size)(col_idx, col_idx));
+						       per_site_orbital_size)(line_idx, ter_idx) *
+			      (density_density_correl.block(ref_site_index * per_site_orbital_size,
+							    ref_site_index * per_site_orbital_size,
+							    per_site_orbital_size,
+							    per_site_orbital_size)(ter_idx, col_idx) -
+			       density_density_correl.block(ref_site_index * per_site_orbital_size,
+							    ref_site_index * per_site_orbital_size,
+							    per_site_orbital_size,
+							    per_site_orbital_size)(ter_idx, ter_idx) *
+			       density_density_correl.block(ref_site_index * per_site_orbital_size,
+							    ref_site_index * per_site_orbital_size,
+							    per_site_orbital_size,
+							    per_site_orbital_size)(col_idx, col_idx));
+		    }
 	       }
 	  }
+     } else {
+	  fit_tails(ref_site_index);
      }
 // log for sigma asymptotics
      cout << "QMC Sigma asymptotics : site " << ref_site_index << endl
