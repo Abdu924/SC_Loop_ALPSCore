@@ -686,6 +686,8 @@ void Selfenergy::feed_tail_params(int ref_site_index,
 }
 
 void Selfenergy::fit_tails(int ref_site_index) {
+     cout << "Tail of SELF ENERGY is fitted numerically"
+	  << endl << endl;
      size_t N_max = matsubara_tail_estimate_region;
      for (size_t freq_index = N_max - tail_fit_length;
 	  freq_index < N_max; freq_index++) {
@@ -727,6 +729,8 @@ void Selfenergy::compute_tail_coeffs(int ref_site_index) {
      // Appendix B.4, or hopefully even better, my own thesis, appendices.
      // Sell also Ferber's thesis for order 3 coeff.
      if (is_analytic_tail == true) {
+	  cout << "analytic trail treatment for tail of SELF ENERGY"
+	       << endl << endl;
 	  Sigma_0_.block(ref_site_index * per_site_orbital_size,
 			 ref_site_index * per_site_orbital_size,
 			 per_site_orbital_size,
