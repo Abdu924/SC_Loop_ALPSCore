@@ -17,6 +17,7 @@
 #include <mpi.h>
 #include "chemical_potential.hpp"
 #include <alps/mc/mcbase.hpp>
+//#include <hdf5.h>
 
 using namespace std;
 namespace po = boost::program_options;
@@ -261,6 +262,7 @@ int main(int argc, char** argv) {
 	  string h5_group_name("/current_sigma");
 	  boost::shared_ptr<Selfenergy> self_energy(
 	       new Selfenergy(parms, world_rank, h5_archive, h5_group_name, true));
+	  h5_archive.close();
 	  {
 	       boost::timer::auto_cpu_timer all_loop;
 	       boost::shared_ptr<DMFTModel> dmft_model(
@@ -413,6 +415,7 @@ int main(int argc, char** argv) {
 	       dmft_model->get_particle_density(old_chemical_potential, dn_dmu);
 	  cout << "debug_density " << debug_density << endl;
      }
+//     H5Close();
      MPI_Finalize();
      return 0;
 }

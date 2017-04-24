@@ -465,7 +465,7 @@ void HybFunction::dump_delta() {
 	       }
 	  }
 	  out.close();
-	  double beta = sigma_->get_beta();     
+	  double beta = sigma_->get_beta();
 	  out.open(imaginary_time_dump_name, ofstream::out);
 	  out << fixed << setprecision(output_precision);
 	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
