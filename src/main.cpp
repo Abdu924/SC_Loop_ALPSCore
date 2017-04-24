@@ -17,7 +17,6 @@
 #include <mpi.h>
 #include "chemical_potential.hpp"
 #include <alps/mc/mcbase.hpp>
-//#include <hdf5.h>
 
 using namespace std;
 namespace po = boost::program_options;
@@ -415,7 +414,6 @@ int main(int argc, char** argv) {
 	       dmft_model->get_particle_density(old_chemical_potential, dn_dmu);
 	  cout << "debug_density " << debug_density << endl;
      }
-//     H5Close();
      MPI_Finalize();
      return 0;
 }
