@@ -22,7 +22,9 @@ inline std::complex<double> t_coeff(int n, int l) {
      std::complex<double> out = (std::sqrt(static_cast<double>(2 * l + 1)) /
 				 std::sqrt(static_cast<double>(std::abs(2 * n + 1)))) *
 	  std::exp(i_c * (n + 0.5) * M_PI) * std::pow(i_c, l) *
-	  boost::math::cyl_bessel_j(l + 0.5,std::abs(n + 0.5) * M_PI);
+	  //boost::math::cyl_bessel_j(l + 0.5,std::abs(n + 0.5) * M_PI);
+	  boost::math::sph_bessel(l, 0.5 * std::abs(2 * n + 1) * M_PI);
+     //1.0;
      if (n < 0) {
 	  out *= std::pow(-1.0, l);
      }
@@ -43,8 +45,8 @@ std::complex<double> legendre_coeff(int n, int l) {
      return 0;
 }
 
-Greensfunction::Greensfunction(const alps::params &parms, int sampling_type,
-			       int world_rank, alps::hdf5::archive &h5_archive)
+Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
+			       int sampling_type, alps::hdf5::archive &h5_archive)
      :sampling_type(sampling_type), world_rank_(world_rank) {   
      basic_init(parms);
      read_bare_gf();

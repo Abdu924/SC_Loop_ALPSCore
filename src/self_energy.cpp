@@ -44,8 +44,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 // dmft :(
 Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       boost::shared_ptr<Chemicalpotential> chempot,
-		       int ref_site_index,
-		       alps::hdf5::archive h5_archive, int input_type,
+		       int ref_site_index, alps::hdf5::archive h5_archive, int input_type,
 		       bool verbose)
      :world_rank_(world_rank), chempot_(chempot), input_type(input_type),
       is_alps3(false) {
@@ -56,8 +55,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      if (parms.exists("SITE_SYMMETRY")) {
 	  std::string fname = parms["SITE_SYMMETRY"];
 	  symmetry_file = fname;
-	  cout << "Reading QMC for one site only and "
-	       "Using symmetry as defined in " <<
+	  cout << "Reading QMC for one site only and Using symmetry as defined in " <<
 	       symmetry_file << endl;
      }
      // Get the result of the qmc calculation,
@@ -84,8 +82,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 // (matrix implementation)
 Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       boost::shared_ptr<Chemicalpotential> chempot,
-		       int ref_site_index,
-		       alps::hdf5::archive h5_archive,
+		       int ref_site_index, alps::hdf5::archive h5_archive,
 		       boost::shared_ptr<Greensfunction> greens_function)
      :world_rank_(world_rank), chempot_(chempot), input_type(1), is_alps3(true) {
      basic_init(parms);

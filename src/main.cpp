@@ -86,7 +86,7 @@ void define_parameters(alps::params &parameters) {
 	  .define<int >("N_ORBITALS", "total number of spin-orbitals")
 	  .define<double>("C_MAX", "parameter for tail adjustment of gf")
 	  .define<double>("C_MIN", "parameter for tail adjustment of gf")
-	  .define<double>("ALPHA", "parameter for combination of new and old self-energies")	  
+	  .define<double>("model.ALPHA", 1.0, "parameter for combination of new and old self-energies")	  
 	  .define<bool>("cthyb.DMFT_FRAMEWORK", false,
 			"true if we need to tie into a dmft framework")
 	  .define<bool>("cthyb.GLOBALFLIP", false, "TODO: UNDERSTAND WHAT THIS DOES.")
@@ -338,6 +338,7 @@ int main(int argc, char** argv) {
      } else if (computation_type == 1) {
 	  // perform "mix" action
 	  bool verbose = false;
+	  std::cout << "do mix" << std::endl;
 	  if (world_rank == 0) {		    
 	       // Read the current sigma, and calculate the
 	       // sigma gotten from QMC + tails
@@ -349,23 +350,28 @@ int main(int argc, char** argv) {
 	       boost::shared_ptr<Selfenergy> qmc_self_energy;
 	       boost::shared_ptr<Selfenergy> legendre_qmc_self_energy;
 	       if (from_alps3) {
-		    int sampling_type = 1;
+		    int sampling_type = 0;
 		    boost::shared_ptr<Greensfunction>
 			 greens_function(new Greensfunction(parms, world_rank, sampling_type, h5_archive));
 		    qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
 							 h5_archive, greens_function));
 	       } else {
 		    if (parms["cthyb.MEASURE_freq"]) {
+			 // S_omega or S_l_omega
+			 int input_type = 0;
+			 std::cout << "matsu sigma" << std::endl;
 			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
-							      h5_archive, 0, verbose));
+							      h5_archive, input_type, verbose));
 		    }
 		    if (parms["cthyb.MEASURE_legendre"]) {
-			 int sampling_type = 0;
+			 std::cout << "legendre gf" << std::endl;
+			 int sampling_type = 1;
 			 boost::shared_ptr<Greensfunction>
-			      greens_function(new Greensfunction(parms, world_rank, sampling_type, h5_archive));
+			      legendre_greens_function(new Greensfunction(parms, world_rank, sampling_type, h5_archive));
+			 std::cout << "legendre sigma" << std::endl;
 			 legendre_qmc_self_energy.reset(
 			      new Selfenergy(parms, world_rank, chempot, ref_site_index,
-					     h5_archive, greens_function));
+					     h5_archive, legendre_greens_function));
 		    }
 	       }
 	       MPI_Barrier(MPI_COMM_WORLD);
@@ -381,33 +387,44 @@ int main(int argc, char** argv) {
 		    }
 	       }
 	       double alpha = 0.5;
-	       if (parms.exists("ALPHA") && !(old_self_energy->get_is_nil_sigma())) {
-		    alpha = parms["ALPHA"];
-	       } else if (old_self_energy->get_is_nil_sigma()) {
+	       if (!(old_self_energy->get_is_nil_sigma())) {
+		    alpha = parms["model.ALPHA"];
+	       } else {
 		    alpha = 1.0;
-		    cout << "Old self-energy not found => Forcing alpha to 1.0" << endl;
+		    cout << "Old self-energy not found => Forcing alpha" << endl;
 	       }
 	       cout << "Using alpha = " << alpha << " for mixing " << endl;
 	       // apply mix with parameter alpha
-	       qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
-	       // Dump the new current sigma
-	       std::string new_h5_group_name("/current_sigma");
-	       qmc_self_energy->hdf5_dump(w_h5_archive, new_h5_group_name);
-	       for (int tail_order = 0; tail_order < 2; tail_order++) {
-		    qmc_self_energy->hdf5_dump_tail(w_h5_archive, new_h5_group_name,
-						    ref_site_index, tail_order);
+	       if (parms["cthyb.MEASURE_freq"]) {
+		    qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
+		    // Dump the new current sigma
+		    std::string new_h5_group_name("/current_sigma");
+		    qmc_self_energy->hdf5_dump(w_h5_archive, new_h5_group_name);
+		    for (int tail_order = 0; tail_order < 2; tail_order++) {
+			 qmc_self_energy->hdf5_dump_tail(w_h5_archive, new_h5_group_name,
+							 ref_site_index, tail_order);
+		    }
 	       }
-	       // Update seed
-	       if (!from_alps3) {
-		    int cur_seed = boost::lexical_cast<int>(parms["SEED"]) + 1;
-		    if (cur_seed > 1000)
-			 cur_seed = 100;
-		    std::stringstream seed_path;
-		    seed_path << "/parameters/SEED";
-		    w_h5_archive << alps::make_pvp(seed_path.str(), cur_seed);
-		    cout << "SEED= " << cur_seed << endl;
-		    w_h5_archive.close();
+	       if (parms["cthyb.MEASURE_legendre"]) {
+		    legendre_qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
+		    std::string new_h5_group_name("/current_legendre_sigma");
+		    legendre_qmc_self_energy->hdf5_dump(w_h5_archive, new_h5_group_name);
+		    for (int tail_order = 0; tail_order < 2; tail_order++) {
+			 legendre_qmc_self_energy->hdf5_dump_tail(w_h5_archive, new_h5_group_name,
+								  ref_site_index, tail_order);
+		    }
 	       }
+	       // // Update seed
+	       // if (!from_alps3) {
+	       // 	    int cur_seed = boost::lexical_cast<int>(parms["SEED"]) + 1;
+	       // 	    if (cur_seed > 1000)
+	       // 		 cur_seed = 100;
+	       // 	    std::stringstream seed_path;
+	       // 	    seed_path << "/parameters/SEED";
+	       // 	    w_h5_archive << alps::make_pvp(seed_path.str(), cur_seed);
+	       // 	    cout << "SEED= " << cur_seed << endl;
+	       // 	    w_h5_archive.close();
+	       // }
 	  }
 	  MPI_Barrier(MPI_COMM_WORLD);
      } else if (computation_type == 2) {
