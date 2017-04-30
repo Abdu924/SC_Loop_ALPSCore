@@ -22,7 +22,8 @@ public:
      Selfenergy(const alps::params &parms, int world_rank,
 		boost::shared_ptr<Chemicalpotential> chempot,
 		int ref_site_index,
-		alps::hdf5::archive h5_archive, bool verbose=false);
+		alps::hdf5::archive h5_archive, int input_type,
+		bool verbose=false);
      Selfenergy(const alps::params &parms, int world_rank,
 		boost::shared_ptr<Chemicalpotential> chempot,
 		int ref_site_index, alps::hdf5::archive h5_archive, 
@@ -99,6 +100,7 @@ private:
      std::vector<Eigen::MatrixXcd> qmc_tail;
      boost::shared_ptr<Chemicalpotential> chempot_;
      bool enforce_real;
+     int input_type;
      bool is_alps3;
      bool is_analytic_tail;
      int matsubara_tail_estimate_region;
@@ -118,7 +120,8 @@ private:
      void fit_tails(int ref_site_index);
      void compute_qmc_tail(int ref_site_index);
      void append_qmc_tail(int ref_site_index, const alps::params &parms);
-
+     void sanity_check(const alps::params &parms);
+     
      static const std::string density_density_result_name;
 };
 

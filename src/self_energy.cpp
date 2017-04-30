@@ -45,21 +45,20 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       boost::shared_ptr<Chemicalpotential> chempot,
 		       int ref_site_index,
-		       alps::hdf5::archive h5_archive, bool verbose)
-     :world_rank_(world_rank), chempot_(chempot), is_alps3(false),
-      is_analytic_tail(true){
+		       alps::hdf5::archive h5_archive, int input_type,
+		       bool verbose)
+     :world_rank_(world_rank), chempot_(chempot), input_type(input_type),
+      is_alps3(false) {
      basic_init(parms, verbose);
+     is_analytic_tail = static_cast<bool>(parms["model.analytic_sigma_tail"]);
      std::string symmetry_file;
+     sanity_check(parms);
      if (parms.exists("SITE_SYMMETRY")) {
 	  std::string fname = parms["SITE_SYMMETRY"];
 	  symmetry_file = fname;
 	  cout << "Reading QMC for one site only and "
 	       "Using symmetry as defined in " <<
 	       symmetry_file << endl;
-     } else {
-	  if (n_sites > 1) {
-	       throw runtime_error("n_sites > 1 but SITE_SYMMETRY is not defined !");
-	  }
      }
      // Get the result of the qmc calculation,
      // executed for one site only
@@ -87,24 +86,18 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       int ref_site_index,
 		       alps::hdf5::archive h5_archive,
 		       boost::shared_ptr<Greensfunction> greens_function)
-     :world_rank_(world_rank), chempot_(chempot), is_alps3(true) {
+     :world_rank_(world_rank), chempot_(chempot), input_type(1), is_alps3(true) {
      basic_init(parms);
-     if (!parms.defined("model.analytic_sigma_tail")) {
-	  is_analytic_tail = true;
-     } else {
-	  is_analytic_tail = static_cast<bool>(parms["model.analytic_sigma_tail"]);
-     }
+     // defaults to true
+     is_analytic_tail = static_cast<bool>(parms["model.analytic_sigma_tail"]);
      std::string symmetry_file;
+     sanity_check(parms);
      if (parms.exists("SITE_SYMMETRY")) {
 	  std::string fname = parms["SITE_SYMMETRY"];
 	  symmetry_file = fname;
 	  cout << "Reading QMC for one site only and "
 	       "Using symmetry as defined in " <<
 	       symmetry_file << endl;
-     } else {
-	  if (n_sites > 1) {
-	       throw runtime_error("n_sites > 1 but SITE_SYMMETRY is not defined !");
-	  }
      }
      // Get the result of the qmc calculation,
      // executed for one site only
@@ -126,6 +119,12 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      // precompute some matsubara frequency sums for later use
      // in the Fourier transforms.
      compute_order2_partial_sum();
+}
+
+void Selfenergy::sanity_check(const alps::params &parms) {
+     if ((!parms.exists("SITE_SYMMETRY")) && (n_sites > 1)) {
+	  throw runtime_error("n_sites > 1 but SITE_SYMMETRY is not defined !");
+     }
 }
 
 void Selfenergy::read_symmetry_definition(std::string symmetry_file) {
@@ -420,7 +419,7 @@ void Selfenergy::read_qmc_sigma(int ref_site_index,
 }
 
 void Selfenergy::read_qmc_sigma(int ref_site_index, alps::hdf5::archive h5_archive) {
-     string qmc_root_path("/od_hyb_S_omega");
+     string qmc_root_path = (input_type == 0) ? "/od_hyb_S_omega" : "/od_hyb_S_l_omega";
      if (!h5_archive.is_group(qmc_root_path)) {
 	  throw runtime_error("Trying to mix but no QMC data found !");
      }
@@ -910,8 +909,7 @@ void Selfenergy::get_qmc_single_site_hdf5_data(size_t site_index,
 				orbital_path << rootpath << "/" +
 					boost::lexical_cast<std::string>(block_index) +
 					"/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
-				h5_archive >> alps::make_pvp(orbital_path.str(),
-							     temp_data);
+				h5_archive >> alps::make_pvp(orbital_path.str(), temp_data);
 				for (size_t freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
 					values_[freq_index].block(site_index * per_site_orbital_size,
 								  site_index * per_site_orbital_size,

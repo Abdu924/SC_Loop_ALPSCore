@@ -37,20 +37,20 @@ void init(int world_rank, int computation_type,
      }
      backup_file_name = output_file_name + ".old";
      if (world_rank == 0) {
-	     if (boost::filesystem::exists(output_file_name)) {
-		     if (boost::filesystem::is_regular_file(output_file_name)) {
-			     boost::filesystem::copy_file(output_file_name, backup_file_name,
-							  boost::filesystem::copy_option::overwrite_if_exists);
-			     //cout << p << " size is " << boost::filesystem::file_size(p) << endl;
-		     }
-	     }
-	     auto dummy1 = freopen(output_file_name.c_str(), "w", stdout );
-	     auto dummy2 = freopen("error.txt", "w", stderr);
-	     cout << "Using Boost "
-		  << BOOST_VERSION / 100000     << "."  // major version
-		  << BOOST_VERSION / 100 % 1000 << "."  // minor version
-		  << BOOST_VERSION % 100                // patch level
-		  << endl;
+	  if (boost::filesystem::exists(output_file_name)) {
+	       if (boost::filesystem::is_regular_file(output_file_name)) {
+		    boost::filesystem::copy_file(output_file_name, backup_file_name,
+						 boost::filesystem::copy_option::overwrite_if_exists);
+		    //cout << p << " size is " << boost::filesystem::file_size(p) << endl;
+	       }
+	  }
+	  auto dummy1 = freopen(output_file_name.c_str(), "w", stdout );
+	  auto dummy2 = freopen("error.txt", "w", stderr);
+	  cout << "Using Boost "
+	       << BOOST_VERSION / 100000     << "."  // major version
+	       << BOOST_VERSION / 100 % 1000 << "."  // minor version
+	       << BOOST_VERSION % 100                // patch level
+	       << endl;
      }
 }
 
@@ -87,20 +87,23 @@ void define_parameters(alps::params &parameters) {
 	  .define<double>("C_MAX", "parameter for tail adjustment of gf")
 	  .define<double>("C_MIN", "parameter for tail adjustment of gf")
 	  .define<double>("ALPHA", "parameter for combination of new and old self-energies")	  
-	  .define<bool>("cthyb.DMFT_FRAMEWORK",false,"true if we need to tie into a dmft framework")
+	  .define<bool>("cthyb.DMFT_FRAMEWORK", false,
+			"true if we need to tie into a dmft framework")
 	  .define<bool>("cthyb.GLOBALFLIP", false, "TODO: UNDERSTAND WHAT THIS DOES.")
-	  .define<double>("cthyb.J",0,"interaction value for density-density Hund's coupling term J.")
-	  .define<bool>("cthyb.K_IN_HDF5",false,"set to true if retarded interaction K is stored in hdf5.")
-	  .define<bool>("cthyb.MEASURE_freq",true, "measure in frequency domain")
-	  .define<bool>("cthyb.MEASURE_g2w",false, "measure two-particle Green's function in frequency space")
-	  .define<bool>("cthyb.MEASURE_h2w",false, "measure two-particle H Green's function in frequency space")
-	  .define<bool>("cthyb.MEASURE_legendre",false, "measure legendre Green's function coefficients")
-	  .define<bool>("cthyb.MEASURE_nn",false, "measure static density-density correlation functions")
-	  .define<bool>("cthyb.MEASURE_nnt",false, "measure density-density correlation functions <n(0) n(t)>")
-	  .define<bool>("cthyb.MEASURE_nnw",false, "measure density-density correlation functions in frequency domain")
+	  .define<double>("cthyb.J", 0, "interaction value for density-density Hund's coupling term J.")
+	  .define<bool>("cthyb.K_IN_HDF5", false, "set to true if retarded interaction K is stored in hdf5.")
+	  .define<bool>("cthyb.MEASURE_freq", true, "measure in frequency domain")
+	  .define<bool>("cthyb.MEASURE_g2w", false, "measure two-particle Green's function in frequency space")
+	  .define<bool>("cthyb.MEASURE_h2w", false, "measure two-particle H Green's function in frequency space")
+	  .define<bool>("cthyb.MEASURE_legendre", false, "measure legendre Green's function coefficients")
+	  .define<bool>("cthyb.MEASURE_nn", false, "measure static density-density correlation functions")
+	  .define<bool>("cthyb.MEASURE_nnt", false, "measure density-density correlation functions <n(0) n(t)>")
+	  .define<bool>("cthyb.MEASURE_nnw", false,
+			"measure density-density correlation functions in frequency domain")
 	  .define<bool>("cthyb.MEASURE_sector_statistics",false, "measure sector statistics")
 	  .define<bool>("cthyb.MEASURE_time",false, "measure in the time domain")
-	  .define<bool>("model.analytic_sigma_tail", "decide whether to calculate of fit the self energy tail")
+	  .define<bool>("model.analytic_sigma_tail", true,
+			"decide whether to calculate of fit the self energy tail")
 	  .define<double>("MU", "chemical potential / orbital energy values")
 	  .define<std::string>("MU_VECTOR", "file name for file with chemical potential / orbital energy values")
 	  .define<bool>("MU_IN_HDF5", false,"true if the file MU_VECTOR points to a hdf5 file")
@@ -112,10 +115,14 @@ void define_parameters(alps::params &parameters) {
 	  .define<int >("cthyb.N_MEAS","number of updates per measurement")
 	  .define<int >("FLAVORS","number of spin-orbitals (sometimes called flavors)")
 	  .define<int >("N_TAU","number of imaginary time discretization points")
-	  .define<int >("cthyb.N_W",0,"number of bosonic Matsubara frequencies for the two-particle measurement (0 ... N_W)")
-	  .define<int >("cthyb.N_nn",0,"number of points for the measurement of the density density correlator")
-	  .define<int >("cthyb.N_w2",0,"number of fermionic frequencies for the two-particle measurement (-N_w2 ... N_w2-1)")
-	  .define<std::string>("cthyb.RET_INT_K","file with the retarted interaction information. See doc for format.")
+	  .define<int >("cthyb.N_W", 0,
+			"number of bosonic Matsubara frequencies for the two-particle measurement (0 ... N_W)")
+	  .define<int >("cthyb.N_nn", 0,
+			"number of points for the measurement of the density density correlator")
+	  .define<int >("cthyb.N_w2", 0,
+			"number of fermionic frequencies for the two-particle measurement (-N_w2 ... N_w2-1)")
+	  .define<std::string>("cthyb.RET_INT_K",
+			       "file with the retarted interaction information. See doc for format.")
 	  .define<bool>("cthyb.SPINFLIP",false,"TODO: UNDERSTAND THIS PARAMETER")
 	  .define<unsigned long>("cthyb.SWEEPS","total number of Monte Carlo sweeps to be done")
 	  .define<bool>("cthyb.TEXT_OUTPUT","if this is enabled, we write text files in addition to hdf5 files")
@@ -126,14 +133,20 @@ void define_parameters(alps::params &parameters) {
 	  .define<bool>("UMATRIX_IN_HDF5",false,"true if we store the U_matrix as /Umatrix in a hdf5 file")
 	  .define<bool>("VERBOSE",false,"how verbose the code is. true = more output")
 	  .define<std::size_t>("MAX_TIME", "maximum solver runtime")
-	  .define<std::string>("solver.OUTFILE_H5GF", "alps_solver_in.h5gf", "H5GF Green's function input file containing G0(omega,k) at /G0 and G0(ij, tau) at /G0_tau_rs")
-	  .define<std::string>("solver.INFILE_H5GF", "alps_solver_out.h5gf","H5GF Green's function output file containing G(omega,k) at /G_omega and G(ij, tau) at /G_tau")
+	  .define<std::string>("solver.OUTFILE_H5GF", "alps_solver_in.h5gf",
+			       "H5GF Green's function input file containing G0(omega,k) "
+			       "at /G0 and G0(ij, tau) at /G0_tau_rs")
+	  .define<std::string>("solver.INFILE_H5GF", "alps_solver_out.h5gf",
+			       "H5GF Green's function output file containing G(omega,k) "
+			       "at /G_omega and G(ij, tau) at /G_tau")
 	  .define<int >("L", 200, "Number of Brillouin Zone points")
 	  .define<double>("t", 1.0, "Hopping element: nearest neighbor")
 	  .define<double>("tprime", 0.0, "Hopping element: next-nearest neighbor")
-	  .define<int >("measurement.nn_corr.n_tau", 3, "number of pts for density-density correlation functions.")
+	  .define<int >("measurement.nn_corr.n_tau", 3,
+			"number of pts for density-density correlation functions.")
 	  .define<int >("measurement.G1.n_tau", 1800, "number of pts for G(tau).")
-	  .define<std::string>("measurement.nn_corr.def","definition of density-density correlation functions.")
+	  .define<std::string>("measurement.nn_corr.def",
+			       "definition of density-density correlation functions.")
 	  ;
 }
 
@@ -183,8 +196,8 @@ tuple<string, int, bool> handle_command_line(po::variables_map vm, po::options_d
 	  exit(1);
      }
      if (vm.count("from_alps3")) {
-	from_alps3 = true;
-	cout << "Taking ***MATRIX RESULT*** as input format\n";
+	  from_alps3 = true;
+	  cout << "Taking ***MATRIX RESULT*** as input format\n";
      }
 
      string input_file(vm["input-file"].as<string>());
@@ -202,8 +215,8 @@ double extract_chemical_potential(boost::shared_ptr<Bandstructure> bare_band,
      for (int i = 1; i < n_orbitals; i++) {
 	  candidate_mu = energies(i) + (*chempot)[i];
 	  if ((i > 0) && (abs(candidate_mu - ref_candidate_mu) > tolerance)) {
-		    cout << "MU is inconsistent. Quitting. " << endl;
-		    throw runtime_error("MU is inconsistent !");
+	       cout << "MU is inconsistent. Quitting. " << endl;
+	       throw runtime_error("MU is inconsistent !");
 	  }
      }
      return ref_candidate_mu;
@@ -323,67 +336,76 @@ int main(int argc, char** argv) {
 	       }
 	  }		
      } else if (computation_type == 1) {
-	       // perform "mix" action
-	       if (world_rank == 0) {		    
-		    // Read the current sigma, and calculate the
-		    // sigma gotten from QMC + tails
-		    int ref_site_index = 0;
-		    std::string old_h5_group_name("/current_sigma");
-		    boost::shared_ptr<Selfenergy>
-			 old_self_energy(new Selfenergy(parms, world_rank, h5_archive,
-							old_h5_group_name, false));
-		    boost::shared_ptr<Selfenergy> qmc_self_energy;
-		    if (from_alps3) {
-			 boost::shared_ptr<Greensfunction>
-			      greens_function(new Greensfunction(parms, world_rank, h5_archive));
+	  // perform "mix" action
+	  bool verbose = false;
+	  if (world_rank == 0) {		    
+	       // Read the current sigma, and calculate the
+	       // sigma gotten from QMC + tails
+	       int ref_site_index = 0;
+	       std::string old_h5_group_name("/current_sigma");
+	       boost::shared_ptr<Selfenergy>
+		    old_self_energy(new Selfenergy(parms, world_rank, h5_archive,
+						   old_h5_group_name, verbose));
+	       boost::shared_ptr<Selfenergy> qmc_self_energy;
+	       boost::shared_ptr<Selfenergy> legendre_qmc_self_energy;
+	       if (from_alps3) {
+		    boost::shared_ptr<Greensfunction>
+			 greens_function(new Greensfunction(parms, world_rank, h5_archive));
+		    qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
+							 h5_archive, greens_function));
+	       } else {
+		    if (parms["cthyb.MEASURE_freq"]) {
 			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
-							      h5_archive, greens_function));
-		    } else {
-			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
-							      h5_archive, false));
+							      h5_archive, 0, verbose));
 		    }
-		    MPI_Barrier(MPI_COMM_WORLD);
-		    h5_archive.close();
-		    // save old sigma
-		    alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
-		    std::string copy_h5_group_name("/old_sigma");
-		    if (!(old_self_energy->get_is_nil_sigma())) {
-			 old_self_energy->hdf5_dump(w_h5_archive, copy_h5_group_name);
-			 for (int tail_order = 0; tail_order < 2; tail_order++) {
-			      old_self_energy->hdf5_dump_tail(w_h5_archive, copy_h5_group_name,
-							      ref_site_index, tail_order);
-			 }
-		    }
-		    double alpha = 0.5;
-		    if (parms.exists("ALPHA") && !(old_self_energy->get_is_nil_sigma())) {
-			 alpha = parms["ALPHA"];
-		    } else if (old_self_energy->get_is_nil_sigma()) {
-			 alpha = 1.0;
-			 cout << "Old self-energy not found => Forcing alpha to 1.0" << endl;
-		    }
-		    cout << "Using alpha = " << alpha << " for mixing " << endl;
-		    // apply mix with parameter alpha
-		    qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
-		    // Dump the new current sigma
-		    std::string new_h5_group_name("/current_sigma");
-		    qmc_self_energy->hdf5_dump(w_h5_archive, new_h5_group_name);
-		    for (int tail_order = 0; tail_order < 2; tail_order++) {
-			 qmc_self_energy->hdf5_dump_tail(w_h5_archive, new_h5_group_name,
-							 ref_site_index, tail_order);
-		    }
-		    // Update seed
-		    if (!from_alps3) {
-			 int cur_seed = boost::lexical_cast<int>(parms["SEED"]) + 1;
-			 if (cur_seed > 1000)
-			      cur_seed = 100;
-			 std::stringstream seed_path;
-			 seed_path << "/parameters/SEED";
-			 w_h5_archive << alps::make_pvp(seed_path.str(), cur_seed);
-			 cout << "SEED= " << cur_seed << endl;
-			 w_h5_archive.close();
+		    if (parms["cthyb.MEASURE_legendre"]) {
+			 legendre_qmc_self_energy.reset(
+			      new Selfenergy(parms, world_rank, chempot, ref_site_index,
+					     h5_archive, 1, verbose));
 		    }
 	       }
 	       MPI_Barrier(MPI_COMM_WORLD);
+	       h5_archive.close();
+	       // save old sigma
+	       alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
+	       std::string copy_h5_group_name("/old_sigma");
+	       if (!(old_self_energy->get_is_nil_sigma())) {
+		    old_self_energy->hdf5_dump(w_h5_archive, copy_h5_group_name);
+		    for (int tail_order = 0; tail_order < 2; tail_order++) {
+			 old_self_energy->hdf5_dump_tail(w_h5_archive, copy_h5_group_name,
+							 ref_site_index, tail_order);
+		    }
+	       }
+	       double alpha = 0.5;
+	       if (parms.exists("ALPHA") && !(old_self_energy->get_is_nil_sigma())) {
+		    alpha = parms["ALPHA"];
+	       } else if (old_self_energy->get_is_nil_sigma()) {
+		    alpha = 1.0;
+		    cout << "Old self-energy not found => Forcing alpha to 1.0" << endl;
+	       }
+	       cout << "Using alpha = " << alpha << " for mixing " << endl;
+	       // apply mix with parameter alpha
+	       qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
+	       // Dump the new current sigma
+	       std::string new_h5_group_name("/current_sigma");
+	       qmc_self_energy->hdf5_dump(w_h5_archive, new_h5_group_name);
+	       for (int tail_order = 0; tail_order < 2; tail_order++) {
+		    qmc_self_energy->hdf5_dump_tail(w_h5_archive, new_h5_group_name,
+						    ref_site_index, tail_order);
+	       }
+	       // Update seed
+	       if (!from_alps3) {
+		    int cur_seed = boost::lexical_cast<int>(parms["SEED"]) + 1;
+		    if (cur_seed > 1000)
+			 cur_seed = 100;
+		    std::stringstream seed_path;
+		    seed_path << "/parameters/SEED";
+		    w_h5_archive << alps::make_pvp(seed_path.str(), cur_seed);
+		    cout << "SEED= " << cur_seed << endl;
+		    w_h5_archive.close();
+	       }
+	  }
+	  MPI_Barrier(MPI_COMM_WORLD);
      } else if (computation_type == 2) {
 	  // dump hamiltonian
 	  boost::shared_ptr<Bandstructure> bare_band(
@@ -391,28 +413,28 @@ int main(int argc, char** argv) {
 	  bare_band->dump_hamilt(parms);
      } else if (computation_type == 3) {
 	  // Perform debug action
-	  bool compute_bubble = false;
-	  boost::shared_ptr<Bandstructure> bare_band(
-	       new Bandstructure(parms, world_rank, true));
-	  string h5_group_name("/current_sigma");
-	  boost::shared_ptr<Selfenergy> self_energy(
-	       new Selfenergy(parms, world_rank, h5_archive, h5_group_name, false));
-	  boost::shared_ptr<DMFTModel> dmft_model(
-	       new DMFTModel(bare_band, self_energy,
-			     parms, world_rank));
-	  // Restrict reading to process 0, then broadcast.
-	  if (world_rank == 0) {
-	       found_old_mu = true;
-	       old_chemical_potential = 1.3790653;
-	       dn_dmu = 0.0197718;
-	  }
-	  MPI_Bcast(&found_old_mu, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
-	  MPI_Bcast(&old_chemical_potential, 1, MPI::DOUBLE, 0, MPI_COMM_WORLD);
-	  MPI_Bcast(&dn_dmu, 1, MPI::DOUBLE, 0, MPI_COMM_WORLD);
-	  double debug_density, debug_deriv;
-	  tie(debug_density, debug_deriv) =
-	       dmft_model->get_particle_density(old_chemical_potential, dn_dmu);
-	  cout << "debug_density " << debug_density << endl;
+	  // bool compute_bubble = false;
+	  // boost::shared_ptr<Bandstructure> bare_band(
+	  //      new Bandstructure(parms, world_rank, true));
+	  // string h5_group_name("/current_sigma");
+	  // boost::shared_ptr<Selfenergy> self_energy(
+	  //      new Selfenergy(parms, world_rank, h5_archive, h5_group_name, false));
+	  // boost::shared_ptr<DMFTModel> dmft_model(
+	  //      new DMFTModel(bare_band, self_energy,
+	  // 		     parms, world_rank));
+	  // // Restrict reading to process 0, then broadcast.
+	  // if (world_rank == 0) {
+	  //      found_old_mu = true;
+	  //      old_chemical_potential = 1.3790653;
+	  //      dn_dmu = 0.0197718;
+	  // }
+	  // MPI_Bcast(&found_old_mu, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
+	  // MPI_Bcast(&old_chemical_potential, 1, MPI::DOUBLE, 0, MPI_COMM_WORLD);
+	  // MPI_Bcast(&dn_dmu, 1, MPI::DOUBLE, 0, MPI_COMM_WORLD);
+	  // double debug_density, debug_deriv;
+	  // tie(debug_density, debug_deriv) =
+	  //      dmft_model->get_particle_density(old_chemical_potential, dn_dmu);
+	  // cout << "debug_density " << debug_density << endl;
      }
      MPI_Finalize();
      return 0;
