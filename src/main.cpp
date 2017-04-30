@@ -109,7 +109,6 @@ void define_parameters(alps::params &parameters) {
 	  .define<bool>("MU_IN_HDF5", false,"true if the file MU_VECTOR points to a hdf5 file")
 	  .define<int >("cthyb.N_HISTOGRAM_ORDERS",200, "orders for the histograms of probability per order")
 	  .define<int >("cthyb.N_LEGENDRE",0,"number of legendre coefficients")
-	  .define<int >("N_LEGENDRE",0,"number of legendre coefficients")
 	  .define<int >("N_MATSUBARA", 955, "number of matsubara frequencies")
 	  .define<int >("measurement.G1.N_MATSUBARA", 955, "number of matsubara frequencies for alps3")
 	  .define<int >("cthyb.N_MEAS","number of updates per measurement")
@@ -349,8 +348,9 @@ int main(int argc, char** argv) {
 	       boost::shared_ptr<Selfenergy> qmc_self_energy;
 	       boost::shared_ptr<Selfenergy> legendre_qmc_self_energy;
 	       if (from_alps3) {
+		    int sampling_type = 0;
 		    boost::shared_ptr<Greensfunction>
-			 greens_function(new Greensfunction(parms, world_rank, h5_archive));
+			 greens_function(new Greensfunction(parms, world_rank, sampling_type, h5_archive));
 		    qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
 							 h5_archive, greens_function));
 	       } else {
@@ -359,9 +359,12 @@ int main(int argc, char** argv) {
 							      h5_archive, 0, verbose));
 		    }
 		    if (parms["cthyb.MEASURE_legendre"]) {
+			 int sampling_type = 0;
+			 boost::shared_ptr<Greensfunction>
+			      greens_function(new Greensfunction(parms, world_rank, sampling_type, h5_archive));
 			 legendre_qmc_self_energy.reset(
 			      new Selfenergy(parms, world_rank, chempot, ref_site_index,
-					     h5_archive, 1, verbose));
+					     h5_archive, greens_function));
 		    }
 	       }
 	       MPI_Barrier(MPI_COMM_WORLD);

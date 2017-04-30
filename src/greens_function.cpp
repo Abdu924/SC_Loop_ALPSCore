@@ -11,9 +11,9 @@
 #include "greens_function.hpp"
 #include "hybridization_function.hpp"
 #include <math.h>
-//#include <gsl/gsl_sf_bessel.h>
 
 using namespace std;
+typedef boost::multi_array<complex<double> , 3> cplx_array_type;
 
 std::complex<double> legendre_coeff(int n, int l) {
      // transformation matrix from Legendre to Matsubara basis
@@ -29,14 +29,21 @@ std::complex<double> legendre_coeff(int n, int l) {
      return 0;
 }
 
-
-Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
-			       alps::hdf5::archive &h5_archive)
-     :world_rank_(world_rank) {   
+Greensfunction::Greensfunction(const alps::params &parms, int sampling_type,
+			       int world_rank, alps::hdf5::archive &h5_archive)
+     :sampling_type(sampling_type), world_rank_(world_rank) {   
      basic_init(parms);
      read_bare_gf();
-     read_single_site_full_gf_matsubara(h5_archive);
-     cout << "gf values " << full_gf_values_[0](0,0) << endl;
+     generate_data(h5_archive);
+}
+
+void Greensfunction::generate_data(alps::hdf5::archive &h5_archive) {
+     if (sampling_type == 0) {
+	  // Matsubara input from alps3
+	  read_single_site_full_gf_matsubara(h5_archive);
+     } else if (sampling_type == 1) {
+	  read_single_site_legendre(h5_archive);
+     }
 }
 
 void Greensfunction::basic_init(const alps::params &parms) {
@@ -49,7 +56,8 @@ void Greensfunction::basic_init(const alps::params &parms) {
      tot_orbital_size = per_site_orbital_size * n_sites;
      n_matsubara = static_cast<int>(parms["measurement.G1.N_MATSUBARA"]);
      n_matsubara_for_alps2 = static_cast<int>(parms["N_MATSUBARA"]);
-     n_legendre = static_cast<int>(parms["N_LEGENDRE"]);
+     n_legendre = static_cast<int>(parms["cthyb.N_LEGENDRE"]);
+     l_max = n_legendre;
      beta = static_cast<double>(parms["BETA"]);
      init_gf_container();
 }
@@ -117,50 +125,49 @@ Eigen::MatrixXcd Greensfunction::get_dyson_result(int freq_index, bool is_negati
      }
 }
 
-void Greensfunction::read_single_site_full_gf_legendre(alps::hdf5::archive &h5_archive, int site_index) {
-     typedef boost::multi_array<double, 4> array_type;
-     std::cerr << "Legendre input not supported " << endl;
-     throw std::runtime_error("Legendre input not supported for 1p GF");
-     array_type legendre_data(
-	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre][2]);
-     h5_archive["G1_LEGENDRE"] >> legendre_data;
-     LegendreTransformer legendre_transformer(n_matsubara, n_legendre);
-     const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl(legendre_transformer.Tnl());
-     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> neg_Tnl(Tnl);
-     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
-	  tmp_mat(n_legendre, 1), tmp_mat2(n_matsubara, 1), neg_tmp_mat2(n_matsubara, 1);
-     for (int freq_index = 0; freq_index < n_matsubara; ++freq_index) {
-	  for (int il = 0; il < n_legendre; ++il) {
-	       neg_Tnl(n_matsubara - 1 - freq_index, il) =
-		    std::pow(-1.0, il) * Tnl(freq_index, il);
-	  }
-     }
-     for (int flavor = 0; flavor < per_site_orbital_size; ++flavor) {
-	  for (int flavor2 = 0; flavor2 < per_site_orbital_size; ++flavor2) {
-	       for (int il = 0; il < n_legendre; ++il) {
-		    tmp_mat(il, 0) = std::complex<double>(legendre_data[flavor][flavor2][il][0],
-							  legendre_data[flavor][flavor2][il][1]);
-	       }
-	       tmp_mat2 = Tnl * tmp_mat;
-	       neg_tmp_mat2 = neg_Tnl * tmp_mat;
-	       for (int freq_index = 0; freq_index < n_matsubara; ++freq_index) {
-		    full_gf_values_[freq_index].block(site_index * per_site_orbital_size,
-						      site_index * per_site_orbital_size,
-						      per_site_orbital_size,
-						      per_site_orbital_size)(flavor, flavor2) =
-			 tmp_mat2(freq_index, 0);		    
-		    full_gf_neg_values_[freq_index].block(site_index * per_site_orbital_size,
-							  site_index * per_site_orbital_size,
-							  per_site_orbital_size,
-							  per_site_orbital_size)(flavor, flavor2) =
-			 neg_tmp_mat2(freq_index, 0);
-	       }
-	  }
-     }
-}
+// void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, int site_index) {
+//      typedef boost::multi_array<double, 4> array_type;
+//      std::cerr << "Legendre input not supported " << endl;
+//      throw std::runtime_error("Legendre input not supported for 1p GF");
+//      array_type legendre_data(
+// 	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre][2]);
+//      h5_archive["G1_LEGENDRE"] >> legendre_data;
+//      LegendreTransformer legendre_transformer(n_matsubara, n_legendre);
+//      const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl(legendre_transformer.Tnl());
+//      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> neg_Tnl(Tnl);
+//      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
+// 	  tmp_mat(n_legendre, 1), tmp_mat2(n_matsubara, 1), neg_tmp_mat2(n_matsubara, 1);
+//      for (int freq_index = 0; freq_index < n_matsubara; ++freq_index) {
+// 	  for (int il = 0; il < n_legendre; ++il) {
+// 	       neg_Tnl(n_matsubara - 1 - freq_index, il) =
+// 		    std::pow(-1.0, il) * Tnl(freq_index, il);
+// 	  }
+//      }
+//      for (int flavor = 0; flavor < per_site_orbital_size; ++flavor) {
+// 	  for (int flavor2 = 0; flavor2 < per_site_orbital_size; ++flavor2) {
+// 	       for (int il = 0; il < n_legendre; ++il) {
+// 		    tmp_mat(il, 0) = std::complex<double>(legendre_data[flavor][flavor2][il][0],
+// 							  legendre_data[flavor][flavor2][il][1]);
+// 	       }
+// 	       tmp_mat2 = Tnl * tmp_mat;
+// 	       neg_tmp_mat2 = neg_Tnl * tmp_mat;
+// 	       for (int freq_index = 0; freq_index < n_matsubara; ++freq_index) {
+// 		    full_gf_values_[freq_index].block(site_index * per_site_orbital_size,
+// 						      site_index * per_site_orbital_size,
+// 						      per_site_orbital_size,
+// 						      per_site_orbital_size)(flavor, flavor2) =
+// 			 tmp_mat2(freq_index, 0);		    
+// 		    full_gf_neg_values_[freq_index].block(site_index * per_site_orbital_size,
+// 							  site_index * per_site_orbital_size,
+// 							  per_site_orbital_size,
+// 							  per_site_orbital_size)(flavor, flavor2) =
+// 			 neg_tmp_mat2(freq_index, 0);
+// 	       }
+// 	  }
+//      }
+// }
 
 void Greensfunction::read_single_site_full_gf_matsubara(alps::hdf5::archive &h5_archive, int site_index) {
-     typedef boost::multi_array<complex<double> , 3> cplx_array_type;
      cplx_array_type raw_full_gf(
       	  boost::extents[n_matsubara][per_site_orbital_size][per_site_orbital_size]);
      h5_archive["/gf/data"] >> raw_full_gf;
@@ -188,11 +195,63 @@ void Greensfunction::read_single_site_full_gf_matsubara(alps::hdf5::archive &h5_
      }
 }
 
+void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, int site_index) {
+     cplx_array_type raw_legendre_data(
+      	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
+     h5_archive["G1_LEGENDRE"] >> raw_legendre_data;
+     // measure c_1
+     std::vector<Eigen::MatrixXcd > raw_gl_matrices;
+     for (int l_index = 0; l_index < l_max; l_index++) {
+	  raw_gl_matrices.push_back(Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size));
+     }
+     measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     for (int l_index = 0; l_index < l_max; l_index += 2) {
+	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+		    raw_gl_matrices[l_index](row_index, col_index) = raw_legendre_data[row_index][col_index][l_index];
+	       }
+	  }
+	  measured_c1 += 2.0 * tl_values[l_index] * raw_gl_matrices[l_index] / beta;
+     }
+     // measure c_2
+     measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     for (int l_index = 1; l_index < l_max; l_index += 2) {
+	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+		    raw_gl_matrices[l_index](row_index, col_index) = raw_legendre_data[row_index][col_index][l_index];
+		    gl_values_[l_index](row_index, col_index) = raw_gl_matrices[l_index](row_index, col_index);
+	       }
+	  }
+	  measured_c2 -= 2.0 * tl_values[l_index] * (double)l_index * (l_index + 1.0) *
+	       raw_gl_matrices[l_index] / (std::pow(beta, 2));
+     }
+     // Fix c_1
+     // Cf paper by Boehnke et al. PHYSICAL REVIEW B 84, 075145 (2011)
+     // Eq 10.
+     for (int l_index = 0; l_index < l_max; l_index += 2) {
+	  gl_values_[l_index] = raw_gl_matrices[l_index] + (
+	       Eigen::MatrixXcd::Identity(per_site_orbital_size, per_site_orbital_size) - measured_c1) *
+	       beta * tl_values[l_index] / tl_modulus;
+     }
+}
+
 void Greensfunction::init_gf_container() {
+     measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     tl_values.resize(l_max);
+     for (int l_index = 0; l_index < l_max; l_index++) {
+	  tl_values[l_index] = - 2.0 * std::sqrt(2.0 * l_index + 1.0);
+	  tl_modulus += std::abs(std::pow(tl_values[l_index], 2));
+     }
+     gl_values_.resize(l_max);
      bare_gf_values_.resize(n_matsubara_for_alps2);
      bare_gf_neg_values_.resize(n_matsubara_for_alps2);
      full_gf_values_.resize(n_matsubara);
      full_gf_neg_values_.resize(n_matsubara);
+     for (int l_index = 0; l_index < l_max; l_index++) {
+	  gl_values_[l_index] = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     }
      //initialize self-energy
      for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  full_gf_values_[freq_index] =
@@ -205,6 +264,5 @@ void Greensfunction::init_gf_container() {
 	       Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
 	  bare_gf_neg_values_[freq_index] =
 	       Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
-     }
-	  
+     }	  
 }
