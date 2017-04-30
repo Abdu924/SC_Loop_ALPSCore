@@ -33,6 +33,7 @@ protected:
      void basic_init(const alps::params &parms);
      void init_gf_container();
      void generate_data(alps::hdf5::archive &h5_archive);
+     void get_matsubara_from_legendre(int site_index=0);
      
      Eigen::VectorXcd matsubara_frequencies_;
      size_t n_blocks;

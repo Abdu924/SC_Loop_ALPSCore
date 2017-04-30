@@ -11,9 +11,23 @@
 #include "greens_function.hpp"
 #include "hybridization_function.hpp"
 #include <math.h>
+#include <boost/math/special_functions/bessel.hpp>
 
 using namespace std;
 typedef boost::multi_array<complex<double> , 3> cplx_array_type;
+
+//transformation matrix from Legendre to Matsubara basis
+inline std::complex<double> t_coeff(int n, int l) {
+     std::complex<double> i_c(0., 1.);
+     std::complex<double> out = (std::sqrt(static_cast<double>(2 * l + 1)) /
+				 std::sqrt(static_cast<double>(std::abs(2 * n + 1)))) *
+	  std::exp(i_c * (n + 0.5) * M_PI) * std::pow(i_c, l) *
+	  boost::math::cyl_bessel_j(l + 0.5,std::abs(n + 0.5) * M_PI);
+     if (n < 0) {
+	  out *= std::pow(-1.0, l);
+     }
+     return out;
+}
 
 std::complex<double> legendre_coeff(int n, int l) {
      // transformation matrix from Legendre to Matsubara basis
@@ -43,6 +57,7 @@ void Greensfunction::generate_data(alps::hdf5::archive &h5_archive) {
 	  read_single_site_full_gf_matsubara(h5_archive);
      } else if (sampling_type == 1) {
 	  read_single_site_legendre(h5_archive);
+	  get_matsubara_from_legendre();
      }
 }
 
@@ -167,6 +182,33 @@ Eigen::MatrixXcd Greensfunction::get_dyson_result(int freq_index, bool is_negati
 //      }
 // }
 
+void Greensfunction::get_matsubara_from_legendre(int site_index) {
+     for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
+	  full_gf_values_[freq_index].block(site_index * per_site_orbital_size,
+					    site_index * per_site_orbital_size,
+					    per_site_orbital_size,
+					    per_site_orbital_size) =
+	       Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	  full_gf_neg_values_[n_matsubara - 1 - freq_index].block(site_index * per_site_orbital_size,
+								  site_index * per_site_orbital_size,
+								  per_site_orbital_size,
+								  per_site_orbital_size) =
+	       Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	  for (int l = 0; l < l_max; l++) {
+	  	  full_gf_values_[freq_index].block(site_index * per_site_orbital_size,
+						    site_index * per_site_orbital_size,
+						    per_site_orbital_size,
+						    per_site_orbital_size) +=
+		       gl_values_[l] * t_coeff(freq_index, l);
+		  full_gf_neg_values_[n_matsubara - 1 - freq_index].block(site_index * per_site_orbital_size,
+						    site_index * per_site_orbital_size,
+						    per_site_orbital_size,
+						    per_site_orbital_size) +=
+		       gl_values_[l] * t_coeff(-freq_index, l);
+	  }
+     }
+}
+
 void Greensfunction::read_single_site_full_gf_matsubara(alps::hdf5::archive &h5_archive, int site_index) {
      cplx_array_type raw_full_gf(
       	  boost::extents[n_matsubara][per_site_orbital_size][per_site_orbital_size]);
@@ -233,7 +275,8 @@ void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, 
 	       Eigen::MatrixXcd::Identity(per_site_orbital_size, per_site_orbital_size) - measured_c1) *
 	       beta * tl_values[l_index] / tl_modulus;
      }
-     // now reset measured_c1 to its target value, and compute measured_c3, with fixed gl values.
+     // now reset measured_c1 to its target value, and compute measured_c3,
+     // with corrected gl values.
      measured_c1 = Eigen::MatrixXcd::Identity(per_site_orbital_size, per_site_orbital_size);
      // measure c_3
      measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
