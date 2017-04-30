@@ -23,8 +23,8 @@ std::complex<double> t_coeff(int n, int l) {
 	  std::exp(i_c * (n + 0.5) * M_PI) * std::pow(i_c, l) *
 	  //std::sqrt(M_PI / (2.0 * z)) * jn(n, 2.38 );
 	  //boost::math::cyl_bessel_j(l + 0.5,std::abs(n + 0.5) * M_PI);
-	  //boost::math::sph_bessel(l, 0.5 * std::abs(2 * n + 1) * M_PI);
-	  boost::math::sph_bessel(1, 2.38);
+	  boost::math::sph_bessel(l, 0.5 * std::abs(2 * n + 1) * M_PI);
+	  //boost::math::sph_bessel(1, 2.38);
      
      //1.0;
      if (n < 0) {

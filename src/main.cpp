@@ -16,6 +16,7 @@
 #include <mpi.h>
 #include "chemical_potential.hpp"
 #include <alps/mc/mcbase.hpp>
+#include <boost/math/special_functions/bessel.hpp>
 
 using namespace std;
 namespace po = boost::program_options;
@@ -59,12 +60,13 @@ void define_parameters(alps::params &parameters) {
 	  return;
      }
      // Adds the parameters of the base class
-     alps::mcbase::define_parameters(parameters);
+     //alps::mcbase::define_parameters(parameters);
      // Adds the convenience parameters (for save/load)
      // alps::define_convenience_parameters(parameters);
      // Define ct-hyb related parameters
      parameters
 	  .description("hybridization expansion simulation")
+	  .define<long>("SEED", 42, "PRNG seed")
 	  .define<bool>("cthyb.ACCURATE_COVARIANCE", false, "TODO: UNDERSTAND WHAT THIS DOES")
 	  .define<std::string>("cthyb.BASEPATH","", "path in hdf5 file to which results are stored")
 	  .define<double>("BETA", "inverse temperature")
@@ -198,7 +200,6 @@ tuple<string, int, bool> handle_command_line(po::variables_map vm, po::options_d
 	  from_alps3 = true;
 	  cout << "Taking ***MATRIX RESULT*** as input format\n";
      }
-
      string input_file(vm["input-file"].as<string>());
      return tuple<string, int, bool>(input_file, computation_type, from_alps3);
 }
