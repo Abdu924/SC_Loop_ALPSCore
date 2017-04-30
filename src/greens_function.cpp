@@ -72,7 +72,7 @@ void Greensfunction::basic_init(const alps::params &parms) {
      n_matsubara = static_cast<int>(parms["measurement.G1.N_MATSUBARA"]);
      n_matsubara_for_alps2 = static_cast<int>(parms["N_MATSUBARA"]);
      n_legendre = static_cast<int>(parms["cthyb.N_LEGENDRE"]);
-     l_max = n_legendre;
+     l_max = static_cast<int>(parms["model.L_MAX"]);
      beta = static_cast<double>(parms["BETA"]);
      init_gf_container();
 }

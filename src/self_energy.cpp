@@ -95,8 +95,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      if (parms.exists("SITE_SYMMETRY")) {
 	  std::string fname = parms["SITE_SYMMETRY"];
 	  symmetry_file = fname;
-	  cout << "Reading QMC for one site only and "
-	       "Using symmetry as defined in " <<
+	  cout << "Reading QMC for one site only and using symmetry as defined in " <<
 	       symmetry_file << endl;
      }
      // Get the result of the qmc calculation,
