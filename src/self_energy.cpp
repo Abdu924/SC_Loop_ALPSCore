@@ -71,6 +71,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      // Smooth the noisy tail
      feed_tail_params(ref_site_index, parms, h5_archive);
      compute_tail_coeffs(ref_site_index);
+     log_sigma_tails(ref_site_index);
      compute_qmc_tail(ref_site_index);
      append_qmc_tail(ref_site_index, parms);
      symmetrize_sites(ref_site_index);
@@ -106,14 +107,11 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      // the relevant symmetry.
      read_symmetry_definition(symmetry_file);
      read_qmc_sigma(ref_site_index, greens_function);
-     // Smooth the noisy tail
-     feed_tail_params(ref_site_index, parms, h5_archive);
-     
-     compute_tail_coeffs(ref_site_index);
+     //feed_tail_params(ref_site_index, parms, h5_archive);
+     compute_tail_coeffs(greens_function, chempot, ref_site_index);
+     log_sigma_tails(ref_site_index);
      compute_qmc_tail(ref_site_index);
      // No need to append tails when data comes from Legendre
-     // Oh YESS we do! :)
-     append_qmc_tail(ref_site_index, parms);
      symmetrize_sites(ref_site_index);
      // precompute some matsubara frequency sums for later use
      // in the Fourier transforms.
@@ -719,6 +717,30 @@ void Selfenergy::fit_tails(int ref_site_index) {
      }
 }
 
+void Selfenergy::compute_tail_coeffs( boost::shared_ptr<Greensfunction> greens_function,
+				      boost::shared_ptr<Chemicalpotential> chempot,
+				      int ref_site_index) {
+     cout << "SELF ENERGY tails from Legendre cumulatives" << endl << endl;
+     Sigma_0_.block(ref_site_index * per_site_orbital_size,
+		    ref_site_index * per_site_orbital_size,
+		    per_site_orbital_size,
+		    per_site_orbital_size) = greens_function->get_measured_c2();
+     for (int orbital = 0; orbital < per_site_orbital_size; orbital++) {
+	  Sigma_0_.block(ref_site_index * per_site_orbital_size,
+			ref_site_index * per_site_orbital_size,
+			per_site_orbital_size,
+			per_site_orbital_size)(orbital, orbital) +=
+	       (*chempot)[orbital];
+     }
+     Sigma_1_.block(ref_site_index * per_site_orbital_size,
+		    ref_site_index * per_site_orbital_size,
+		    per_site_orbital_size,
+		    per_site_orbital_size) =
+	  greens_function->get_measured_c3() - (
+	       greens_function->get_measured_c2() *
+	       greens_function->get_measured_c2());
+}
+
 void Selfenergy::compute_tail_coeffs(int ref_site_index) {
      // 0.5 factor stems from the fact that the formal expression
      // of the Hamiltonian is without order in the thesis, while it has
@@ -807,7 +829,11 @@ void Selfenergy::compute_tail_coeffs(int ref_site_index) {
      if (!is_analytic_tail) {
 	  fit_tails(ref_site_index);
      }
-// log for sigma asymptotics
+}
+
+
+void Selfenergy::log_sigma_tails(int ref_site_index) {
+     // log for sigma asymptotics
      cout << "QMC Sigma asymptotics : site " << ref_site_index << endl
 	  << "Sigma_inf "<< endl << endl;
      cout << Sigma_0_.block(ref_site_index * per_site_orbital_size,

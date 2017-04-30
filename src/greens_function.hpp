@@ -21,6 +21,8 @@ public:
      Greensfunction(const alps::params &parms, int world_rank,
 		    int sampling_type,  alps::hdf5::archive &h5_archive);
      Eigen::MatrixXcd get_dyson_result(int freq_index, bool is_negative);
+     Eigen::MatrixXcd get_measured_c2();
+     Eigen::MatrixXcd get_measured_c3();
      
      virtual ~Greensfunction() {}
      

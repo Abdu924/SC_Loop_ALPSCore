@@ -117,6 +117,14 @@ void Greensfunction::read_bare_gf() {
      }
 }
 
+Eigen::MatrixXcd Greensfunction::get_measured_c2() {
+     return measured_c2;
+}
+
+Eigen::MatrixXcd Greensfunction::get_measured_c3() {
+     return measured_c3;
+}
+
 Eigen::MatrixXcd Greensfunction::get_dyson_result(int freq_index, bool is_negative_freq) {
      assert(freq_index < n_matsubara_for_alps2);
      if (!is_negative_freq) {
