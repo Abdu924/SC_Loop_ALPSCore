@@ -10,6 +10,7 @@
 #include "band_structure.hpp"
 #include "self_energy.hpp"
 #include "tail_manager.hpp"
+#include <tuple>
 
 using namespace std;
 

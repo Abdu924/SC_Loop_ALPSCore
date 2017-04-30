@@ -8,6 +8,7 @@
 #include <complex>
 #include <cmath>
 #include <alps/params.hpp>
+#include <tuple>
 
 using namespace std;
 
