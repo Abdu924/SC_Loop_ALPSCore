@@ -199,11 +199,11 @@ void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, 
      cplx_array_type raw_legendre_data(
       	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
      h5_archive["G1_LEGENDRE"] >> raw_legendre_data;
-     // measure c_1
      std::vector<Eigen::MatrixXcd > raw_gl_matrices;
      for (int l_index = 0; l_index < l_max; l_index++) {
 	  raw_gl_matrices.push_back(Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size));
      }
+     // measure c_1
      measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for (int l_index = 0; l_index < l_max; l_index += 2) {
 	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
@@ -226,13 +226,22 @@ void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, 
 	       raw_gl_matrices[l_index] / (std::pow(beta, 2));
      }
      // Fix c_1
-     // Cf paper by Boehnke et al. PHYSICAL REVIEW B 84, 075145 (2011)
+     // Cf paper by Boehnke et al. PRB 84, 075145 (2011)
      // Eq 10.
      for (int l_index = 0; l_index < l_max; l_index += 2) {
 	  gl_values_[l_index] = raw_gl_matrices[l_index] + (
 	       Eigen::MatrixXcd::Identity(per_site_orbital_size, per_site_orbital_size) - measured_c1) *
 	       beta * tl_values[l_index] / tl_modulus;
      }
+     // now reset measured_c1 to its target value, and compute measured_c3, with fixed gl values.
+     measured_c1 = Eigen::MatrixXcd::Identity(per_site_orbital_size, per_site_orbital_size);
+     // measure c_3
+     measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     for (int l_index = 0; l_index < l_max; l_index += 2) {
+	  double l_factor = (double)l_index;
+	  measured_c3 += 0.5 * tl_values[l_index] * raw_gl_matrices[l_index] *
+	       (l_factor + 2.0) * (l_factor + 1.0) * l_factor * (l_factor - 1.0) / (std::pow(beta, 3));
+     }     
 }
 
 void Greensfunction::init_gf_container() {
@@ -252,7 +261,7 @@ void Greensfunction::init_gf_container() {
      for (int l_index = 0; l_index < l_max; l_index++) {
 	  gl_values_[l_index] = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      }
-     //initialize self-energy
+     // Initialize self-energy
      for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  full_gf_values_[freq_index] =
 	       Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
