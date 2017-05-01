@@ -18,33 +18,14 @@ typedef boost::multi_array<complex<double> , 3> cplx_array_type;
 //transformation matrix from Legendre to Matsubara basis
 std::complex<double> t_coeff(int n, int l) {
      std::complex<double> i_c(0., 1.);
-     std::complex<double> out = (std::sqrt(static_cast<double>(2 * l + 1)) /
-				 std::sqrt(static_cast<double>(std::abs(2 * n + 1)))) *
+     std::complex<double> out = std::sqrt(static_cast<double>(2 * l + 1)) * // /
+				 //	 std::sqrt(static_cast<double>(std::abs(2 * n + 1)))) *
 	  std::exp(i_c * (n + 0.5) * M_PI) * std::pow(i_c, l) *
-	  //std::sqrt(M_PI / (2.0 * z)) * jn(n, 2.38 );
-	  //boost::math::cyl_bessel_j(l + 0.5,std::abs(n + 0.5) * M_PI);
 	  boost::math::sph_bessel(l, 0.5 * std::abs(2 * n + 1) * M_PI);
-	  //boost::math::sph_bessel(1, 2.38);
-     
-     //1.0;
      if (n < 0) {
 	  out *= std::pow(-1.0, l);
      }
      return out;
-}
-
-std::complex<double> legendre_coeff(int n, int l) {
-     // transformation matrix from Legendre to Matsubara basis
-     std::complex<double> i_c(0., 1.);
-     //std::complex<double>  testzzz = boost::math::cyl_bessel_j(l + 0.5, (n + 0.5) * M_PI);
-     //double testzzz = jn(l, static_cast<double>(0.5 * (2 * n + 1) * M_PI));
-     //return (sqrt(2 * l + 1) / sqrt(2 * n + 1)) *
-//	  exp(i_c * (n + 0.5) * M_PI) * pow(i_c, l);
-//     return (std::sqrt(2 * l + 1)) *
-     //   	  std::exp(i_c * (n + 0.5) * M_PI) * std::pow(i_c, l) *
-      	  // boost::math::cyl_bessel_j(l + 0.5, (n + 0.5) * M_PI);
-	  //jn(l, (n + 0.5) * M_PI);
-     return 0;
 }
 
 Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
@@ -83,6 +64,7 @@ void Greensfunction::basic_init(const alps::params &parms) {
 
 void Greensfunction::read_bare_gf() {
      std::ifstream infile(HybFunction::bare_gf_no_shift_dump_name.c_str());
+     //std::ifstream infile(HybFunction::matsubara_bare_gf_dump_name.c_str());     
      if(!infile.good()) {
 	  std::cerr << "Could not find file " << HybFunction::bare_gf_no_shift_dump_name << endl;
 	  throw std::runtime_error("pb reading bare GF in txt format");
@@ -131,6 +113,12 @@ Eigen::MatrixXcd Greensfunction::get_measured_c3() {
 
 Eigen::MatrixXcd Greensfunction::get_dyson_result(int freq_index, bool is_negative_freq) {
      assert(freq_index < n_matsubara_for_alps2);
+     if ((freq_index == n_matsubara_for_alps2 - 1) && (!is_negative_freq)) {
+	  std::cout << "invert " << std::endl
+		    << std::endl << full_gf_values_[freq_index] << std::endl
+		    << std::endl << bare_gf_values_[freq_index] << std::endl << std::endl;
+     }
+
      if (!is_negative_freq) {
 	  return (-full_gf_values_[freq_index].block(ref_site_index * per_site_orbital_size,
 						     ref_site_index * per_site_orbital_size,
@@ -195,6 +183,7 @@ Eigen::MatrixXcd Greensfunction::get_dyson_result(int freq_index, bool is_negati
 // }
 
 void Greensfunction::get_matsubara_from_legendre(int site_index) {
+     std::cout << "log gf computation"  << std::endl;
      for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  full_gf_values_[freq_index].block(site_index * per_site_orbital_size,
 					    site_index * per_site_orbital_size,
@@ -212,6 +201,11 @@ void Greensfunction::get_matsubara_from_legendre(int site_index) {
 						    per_site_orbital_size,
 						    per_site_orbital_size) +=
 		       gl_values_[l] * t_coeff(freq_index, l);
+		  if (freq_index == n_matsubara - 1) {
+		       std::cout << "index " << l << gl_values_[l](0,0) << " x " << t_coeff(freq_index, l)
+				 << " = " << gl_values_[l](0,0) * t_coeff(freq_index, l) << " cumsum: "
+				 << full_gf_values_[freq_index](0, 0) << std::endl << std::endl;
+		  }
 		  full_gf_neg_values_[n_matsubara - 1 - freq_index].block(site_index * per_site_orbital_size,
 						    site_index * per_site_orbital_size,
 						    per_site_orbital_size,
@@ -219,6 +213,15 @@ void Greensfunction::get_matsubara_from_legendre(int site_index) {
 		       gl_values_[l] * t_coeff(-freq_index, l);
 	  }
      }
+     std::cout << "full_gf_values_ from get_matsubara_from_legendre : " << std::endl;
+     std::cout << full_gf_values_[ n_matsubara-1] << std::endl << std::endl;
+          std::cout << "bare_gf_values_  : " << std::endl;
+     std::cout << bare_gf_values_[n_matsubara-1] << std::endl << std::endl;
+
+     std::cout << "INVERSES : " << std::endl;
+     std::cout << full_gf_values_[ n_matsubara-1].inverse() << std::endl << std::endl;
+          std::cout << "bare_gf_values_  : " << std::endl;
+	  std::cout << bare_gf_values_[n_matsubara-1].inverse() << std::endl;
 }
 
 void Greensfunction::read_single_site_full_gf_matsubara(alps::hdf5::archive &h5_archive, int site_index) {
@@ -262,22 +265,26 @@ void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, 
      for (int l_index = 0; l_index < l_max; l_index += 2) {
 	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
 	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
-		    raw_gl_matrices[l_index](row_index, col_index) = raw_legendre_data[row_index][col_index][l_index];
+		    raw_gl_matrices[l_index](row_index, col_index) =
+			 std::sqrt(2.0 * l_index + 1.0) * raw_legendre_data[row_index][col_index][l_index];
 	       }
 	  }
-	  measured_c1 += 2.0 * tl_values[l_index] * raw_gl_matrices[l_index] / beta;
+	  measured_c1 += tl_values[l_index] * raw_gl_matrices[l_index] / beta;
      }
      // measure c_2
      measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for (int l_index = 1; l_index < l_max; l_index += 2) {
 	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
 	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
-		    raw_gl_matrices[l_index](row_index, col_index) = raw_legendre_data[row_index][col_index][l_index];
+		    raw_gl_matrices[l_index](row_index, col_index) =
+			 std::sqrt(2.0 * l_index + 1.0) * raw_legendre_data[row_index][col_index][l_index];
 		    gl_values_[l_index](row_index, col_index) = raw_gl_matrices[l_index](row_index, col_index);
 	       }
 	  }
-	  measured_c2 -= 2.0 * tl_values[l_index] * (double)l_index * (l_index + 1.0) *
+	  measured_c2 -= tl_values[l_index] * (double)l_index * (l_index + 1.0) *
 	       raw_gl_matrices[l_index] / (std::pow(beta, 2));
+	  std::cout << "0, 0, measured_c2 for l = " << l_index << " : " << measured_c2(0, 0) << std::endl;
+	  std::cout << "1, 1, measured_c2 for l = " << l_index << " : " << measured_c2(1, 1) << std::endl; 	  
      }
      // Fix c_1
      // Cf paper by Boehnke et al. PRB 84, 075145 (2011)
@@ -296,15 +303,23 @@ void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, 
 	  double l_factor = (double)l_index;
 	  measured_c3 += 0.5 * tl_values[l_index] * raw_gl_matrices[l_index] *
 	       (l_factor + 2.0) * (l_factor + 1.0) * l_factor * (l_factor - 1.0) / (std::pow(beta, 3));
-     }     
+     }
+     display_fixed_legendre();
 }
 
+void Greensfunction::display_fixed_legendre() {
+     for (int l_index = 0; l_index < l_max; l_index++) {
+	  std::cout << gl_values_[l_index] << std:: endl << std::endl;
+     }
+}
+     
 void Greensfunction::init_gf_container() {
      measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      tl_values.resize(l_max);
-     for (int l_index = 0; l_index < l_max; l_index++) {
+     tl_modulus = 0.0;
+     for (int l_index = 0; l_index < l_max; l_index += 2) {
 	  tl_values[l_index] = - 2.0 * std::sqrt(2.0 * l_index + 1.0);
 	  tl_modulus += std::abs(std::pow(tl_values[l_index], 2));
      }

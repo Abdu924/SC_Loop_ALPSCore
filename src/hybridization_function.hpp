@@ -44,6 +44,7 @@ public:
      virtual ~HybFunction() {}
 
      static const string bare_gf_no_shift_dump_name;
+     static const string matsubara_bare_gf_dump_name;
      
 private:
      bool compute_bubble;
@@ -88,7 +89,6 @@ private:
      static const string imaginary_time_dump_name_for_matrix;     
      static const string imaginary_time_hdf5_root;
      static const string bubble_hdf5_root;
-     static const string matsubara_bare_gf_dump_name;
      static const string shift_dump_name;
 };
   

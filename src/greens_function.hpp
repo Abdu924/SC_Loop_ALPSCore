@@ -36,7 +36,8 @@ protected:
      void init_gf_container();
      void generate_data(alps::hdf5::archive &h5_archive);
      void get_matsubara_from_legendre(int site_index=0);
-     
+     void display_fixed_legendre();
+
      Eigen::VectorXcd matsubara_frequencies_;
      size_t n_blocks;
      size_t n_sites;

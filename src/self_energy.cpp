@@ -109,6 +109,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      log_sigma_tails(ref_site_index);
      compute_qmc_tail(ref_site_index);
      // No need to append tails when data comes from Legendre
+     // append_qmc_tail(ref_site_index, parms);
      symmetrize_sites(ref_site_index);
      // precompute some matsubara frequency sums for later use
      // in the Fourier transforms.
@@ -334,6 +335,8 @@ void Selfenergy::run_dyson_equation(int ref_site_index,
 					per_site_orbital_size) =
 	       greens_function->get_dyson_result(freq_index, true);
      }
+     std::cout << "dyson last step " << std::endl
+	       << std::endl << values_[n_matsubara_freqs - 1] << std::endl;
 }
 
 // Initialize structures common to qmc- and dmft-style objects
