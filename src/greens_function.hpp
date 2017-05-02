@@ -23,6 +23,7 @@ public:
      Eigen::MatrixXcd get_dyson_result(int freq_index, bool is_negative);
      Eigen::MatrixXcd get_measured_c2();
      Eigen::MatrixXcd get_measured_c3();
+     //void generate_t_coeffs(alps::hdf5::archive &h5_archive);
      
      virtual ~Greensfunction() {}
      
@@ -37,7 +38,9 @@ protected:
      void generate_data(alps::hdf5::archive &h5_archive);
      void get_matsubara_from_legendre(int site_index=0);
      void display_fixed_legendre();
-
+     void read_t_coeffs(alps::hdf5::archive &h5_archive);
+     std::complex<double> get_t_coeff(int n, int l);
+     
      Eigen::VectorXcd matsubara_frequencies_;
      size_t n_blocks;
      size_t n_sites;
@@ -51,6 +54,7 @@ protected:
      int ref_site_index;
      int sampling_type;
 
+     Eigen::MatrixXcd full_t_set;
      Eigen::MatrixXcd measured_c1, measured_c2, measured_c3;
      std::vector<Eigen::MatrixXcd> gl_values_;
      std::vector<Eigen::MatrixXcd> bare_gf_values_;

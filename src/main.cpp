@@ -404,6 +404,10 @@ int main(int argc, char** argv) {
 			 }
 		    }
 		    if (parms["cthyb.MEASURE_legendre"]) {
+			 //int sampling_type = 1;
+			 //boost::shared_ptr<Greensfunction>
+			 //     legendre_greens_function(new Greensfunction(parms, world_rank, sampling_type, w_h5_archive));
+			 //legendre_greens_function->generate_t_coeff(w_h5_archive);
 			 legendre_qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
 			 std::string new_h5_group_name("/current_legendre_sigma");
 			 legendre_qmc_self_energy->hdf5_dump(w_h5_archive, new_h5_group_name);
@@ -412,17 +416,6 @@ int main(int argc, char** argv) {
 								       ref_site_index, tail_order);
 			 }
 		    }
-		    // // Update seed
-		    // if (!from_alps3) {
-		    // 	    int cur_seed = boost::lexical_cast<int>(parms["SEED"]) + 1;
-		    // 	    if (cur_seed > 1000)
-		    // 		 cur_seed = 100;
-		    // 	    std::stringstream seed_path;
-		    // 	    seed_path << "/parameters/SEED";
-		    // 	    w_h5_archive << alps::make_pvp(seed_path.str(), cur_seed);
-		    // 	    cout << "SEED= " << cur_seed << endl;
-		    // 	    w_h5_archive.close();
-		    // }
 	       }
 	       MPI_Barrier(MPI_COMM_WORLD);
 	  } else if (computation_type == 2) {

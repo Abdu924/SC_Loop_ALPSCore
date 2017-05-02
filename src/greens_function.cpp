@@ -1,4 +1,4 @@
-#include <boost/math/special_functions/bessel.hpp>
+//#include <boost/math/special_functions/bessel.hpp>
 #include <iostream>
 #include <cmath>
 #include <fstream>
@@ -16,24 +16,33 @@ using namespace std;
 typedef boost::multi_array<complex<double> , 3> cplx_array_type;
 
 //transformation matrix from Legendre to Matsubara basis
-std::complex<double> t_coeff(int n, int l) {
-     std::complex<double> i_c(0., 1.);
-     std::complex<double> out = std::sqrt(static_cast<double>(2 * l + 1)) * // /
-				 //	 std::sqrt(static_cast<double>(std::abs(2 * n + 1)))) *
-	  std::exp(i_c * (n + 0.5) * M_PI) * std::pow(i_c, l) *
-	  boost::math::sph_bessel(l, 0.5 * std::abs(2 * n + 1) * M_PI);
-     if (n < 0) {
-	  out *= std::pow(-1.0, l);
-     }
-     return out;
-}
+// std::complex<double> t_coeff(int n, int l) {
+//      std::complex<double> i_c(0., 1.);
+//      std::complex<double> out = std::sqrt(static_cast<double>(2 * l + 1)) * // /
+// 				 //	 std::sqrt(static_cast<double>(std::abs(2 * n + 1)))) *
+// 	  std::exp(i_c * (n + 0.5) * M_PI) * std::pow(i_c, l) *
+// 	  boost::math::sph_bessel(l, 0.5 * std::abs(2 * n + 1) * M_PI);
+//      if (n < 0) {
+// 	  out *= std::pow(-1.0, l);
+//      }
+//      return out;
+// }
 
 Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
 			       int sampling_type, alps::hdf5::archive &h5_archive)
      :sampling_type(sampling_type), world_rank_(world_rank) {   
      basic_init(parms);
      read_bare_gf();
+     read_t_coeffs(h5_archive);
      generate_data(h5_archive);
+}
+
+std::complex<double> Greensfunction::get_t_coeff(int n, int l) {
+     std::complex<double> out = full_t_set(std::abs(n), l);
+     if (n < 0) {
+	  out *= std::pow(-1.0, l);
+     }
+     return out;
 }
 
 void Greensfunction::generate_data(alps::hdf5::archive &h5_archive) {
@@ -45,6 +54,28 @@ void Greensfunction::generate_data(alps::hdf5::archive &h5_archive) {
 	  get_matsubara_from_legendre();
      }
 }
+
+void Greensfunction::read_t_coeffs(alps::hdf5::archive &h5_archive) {
+     //full_t_set = (boost::extents[1000][200]);
+     boost::multi_array<std::complex<double> , 2> init_full_t_set(boost::extents[1000][200]);
+     h5_archive["t_coeffs"] >>  init_full_t_set;
+     full_t_set = Eigen::MatrixXcd::Zero(1000, 200);
+     for (int n_index = 0; n_index < 1000; n_index++) {
+	  for (int l_index = 0; l_index < 200; l_index++) {
+	       full_t_set(n_index, l_index) = init_full_t_set[n_index][l_index];
+	  }
+     }
+}
+
+// void Greensfunction::generate_t_coeffs(alps::hdf5::archive &h5_archive) {
+//      boost::multi_array<complex<double> , 2> full_t_set(boost::extents[1000][200]);
+//      for (int n_index = 0; n_index < 1000; n_index++) {
+// 	  for (int l_index = 0;l_index < 200; l_index++) {
+// 	       full_t_set[n_index][l_index] = t_coeff(n_index, l_index);
+// 	  }
+//      }
+//      h5_archive["/t_coeffs"] = full_t_set;
+// }
 
 void Greensfunction::basic_init(const alps::params &parms) {
      ref_site_index = 0;
@@ -193,12 +224,12 @@ void Greensfunction::get_matsubara_from_legendre(int site_index) {
 						    site_index * per_site_orbital_size,
 						    per_site_orbital_size,
 						    per_site_orbital_size) +=
-		       gl_values_[l] * t_coeff(freq_index, l);
+		       gl_values_[l] * get_t_coeff(freq_index, l);
 		  full_gf_neg_values_[n_matsubara - 1 - freq_index].block(site_index * per_site_orbital_size,
 						    site_index * per_site_orbital_size,
 						    per_site_orbital_size,
 						    per_site_orbital_size) +=
-		       gl_values_[l] * t_coeff(-freq_index, l);
+		       gl_values_[l] * get_t_coeff(-freq_index, l);
 	  }
      }
 }
