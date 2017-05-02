@@ -359,16 +359,13 @@ int main(int argc, char** argv) {
 		    if (parms["cthyb.MEASURE_freq"]) {
 			 // S_omega or S_l_omega
 			 int input_type = 0;
-			 std::cout << "matsu sigma" << std::endl;
 			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
 							      h5_archive, input_type, verbose));
 		    }
 		    if (parms["cthyb.MEASURE_legendre"]) {
-			 std::cout << "legendre gf" << std::endl;
 			 int sampling_type = 1;
 			 boost::shared_ptr<Greensfunction>
 			      legendre_greens_function(new Greensfunction(parms, world_rank, sampling_type, h5_archive));
-			 std::cout << "legendre sigma" << std::endl;
 			 legendre_qmc_self_energy.reset(
 			      new Selfenergy(parms, world_rank, chempot, ref_site_index,
 					     h5_archive, legendre_greens_function));

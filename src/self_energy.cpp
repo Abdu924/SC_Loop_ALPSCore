@@ -335,8 +335,6 @@ void Selfenergy::run_dyson_equation(int ref_site_index,
 					per_site_orbital_size) =
 	       greens_function->get_dyson_result(freq_index, true);
      }
-     std::cout << "dyson last step " << std::endl
-	       << std::endl << values_[n_matsubara_freqs - 1] << std::endl;
 }
 
 // Initialize structures common to qmc- and dmft-style objects
@@ -683,7 +681,7 @@ void Selfenergy::feed_tail_params(int ref_site_index,
 }
 
 void Selfenergy::fit_tails(int ref_site_index) {
-     cout << "Tail of SELF ENERGY is fitted numerically"
+     cout << "Sigma_1_ is fitted numerically"
 	  << endl << endl;
      size_t N_max = matsubara_tail_estimate_region;
      for (size_t freq_index = N_max - tail_fit_length;
@@ -726,11 +724,11 @@ void Selfenergy::compute_tail_coeffs( boost::shared_ptr<Greensfunction> greens_f
 		    per_site_orbital_size,
 		    per_site_orbital_size) = greens_function->get_measured_c2();
      for (int orbital = 0; orbital < per_site_orbital_size; orbital++) {
-	  Sigma_0_.block(ref_site_index * per_site_orbital_size,
-			ref_site_index * per_site_orbital_size,
-			per_site_orbital_size,
-			per_site_orbital_size)(orbital, orbital) +=
-	       (*chempot)[orbital];
+     	  Sigma_0_.block(ref_site_index * per_site_orbital_size,
+     			ref_site_index * per_site_orbital_size,
+     			per_site_orbital_size,
+     			per_site_orbital_size)(orbital, orbital) +=
+     	       (*chempot)[orbital];
      }
      Sigma_1_.block(ref_site_index * per_site_orbital_size,
 		    ref_site_index * per_site_orbital_size,

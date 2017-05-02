@@ -296,8 +296,10 @@ void Greensfunction::init_gf_container() {
      measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      tl_values.resize(l_max);
      tl_modulus = 0.0;
-     for (int l_index = 0; l_index < l_max; l_index += 2) {
+     for (int l_index = 0; l_index < l_max; l_index++) {
 	  tl_values[l_index] = - 2.0 * std::sqrt(2.0 * l_index + 1.0);
+     }
+     for (int l_index = 0; l_index < l_max; l_index += 2) {
 	  tl_modulus += std::abs(std::pow(tl_values[l_index], 2));
      }
      gl_values_.resize(l_max);
