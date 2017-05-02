@@ -14,6 +14,7 @@
 
 using namespace std;
 typedef boost::multi_array<complex<double> , 3> cplx_array_type;
+typedef boost::multi_array<double , 4> real_array_type;
 
 //transformation matrix from Legendre to Matsubara basis
 // std::complex<double> t_coeff(int n, int l) {
@@ -30,7 +31,7 @@ typedef boost::multi_array<complex<double> , 3> cplx_array_type;
 
 Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
 			       int sampling_type, alps::hdf5::archive &h5_archive)
-     :sampling_type(sampling_type), world_rank_(world_rank) {   
+     :sampling_type(sampling_type), world_rank_(world_rank) {
      basic_init(parms);
      read_bare_gf();
      read_t_coeffs(h5_archive);
@@ -46,13 +47,8 @@ std::complex<double> Greensfunction::get_t_coeff(int n, int l) {
 }
 
 void Greensfunction::generate_data(alps::hdf5::archive &h5_archive) {
-     if (sampling_type == 0) {
-	  // Matsubara input from alps3
-	  read_single_site_full_gf_matsubara(h5_archive);
-     } else if (sampling_type == 1) {
-	  read_single_site_legendre(h5_archive);
-	  get_matsubara_from_legendre();
-     }
+     read_single_site_legendre(h5_archive);
+     get_matsubara_from_legendre();
 }
 
 void Greensfunction::read_t_coeffs(alps::hdf5::archive &h5_archive) {
@@ -264,12 +260,28 @@ void Greensfunction::read_single_site_full_gf_matsubara(alps::hdf5::archive &h5_
 
 void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, int site_index) {
      cplx_array_type raw_legendre_data(
-      	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
-     h5_archive["G1_LEGENDRE"] >> raw_legendre_data;
+	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
+     if (sampling_type == 1) {
+	  h5_archive["G1_LEGENDRE"] >> raw_legendre_data;
+     } else {
+	  real_array_type real_raw_legendre_data(
+	       boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre][2]);
+	  h5_archive["G1_LEGENDRE"] >> real_raw_legendre_data;
+	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+		    for (int l_index = 0; l_index < l_max; l_index++) {
+			 raw_legendre_data[row_index][col_index][l_index] =
+			      std::complex<double>(real_raw_legendre_data[row_index][col_index][l_index][0],
+						   real_raw_legendre_data[row_index][col_index][l_index][1]);
+		    }
+	       }
+	  }
+     }
      std::vector<Eigen::MatrixXcd > raw_gl_matrices;
      for (int l_index = 0; l_index < l_max; l_index++) {
 	  raw_gl_matrices.push_back(Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size));
      }
+	  
      // measure c_1
      measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for (int l_index = 0; l_index < l_max; l_index += 2) {

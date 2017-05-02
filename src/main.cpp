@@ -350,31 +350,25 @@ int main(int argc, char** argv) {
 							old_h5_group_name, verbose));
 		    boost::shared_ptr<Selfenergy> qmc_self_energy;
 		    boost::shared_ptr<Selfenergy> legendre_qmc_self_energy;
-		    if (from_alps3) {
-			 int sampling_type = 0;
-			 boost::shared_ptr<Greensfunction>
-			      greens_function(new Greensfunction(parms, world_rank, sampling_type, h5_archive));
+		    if ((parms["cthyb.MEASURE_freq"]) && (!from_alps3)) {
+			 // S_omega or S_l_omega
+			 int input_type = 0;
 			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
-							      h5_archive, greens_function));
-		    } else {
-			 if (parms["cthyb.MEASURE_freq"]) {
-			      // S_omega or S_l_omega
-			      int input_type = 0;
-			      qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
-								   h5_archive, input_type, verbose));
-			 }
-			 if (parms["cthyb.MEASURE_legendre"]) {
-			      int sampling_type = 1;
-			      boost::shared_ptr<Greensfunction>
-				   legendre_greens_function(new Greensfunction(parms, world_rank, sampling_type, h5_archive));
-			      legendre_qmc_self_energy.reset(
-				   new Selfenergy(parms, world_rank, chempot, ref_site_index,
-						  h5_archive, legendre_greens_function));
-			 }
+							      h5_archive, input_type, verbose));
+		    }
+		    if (parms["cthyb.MEASURE_legendre"]) {
+			 int sampling_type = from_alps3 ? 0 : 1;
+			 boost::shared_ptr<Greensfunction>
+			      legendre_greens_function(new Greensfunction(parms, world_rank, sampling_type, h5_archive));
+			 std::cout << "legendre" << std::endl;
+			 legendre_qmc_self_energy.reset(
+			      new Selfenergy(parms, world_rank, chempot, ref_site_index,
+					     h5_archive, legendre_greens_function));
 		    }
 		    MPI_Barrier(MPI_COMM_WORLD);
 		    h5_archive.close();
 		    // save old sigma
+		    std::cout << "legendre" << std::endl;
 		    alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
 		    std::string copy_h5_group_name("/old_sigma");
 		    if (!(old_self_energy->get_is_nil_sigma())) {
@@ -393,7 +387,7 @@ int main(int argc, char** argv) {
 		    }
 		    cout << "Using alpha = " << alpha << " for mixing " << endl;
 		    // apply mix with parameter alpha
-		    if (parms["cthyb.MEASURE_freq"]) {
+		    if ((parms["cthyb.MEASURE_freq"]) && (!from_alps3)) {
 			 qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
 			 // Dump the new current sigma
 			 std::string new_h5_group_name("/current_sigma");
