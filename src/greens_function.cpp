@@ -266,7 +266,7 @@ void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, 
 	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
 	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
 		    raw_gl_matrices[l_index](row_index, col_index) =
-			 std::sqrt(2.0 * l_index + 1.0) * raw_legendre_data[row_index][col_index][l_index];
+			 raw_legendre_data[row_index][col_index][l_index];
 	       }
 	  }
 	  measured_c1 += tl_values[l_index] * raw_gl_matrices[l_index] / beta;
@@ -277,7 +277,7 @@ void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, 
 	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
 	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
 		    raw_gl_matrices[l_index](row_index, col_index) =
-			 std::sqrt(2.0 * l_index + 1.0) * raw_legendre_data[row_index][col_index][l_index];
+			 raw_legendre_data[row_index][col_index][l_index];
 		    gl_values_[l_index](row_index, col_index) = raw_gl_matrices[l_index](row_index, col_index);
 	       }
 	  }
