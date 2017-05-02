@@ -22,6 +22,7 @@ std::complex<double> t_coeff(int n, int l) {
 				 //	 std::sqrt(static_cast<double>(std::abs(2 * n + 1)))) *
 	  std::exp(i_c * (n + 0.5) * M_PI) * std::pow(i_c, l) *
 	  boost::math::sph_bessel(l, 0.5 * std::abs(2 * n + 1) * M_PI);
+     //1.0;
      if (n < 0) {
 	  out *= std::pow(-1.0, l);
      }

@@ -45,6 +45,8 @@ public:
 
      static const string bare_gf_no_shift_dump_name;
      static const string matsubara_bare_gf_dump_name;
+     static const string matsubara_self_energy_name;
+     static const string legendre_self_energy_name;
      
 private:
      bool compute_bubble;

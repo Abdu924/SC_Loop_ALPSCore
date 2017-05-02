@@ -889,3 +889,5 @@ const string HybFunction::imaginary_time_dump_name_for_matrix = "ec_delta.tau";
 const string HybFunction::imaginary_time_hdf5_root = "c_delta";
 const string HybFunction::bubble_hdf5_root = "c_bubble";
 const string HybFunction::shift_dump_name = "c_shift.tmp";
+const string HybFunction::matsubara_self_energy_name = "current_sigma";
+const string HybFunction::legendre_self_energy_name = "current_legendre_sigma";
