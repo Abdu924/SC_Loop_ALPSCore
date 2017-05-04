@@ -41,6 +41,7 @@ public:
      void dump_bubble_hdf5();
      void compute_local_bubble();
      void compute_lattice_bubble();
+     void dump_G0_hdf5(alps::hdf5::archive &h5_archive);
      virtual ~HybFunction() {}
 
      static const string bare_gf_no_shift_dump_name;
@@ -80,7 +81,6 @@ private:
      
      //void compute_delta_tau();
      void elementary_compute_delta_tau();
-     void dump_G0_hdf5(alps::hdf5::archive &h5_archive);
      void compute_superior_orders(bool verbose=false);
      std::vector<Eigen::MatrixXcd> get_greens_function(
 	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);

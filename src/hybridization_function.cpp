@@ -618,7 +618,7 @@ void HybFunction::dump_delta_for_matrix() {
 void HybFunction::dump_G0_hdf5(alps::hdf5::archive &h5_archive) {
      if (world_rank_ == 0) {
 	  size_t N_max = sigma_->get_n_matsubara_freqs();
-	  cplx_array_type temp_g0(boost::extents[N_max][tot_orbital_size][tot_orbital_size]);
+	  cplx_array_type temp_g0(boost::extents[tot_orbital_size][tot_orbital_size][N_max]);
 	  for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
 	       for(size_t site_index = 0; site_index < n_sites; site_index++) {
 		    Eigen::MatrixXcd temp = no_shift_bare_greens_function[freq_index].block(
@@ -628,8 +628,9 @@ void HybFunction::dump_G0_hdf5(alps::hdf5::archive &h5_archive) {
 			 per_site_orbital_size);
 		    for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
 			 for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
-			      temp_g0[freq_index][orb1 + site_index * per_site_orbital_size]
-				   [orb2 + site_index * per_site_orbital_size] = temp(orb1, orb2);
+			      temp_g0[orb1 + site_index * per_site_orbital_size]
+				   [orb2 + site_index * per_site_orbital_size][freq_index] =
+				   temp(orb1, orb2);
 			 }
 		    }
 	       }

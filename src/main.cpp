@@ -255,11 +255,11 @@ int main(int argc, const char* argv[]) {
 	  const string input_file(tmp_file_name);
 	  // Note: the input (parameter) file also contains the
 	  // result of previous runs for sigma.
-	  alps::hdf5::archive h5_archive(input_file, alps::hdf5::archive::READ);
 	  boost::shared_ptr<Chemicalpotential> chempot(
 	       new Chemicalpotential(parms, from_alps3, world_rank));
 	  // Compute hybridization function
 	  if ((computation_type == 0) || (computation_type == 4)) {
+	       alps::hdf5::archive h5_archive(input_file, alps::hdf5::archive::READ);
 	       bool compute_bubble(computation_type == 4 ? true : false);
 	       boost::shared_ptr<Bandstructure> bare_band(
 		    new Bandstructure(parms, world_rank, true));
@@ -320,6 +320,13 @@ int main(int argc, const char* argv[]) {
 			 new HybFunction(parms, bare_band, self_energy,
 					 new_chemical_potential, world_rank,
 					 compute_bubble, verbose));
+		    if (world_rank == 0)
+		    {
+			 alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
+			 hybridization_function->dump_G0_hdf5(w_h5_archive);
+			 w_h5_archive.close();
+		    }
+		    MPI_Barrier(MPI_COMM_WORLD);
 		    if (compute_bubble) {
 			 hybridization_function->compute_local_bubble();
 			 hybridization_function->compute_lattice_bubble();
@@ -331,6 +338,7 @@ int main(int argc, const char* argv[]) {
 	       }		
 	  } else if (computation_type == 1) {
 	       // perform "mix" action
+	       alps::hdf5::archive h5_archive(input_file, alps::hdf5::archive::READ);
 	       bool verbose = false;
 	       std::cout << "do mix" << std::endl;
 	       if (world_rank == 0) {		    
@@ -395,7 +403,7 @@ int main(int argc, const char* argv[]) {
 		    if (parms["cthyb.MEASURE_legendre"]) {
 			 //int sampling_type = 1;
 			 //boost::shared_ptr<Greensfunction>
-			 //     legendre_greens_function(new Greensfunction(parms, world_rank, sampling_type, w_h5_archive));
+			 //legendre_greens_function(new Greensfunction(parms, world_rank, sampling_type, w_h5_archive));
 			 //legendre_greens_function->generate_t_coeff(w_h5_archive);
 			 legendre_qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
 			 std::string new_h5_group_name("/current_legendre_sigma");
@@ -405,6 +413,7 @@ int main(int argc, const char* argv[]) {
 								       ref_site_index, tail_order);
 			 }
 		    }
+		    w_h5_archive.close();
 	       }
 	       MPI_Barrier(MPI_COMM_WORLD);
 	  } else if (computation_type == 2) {
