@@ -39,6 +39,7 @@ protected:
      void get_matsubara_from_legendre(int site_index=0);
      void display_fixed_legendre();
      void read_t_coeffs(alps::hdf5::archive &h5_archive);
+	void symmetrize_matrix_elements();
      std::complex<double> get_t_coeff(int n, int l);
      
      Eigen::VectorXcd matsubara_frequencies_;
@@ -53,7 +54,8 @@ protected:
      int l_max;
      int ref_site_index;
      int sampling_type;
-
+     
+     std::vector<Eigen::MatrixXcd > raw_gl_matrices;
      Eigen::MatrixXcd full_t_set;
      Eigen::MatrixXcd measured_c1, measured_c2, measured_c3;
      std::vector<Eigen::MatrixXcd> gl_values_;

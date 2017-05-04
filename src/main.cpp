@@ -153,18 +153,6 @@ void define_parameters(alps::params &parameters) {
 	  ;
 }
 
-tuple<bool, double, double> get_old_mu(string &backup_file_name) {
-     double max_mu_increment = 1.0;
-     double min_mu_increment = 0.001;
-     bool found_mu = false;
-     double old_mu(1.1);
-     double old_derivative(1.0);
-     string last_match;
-     old_derivative *= 4.0;
-     old_derivative = min(max_mu_increment, max(min_mu_increment, abs(old_derivative)));
-     return tuple<bool, double, double>(found_mu, old_mu, old_derivative);
-}
-
 tuple<string, int, bool> handle_command_line(po::variables_map vm, po::options_description desc) {
      int computation_type;
      bool from_alps3(false);
@@ -224,7 +212,7 @@ double extract_chemical_potential(boost::shared_ptr<Bandstructure> bare_band,
      return ref_candidate_mu;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, const char* argv[]) {
      int world_size, world_rank;
      MPI_Init(NULL, NULL);
      MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -243,7 +231,8 @@ int main(int argc, char** argv) {
 	  int computation_type;
 	  bool from_alps3(false);
 	  string tmp_file_name;
-	  alps::params parms(argc, (const char**)argv, "/parameters");
+	  //alps::params parms(argc, (const char**)argv, "/parameters");
+	  alps::params parms(argc, argv);
 	  define_parameters(parms);
 	  // Declare the supported options.
 	  po::options_description desc("Allowed options");
