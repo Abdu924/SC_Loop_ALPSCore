@@ -55,6 +55,7 @@ private:
      vector<Eigen::MatrixXcd> hybridization_function;
      vector<Eigen::MatrixXcd> bare_greens_function;
      vector<Eigen::MatrixXcd> no_shift_bare_greens_function;
+     vector<Eigen::MatrixXcd> pure_no_shift_bare_greens_function;
      vector<Eigen::MatrixXcd> world_local_gf;
      vector<vector<Eigen::MatrixXcd> > world_local_bubble;
      // dims for lattice bubble:  boson, q_index, nu_index,
@@ -79,6 +80,7 @@ private:
      
      //void compute_delta_tau();
      void elementary_compute_delta_tau();
+     void dump_G0_hdf5(alps::hdf5::archive &h5_archive);
      void compute_superior_orders(bool verbose=false);
      std::vector<Eigen::MatrixXcd> get_greens_function(
 	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);

@@ -1,7 +1,9 @@
 #include "hybridization_function.hpp"
 #include <boost/timer/timer.hpp>
+#include <alps/hdf5/multi_array.hpp>
 
 using namespace std;
+typedef boost::multi_array<complex<double> , 3> cplx_array_type;
 
 HybFunction::HybFunction(const alps::params &parms,
 			 boost::shared_ptr<Bandstructure> const &lattice_bs,
@@ -159,12 +161,17 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
      hybridization_function.clear();
      bare_greens_function.clear();
      no_shift_bare_greens_function.clear();
-     
+     pure_no_shift_bare_greens_function.clear();
      Eigen::MatrixXcd local_greens_function =
 	  Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
+     Eigen::MatrixXcd pure_local_bare_gf =
+	  Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      Eigen::MatrixXcd world_local_greens_function =
-	  Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);     
+	  Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
+          Eigen::MatrixXcd  world_pure_local_bare_gf =
+	       Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
+     Eigen::MatrixXcd pure_inverse_bare_gf(tot_orbital_size, tot_orbital_size);
      if (compute_bubble) {
 	  world_local_gf.clear();
 	  for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
@@ -179,6 +186,8 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
      // It is probably very sub optimal to have a MPI_Allreduce inside
      // a frequency loop....
      for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+	  pure_local_bare_gf = Eigen::MatrixXcd::Zero(tot_orbital_size,
+						      tot_orbital_size);	  
 	  local_greens_function = Eigen::MatrixXcd::Zero(tot_orbital_size,
 							 tot_orbital_size);
 	  Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
@@ -192,14 +201,21 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 		    }
 		    continue;
 	       } else {
+		    pure_inverse_bare_gf = -lattice_bs_->dispersion_[k_index];
 		    inverse_gf = -lattice_bs_->dispersion_[k_index] - self_E;
+		    pure_inverse_bare_gf.diagonal() += mu_plus_iomega;
 		    inverse_gf.diagonal() += mu_plus_iomega;
+		    pure_local_bare_gf += pure_inverse_bare_gf.inverse() * l_weight;
 		    local_greens_function += inverse_gf.inverse() * l_weight;
 	       }
 	  }
 	  MPI_Allreduce(local_greens_function.data(),
 			world_local_greens_function.data(),
 			local_greens_function.size(),
+			MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+	  MPI_Allreduce(pure_local_bare_gf.data(),
+			world_pure_local_bare_gf.data(),
+			pure_local_bare_gf.size(),
 			MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 	  // local_greens_function is inversed, but only after it is projected
 	  // out on each site. xm1 is projected on site as well
@@ -235,6 +251,7 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 	  // No need to site-project - sigma is site diagonal
 	  inverse_gf -= sigma_->values_[freq_index];
 	  no_shift_bare_greens_function.push_back(-inverse_gf.inverse());
+	  pure_no_shift_bare_greens_function.push_back(world_pure_local_bare_gf);
 	  inverse_gf.diagonal() += mu_tilde.diagonal();
 	  // TODO This follows the Fortran code, which uses a
 	  // "shift" quantity, saved in a specified file shift.tmp,
@@ -596,6 +613,29 @@ void HybFunction::dump_delta_for_matrix() {
 		// dump bare GF in Matsubara frequencies
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
+}
+
+void HybFunction::dump_G0_hdf5(alps::hdf5::archive &h5_archive) {
+     if (world_rank_ == 0) {
+	  size_t N_max = sigma_->get_n_matsubara_freqs();
+	  cplx_array_type temp_g0(boost::extents[N_max][tot_orbital_size][tot_orbital_size]);
+	  for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+	       for(size_t site_index = 0; site_index < n_sites; site_index++) {
+		    Eigen::MatrixXcd temp = no_shift_bare_greens_function[freq_index].block(
+			 site_index * per_site_orbital_size,
+			 site_index * per_site_orbital_size,
+			 per_site_orbital_size,
+			 per_site_orbital_size);
+		    for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+			 for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+			      temp_g0[freq_index][orb1 + site_index * per_site_orbital_size]
+				   [orb2 + site_index * per_site_orbital_size] = temp(orb1, orb2);
+			 }
+		    }
+	       }
+	  }
+	  h5_archive["/G0/data"] = temp_g0;
+     }
 }
 
 void HybFunction::dump_delta_hdf5() {

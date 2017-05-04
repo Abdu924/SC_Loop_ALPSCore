@@ -126,6 +126,8 @@ void Greensfunction::read_bare_gf() {
 							   per_site_orbital_size).transpose().conjugate();
 	       }
 	  }
+	  std::cout << "bare gf" << std::endl;
+	  std::cout << bare_gf_values_[50] << std::endl;
      }
 }
 
@@ -296,29 +298,25 @@ void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, 
      }
      symmetrize_matrix_elements();
      // measure c_1
+     for (int l_index = 0; l_index < l_max; l_index++) {
+	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+		    gl_values_[l_index](row_index, col_index) = raw_gl_matrices[l_index](row_index, col_index);
+	       }
+	  }
+     }
+
      measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for (int l_index = 0; l_index < l_max; l_index += 2) {
 	  // this is unnecessary, since these will be fixed later, but better for
 	  // bug avoiding...
-	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
-	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
-		    gl_values_[l_index](row_index, col_index) = raw_gl_matrices[l_index](row_index, col_index);
-	       }
-	  }
-	  measured_c1 += tl_values[l_index] * raw_gl_matrices[l_index] / beta;
+	  measured_c1 += tl_values[l_index] * gl_values_[l_index] / beta;
      }
      // measure c_2
      measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for (int l_index = 1; l_index < l_max; l_index += 2) {
-	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
-	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
-		    raw_gl_matrices[l_index](row_index, col_index) =
-			 raw_legendre_data[row_index][col_index][l_index];
-		    gl_values_[l_index](row_index, col_index) = raw_gl_matrices[l_index](row_index, col_index);
-	       }
-	  }
 	  measured_c2 -= tl_values[l_index] * (double)l_index * (l_index + 1.0) *
-	       raw_gl_matrices[l_index] / (std::pow(beta, 2));
+	       gl_values_[l_index] / (std::pow(beta, 2));
      }
      // Fix c_1
      // Cf paper by Boehnke et al. PRB 84, 075145 (2011)
@@ -335,7 +333,7 @@ void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, 
      measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for (int l_index = 0; l_index < l_max; l_index += 2) {
 	  double l_factor = (double)l_index;
-	  measured_c3 += 0.5 * tl_values[l_index] * raw_gl_matrices[l_index] *
+	  measured_c3 += 0.5 * tl_values[l_index] * gl_values_[l_index] *
 	       (l_factor + 2.0) * (l_factor + 1.0) * l_factor * (l_factor - 1.0) / (std::pow(beta, 3));
      }
      //display_fixed_legendre();
@@ -347,7 +345,7 @@ void Greensfunction::symmetrize_matrix_elements() {
 	for (int l_index = 0; l_index < l_max; l_index++) {
 		temp_matrix = raw_gl_matrices[l_index];
 		temp_matrix.adjointInPlace();
-		gl_values_[l_index] = 0.5 * (raw_gl_matrices[l_index] + temp_matrix);
+		raw_gl_matrices[l_index] = 0.5 * (raw_gl_matrices[l_index] + temp_matrix);
 	}
 }
 
