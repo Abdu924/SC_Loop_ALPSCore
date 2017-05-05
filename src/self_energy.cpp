@@ -49,7 +49,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      :world_rank_(world_rank), chempot_(chempot), input_type(input_type),
       is_alps3(false) {
      basic_init(parms, verbose);
-     is_analytic_tail = static_cast<bool>(parms["model.analytic_sigma_tail"]);
+     is_analytic_tail = static_cast<bool>(parms["mixing.analytic_sigma_tail"]);
      std::string symmetry_file;
      sanity_check(parms);
      if (parms.exists("SITE_SYMMETRY")) {
@@ -87,7 +87,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      :world_rank_(world_rank), chempot_(chempot), input_type(1), is_alps3(true) {
      basic_init(parms);
      // defaults to true
-     is_analytic_tail = static_cast<bool>(parms["model.analytic_sigma_tail"]);
+     is_analytic_tail = static_cast<bool>(parms["mixing.analytic_sigma_tail"]);
      std::string symmetry_file;
      sanity_check(parms);
      if (parms.exists("SITE_SYMMETRY")) {

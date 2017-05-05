@@ -103,14 +103,14 @@ void define_parameters(alps::params &parameters) {
 			"measure density-density correlation functions in frequency domain")
 	  .define<bool>("cthyb.MEASURE_sector_statistics",false, "measure sector statistics")
 	  .define<bool>("cthyb.MEASURE_time",false, "measure in the time domain")
-	  .define<bool>("model.analytic_sigma_tail", true,
+	  .define<bool>("mixing.analytic_sigma_tail", true,
 			"decide whether to calculate of fit the self energy tail")
 	  .define<double>("MU", "chemical potential / orbital energy values")
 	  .define<std::string>("MU_VECTOR", "file name for file with chemical potential / orbital energy values")
 	  .define<bool>("MU_IN_HDF5", false,"true if the file MU_VECTOR points to a hdf5 file")
 	  .define<int >("cthyb.N_HISTOGRAM_ORDERS",200, "orders for the histograms of probability per order")
 	  .define<int >("cthyb.N_LEGENDRE",0,"number of legendre coefficients")
-	  .define<int >("model.L_MAX", 0, "Nb of used Legendre coefficients in DMFT")
+	  .define<int >("mixing.L_MAX", 0, "Nb of used Legendre coefficients in DMFT")
 	  .define<bool>("model.DENSITY_DENSITY_TAIL", true,
 			"Use density density expressions for tail of self-energy.")
 	  .define<int >("N_MATSUBARA", 955, "number of matsubara frequencies")
