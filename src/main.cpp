@@ -114,8 +114,7 @@ void define_parameters(alps::params &parameters) {
 		.define<int >("cthyb.N_HISTOGRAM_ORDERS",200, "orders for the histograms of probability per order")
 		.define<int >("cthyb.N_LEGENDRE",0,"number of legendre coefficients")
 		.define<int >("mixing.L_MAX", 0, "Nb of used Legendre coefficients in DMFT")
-		.define<bool>("model.DENSITY_DENSITY_TAIL", true,
-			      "Use density density expressions for tail of self-energy.")
+		.define<bool>("mixing.LEGENDRE_FOR_SC_LOOP", false, "Rely on Legendre data for hybridization function computation and mixing")
 		.define<int >("N_MATSUBARA", 955, "number of matsubara frequencies")
 		.define<int >("measurement.G1.N_MATSUBARA", 955, "number of matsubara frequencies for alps3")
 		.define<int >("cthyb.N_MEAS","number of updates per measurement")
@@ -249,9 +248,8 @@ int main(int argc, const char* argv[]) {
 	       bool compute_bubble(computation_type == 4 ? true : false);
 	       boost::shared_ptr<Bandstructure> bare_band(
 		    new Bandstructure(parms, world_rank, true));
-	       string h5_group_name = ((parms["model.DENSITY_DENSITY_TAIL"])
-				       && (!from_alps3)) ?
-		    HybFunction::matsubara_self_energy_name : HybFunction::legendre_self_energy_name;
+	       string h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
+		       HybFunction::legendre_self_energy_name : HybFunction::matsubara_self_energy_name;
 	       boost::shared_ptr<Selfenergy> self_energy(
 		    new Selfenergy(parms, world_rank, h5_archive, h5_group_name, true));
 	       h5_archive.close();
@@ -331,9 +329,8 @@ int main(int argc, const char* argv[]) {
 		    // Read the current sigma, and calculate the
 		    // sigma gotten from QMC + tails
 		    int ref_site_index = 0;
-		    string old_h5_group_name = ((parms["model.DENSITY_DENSITY_TAIL"])
-						&& (!from_alps3)) ?
-			 HybFunction::matsubara_self_energy_name : HybFunction::legendre_self_energy_name;
+		    string old_h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
+			    HybFunction::legendre_self_energy_name : HybFunction::matsubara_self_energy_name;
 		    boost::shared_ptr<Selfenergy>
 			 old_self_energy(new Selfenergy(parms, world_rank, h5_archive,
 							old_h5_group_name, verbose));

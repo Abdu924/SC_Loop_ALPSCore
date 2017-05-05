@@ -294,11 +294,11 @@ void Greensfunction::fix_moments() {
 			gl_values_[l_index] = raw_gl_matrices[l_index] + (target_c1 - measured_c1) *
 				beta * tl_values[l_index] / tl_modulus;
 		}
-		// now reset measured_c1 to its target value, and compute measured_c3,
-		// with corrected gl values.
+		// now reset measured_c1 to its target value,
 		measured_c1 = Eigen::MatrixXcd::Identity(per_site_orbital_size, per_site_orbital_size);
 	}
 	// measure c_3
+	// if the even Legendre coefficients have been fixed, then this moment benefits as well
 	measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
 	for (int l_index = 0; l_index < l_max; l_index += 2) {
 		double l_factor = (double)l_index;
