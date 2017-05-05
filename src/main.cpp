@@ -190,48 +190,6 @@ tuple<string, int, bool> handle_command_line(alps::params par) {
      return tuple<string, int, bool>(input_file, computation_type, from_alps3);
 }
 
-
-// tuple<string, int, bool> handle_command_line() {
-//      int computation_type;
-//      bool from_alps3(false);
-//      if (vm.count("help")) {
-// 	  cout << desc << "\n";
-// 	  exit(1);
-//      }
-//      // Read hdf5 input define base_name for computation
-//      if (vm.count("input-file"))
-//      {
-// 	  cout << "Input file is: "
-// 	       << vm["input-file"].as<string>() << "\n";
-//      }
-//      if (vm.count("compute_delta"))
-//      {
-// 	  cout << "Computing hybridization function\n";
-// 	  computation_type = 0;
-//      } else if (vm.count("mix")) {
-// 	  cout << "Running mix action\n";
-// 	  computation_type = 1;
-//      } else if (vm.count("dump_hamilt")) {
-// 	  cout << "Dumping Hamiltonian\n";
-// 	  computation_type = 2;
-//      } else if (vm.count("debug")) {
-// 	  cout << "Debug mode\n";
-// 	  computation_type = 3;
-//      } else if (vm.count("compute_bubble")) {
-// 	  cout << "Computing bubble\n";
-// 	  computation_type = 4;
-//      } else {
-// 	  cout << desc << "\n";
-// 	  exit(1);
-//      }
-//      if (vm.count("from_alps3")) {
-// 	  from_alps3 = true;
-// 	  cout << "Taking ***MATRIX RESULT*** as input format\n";
-//      }
-//      string input_file(vm["input-file"].as<string>());
-//      return tuple<string, int, bool>(input_file, computation_type, from_alps3);
-// }
-
 double extract_chemical_potential(boost::shared_ptr<Bandstructure> bare_band,
 				  boost::shared_ptr<Chemicalpotential> chempot) {
      double tolerance = 1.0e-6;
