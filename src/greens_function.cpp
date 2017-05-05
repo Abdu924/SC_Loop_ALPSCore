@@ -47,7 +47,8 @@ std::complex<double> Greensfunction::get_t_coeff(int n, int l) {
 }
 
 void Greensfunction::generate_data(alps::hdf5::archive &h5_archive) {
-     read_single_site_legendre(h5_archive);
+     read_single_site_raw_legendre(h5_archive);
+     fix_moments();
      get_matsubara_from_legendre();
 }
 
@@ -85,6 +86,8 @@ void Greensfunction::basic_init(const alps::params &parms) {
      n_legendre = static_cast<int>(parms["cthyb.N_LEGENDRE"]);
      l_max = static_cast<int>(parms["mixing.L_MAX"]);
      beta = static_cast<double>(parms["BETA"]);
+     fix_sigma_0 = parms["mixing.FIX_SIGMA_0"].as<bool>();
+     fix_sigma_1 = parms["mixing.FIX_SIGMA_1"].as<bool>();
      init_gf_container();
 }
 
@@ -126,8 +129,6 @@ void Greensfunction::read_bare_gf() {
 							   per_site_orbital_size).transpose().conjugate();
 	       }
 	  }
-	  std::cout << "bare gf" << std::endl;
-	  std::cout << bare_gf_values_[50] << std::endl;
      }
 }
 
@@ -161,48 +162,6 @@ Eigen::MatrixXcd Greensfunction::get_dyson_result(int freq_index, bool is_negati
 							per_site_orbital_size).inverse());
      }
 }
-
-// void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, int site_index) {
-//      typedef boost::multi_array<double, 4> array_type;
-//      std::cerr << "Legendre input not supported " << endl;
-//      throw std::runtime_error("Legendre input not supported for 1p GF");
-//      array_type legendre_data(
-// 	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre][2]);
-//      h5_archive["G1_LEGENDRE"] >> legendre_data;
-//      LegendreTransformer legendre_transformer(n_matsubara, n_legendre);
-//      const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl(legendre_transformer.Tnl());
-//      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> neg_Tnl(Tnl);
-//      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
-// 	  tmp_mat(n_legendre, 1), tmp_mat2(n_matsubara, 1), neg_tmp_mat2(n_matsubara, 1);
-//      for (int freq_index = 0; freq_index < n_matsubara; ++freq_index) {
-// 	  for (int il = 0; il < n_legendre; ++il) {
-// 	       neg_Tnl(n_matsubara - 1 - freq_index, il) =
-// 		    std::pow(-1.0, il) * Tnl(freq_index, il);
-// 	  }
-//      }
-//      for (int flavor = 0; flavor < per_site_orbital_size; ++flavor) {
-// 	  for (int flavor2 = 0; flavor2 < per_site_orbital_size; ++flavor2) {
-// 	       for (int il = 0; il < n_legendre; ++il) {
-// 		    tmp_mat(il, 0) = std::complex<double>(legendre_data[flavor][flavor2][il][0],
-// 							  legendre_data[flavor][flavor2][il][1]);
-// 	       }
-// 	       tmp_mat2 = Tnl * tmp_mat;
-// 	       neg_tmp_mat2 = neg_Tnl * tmp_mat;
-// 	       for (int freq_index = 0; freq_index < n_matsubara; ++freq_index) {
-// 		    full_gf_values_[freq_index].block(site_index * per_site_orbital_size,
-// 						      site_index * per_site_orbital_size,
-// 						      per_site_orbital_size,
-// 						      per_site_orbital_size)(flavor, flavor2) =
-// 			 tmp_mat2(freq_index, 0);		    
-// 		    full_gf_neg_values_[freq_index].block(site_index * per_site_orbital_size,
-// 							  site_index * per_site_orbital_size,
-// 							  per_site_orbital_size,
-// 							  per_site_orbital_size)(flavor, flavor2) =
-// 			 neg_tmp_mat2(freq_index, 0);
-// 	       }
-// 	  }
-//      }
-// }
 
 void Greensfunction::get_matsubara_from_legendre(int site_index) {
      for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
@@ -259,89 +218,94 @@ void Greensfunction::read_single_site_full_gf_matsubara(alps::hdf5::archive &h5_
      }
 }
 
-void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, int site_index) {
-     cplx_array_type raw_legendre_data(
-	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
-     if (l_max < 5) {
-	     std::string err_string = "L_MAX is less than 5, I think this is not reasonable, stopping now! (in " +
-		     std::string(__FUNCTION__) + ")";
-	     std::cerr << err_string << std::endl;
-	     throw runtime_error(err_string);
-     }
-     // Read MC output, depending on engine.
-     if (sampling_type == 1) {
-	  h5_archive["G1_LEGENDRE"] >> raw_legendre_data;
-     } else {
-	  real_array_type real_raw_legendre_data(
-	       boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre][2]);
-	  h5_archive["G1_LEGENDRE"] >> real_raw_legendre_data;
-	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
-	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
-		    for (int l_index = 0; l_index < l_max; l_index++) {
-			 raw_legendre_data[row_index][col_index][l_index] =
-			      std::complex<double>(real_raw_legendre_data[row_index][col_index][l_index][0],
-						   real_raw_legendre_data[row_index][col_index][l_index][1]);
-		    }
-	       }
-	  }
-     }
-     // initialize raw_gl_matrices
-     raw_gl_matrices.clear();
-     for (int l_index = 0; l_index < l_max; l_index++) {
-	  raw_gl_matrices.push_back(Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size));
-	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
-	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
-		    raw_gl_matrices[l_index](row_index, col_index) =
-			 raw_legendre_data[row_index][col_index][l_index];
-	       }
-	  }
-     }
-     if (sampling_type == 1) {
-	  for (int l_index = 0; l_index < l_max; l_index++) {
-	       // different convention for DMFT and QMC in Alps2...
-	       raw_gl_matrices[l_index].transposeInPlace();
-	  }
-     }
-     symmetrize_matrix_elements();
-     // measure c_1
-     for (int l_index = 0; l_index < l_max; l_index++) {
-	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
-	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
-		    gl_values_[l_index](row_index, col_index) = raw_gl_matrices[l_index](row_index, col_index);
-	       }
-	  }
-     }
-     measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-     for (int l_index = 0; l_index < l_max; l_index += 2) {
-	  // this is unnecessary, since these will be fixed later, but better for
-	  // bug avoiding...
-	  measured_c1 += tl_values[l_index] * gl_values_[l_index] / beta;
-     }
-     // measure c_2
-     measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-     for (int l_index = 1; l_index < l_max; l_index += 2) {
-	  measured_c2 -= tl_values[l_index] * (double)l_index * (l_index + 1.0) *
-	       gl_values_[l_index] / (std::pow(beta, 2));
-     }
-     // Fix c_1
-     // Cf paper by Boehnke et al. PRB 84, 075145 (2011)
-     // Eq 10.
-     for (int l_index = 0; l_index < l_max; l_index += 2) {
-	  gl_values_[l_index] = raw_gl_matrices[l_index] + (
-	       Eigen::MatrixXcd::Identity(per_site_orbital_size, per_site_orbital_size) - measured_c1) *
-	       beta * tl_values[l_index] / tl_modulus;
-     }
-     // now reset measured_c1 to its target value, and compute measured_c3,
-     // with corrected gl values.
-     measured_c1 = Eigen::MatrixXcd::Identity(per_site_orbital_size, per_site_orbital_size);
-     // measure c_3
-     measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-     for (int l_index = 0; l_index < l_max; l_index += 2) {
-	  double l_factor = (double)l_index;
-	  measured_c3 += 0.5 * tl_values[l_index] * gl_values_[l_index] *
-	       (l_factor + 2.0) * (l_factor + 1.0) * l_factor * (l_factor - 1.0) / (std::pow(beta, 3));
-     }
-     //display_fixed_legendre();
+void Greensfunction::read_single_site_raw_legendre(alps::hdf5::archive &h5_archive, int site_index) {
+	cplx_array_type raw_legendre_data(
+		boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
+	if (l_max < 5) {
+		std::string err_string = "L_MAX is less than 5, I think this is not reasonable, stopping now! (in " +
+			std::string(__FUNCTION__) + ")";
+		std::cerr << err_string << std::endl;
+		throw runtime_error(err_string);
+	}
+	// Read MC output, depending on engine.
+	if (sampling_type == 1) {
+		h5_archive["G1_LEGENDRE"] >> raw_legendre_data;
+	} else {
+		real_array_type real_raw_legendre_data(
+			boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre][2]);
+		h5_archive["G1_LEGENDRE"] >> real_raw_legendre_data;
+		for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+			for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+				for (int l_index = 0; l_index < l_max; l_index++) {
+					raw_legendre_data[row_index][col_index][l_index] =
+						std::complex<double>(real_raw_legendre_data[row_index][col_index][l_index][0],
+								     real_raw_legendre_data[row_index][col_index][l_index][1]);
+				}
+			}
+		}
+	}
+	// initialize raw_gl_matrices
+	raw_gl_matrices.clear();
+	for (int l_index = 0; l_index < l_max; l_index++) {
+		raw_gl_matrices.push_back(Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size));
+		for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+			for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+				raw_gl_matrices[l_index](row_index, col_index) =
+					raw_legendre_data[row_index][col_index][l_index];
+			}
+		}
+	}
+	if (sampling_type == 1) {
+		for (int l_index = 0; l_index < l_max; l_index++) {
+			// different convention for DMFT and QMC in Alps2...
+			raw_gl_matrices[l_index].transposeInPlace();
+		}
+	}
+	symmetrize_matrix_elements();
+	for (int l_index = 0; l_index < l_max; l_index++) {
+		for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+			for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+				gl_values_[l_index](row_index, col_index) = raw_gl_matrices[l_index](row_index, col_index);
+			}
+		}
+	}
+}
+
+void Greensfunction::fix_moments() {
+	// measure c_1
+	measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	for (int l_index = 0; l_index < l_max; l_index += 2) {
+		// this is unnecessary, since these will be fixed later, but better for
+		// bug avoiding...
+		measured_c1 += tl_values[l_index] * gl_values_[l_index] / beta;
+	}
+	// measure c_2
+	measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	for (int l_index = 1; l_index < l_max; l_index += 2) {
+		measured_c2 -= tl_values[l_index] * (double)l_index * (l_index + 1.0) *
+			gl_values_[l_index] / (std::pow(beta, 2));
+	}
+	if (fix_sigma_0) {
+		// Fix c_1
+		// Cf paper by Boehnke et al. PRB 84, 075145 (2011)
+		// Eq 10.
+		Eigen::MatrixXcd target_c1 = Eigen::MatrixXcd::Identity(per_site_orbital_size, per_site_orbital_size);
+		for (int l_index = 0; l_index < l_max; l_index += 2) {
+			gl_values_[l_index] = raw_gl_matrices[l_index] + (target_c1 - measured_c1) *
+				beta * tl_values[l_index] / tl_modulus;
+		}
+		// now reset measured_c1 to its target value, and compute measured_c3,
+		// with corrected gl values.
+		measured_c1 = Eigen::MatrixXcd::Identity(per_site_orbital_size, per_site_orbital_size);
+	}
+	// measure c_3
+	measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	for (int l_index = 0; l_index < l_max; l_index += 2) {
+		double l_factor = (double)l_index;
+		measured_c3 += 0.5 * tl_values[l_index] * gl_values_[l_index] *
+			(l_factor + 2.0) * (l_factor + 1.0) * l_factor * (l_factor - 1.0) / (std::pow(beta, 3));
+	}
+	//display_fixed_legendre();
 }
 
 void Greensfunction::symmetrize_matrix_elements() {
