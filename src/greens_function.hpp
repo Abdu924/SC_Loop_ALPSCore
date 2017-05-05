@@ -23,7 +23,7 @@ public:
      Eigen::MatrixXcd get_dyson_result(int freq_index, bool is_negative);
      Eigen::MatrixXcd get_measured_c2();
      Eigen::MatrixXcd get_measured_c3();
-     //void generate_t_coeffs(alps::hdf5::archive &h5_archive);
+     void generate_t_coeffs(alps::hdf5::archive &h5_archive);
      
      virtual ~Greensfunction() {}
      
