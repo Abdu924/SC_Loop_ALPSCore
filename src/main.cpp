@@ -10,16 +10,12 @@
 #include "bare_hamiltonian.hpp"
 #include "hybridization_function.hpp"
 #include <fstream>
-#include <boost/tokenizer.hpp>
 #include <boost/timer/timer.hpp>
-#include <boost/program_options.hpp>
 #include <mpi.h>
 #include "chemical_potential.hpp"
 #include <alps/mc/mcbase.hpp>
-#include <boost/math/special_functions/bessel.hpp>
 
 using namespace std;
-namespace po = boost::program_options;
 
 void init(int world_rank, int computation_type,
 	  string &output_file_name, string &backup_file_name) {
