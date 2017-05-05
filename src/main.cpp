@@ -235,8 +235,8 @@ int main(int argc, const char* argv[]) {
 	  define_parameters(parms);
 	  tie(tmp_file_name, computation_type, from_alps3) = handle_command_line(parms);
 	  init(world_rank, computation_type, output_file_name, old_output_file_name);
-	  if (world_rank == 0)
-		  std::cout << "Parameters : " << std::endl << parms << std::endl;
+	  //if (world_rank == 0)
+	  //	  std::cout << "Parameters : " << std::endl << parms << std::endl;
 	  const string input_file(tmp_file_name);
 	  // Note: the input (parameter) file also contains the
 	  // result of previous runs for sigma.
@@ -250,8 +250,15 @@ int main(int argc, const char* argv[]) {
 		    new Bandstructure(parms, world_rank, true));
 	       string h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
 		       HybFunction::legendre_self_energy_name : HybFunction::matsubara_self_energy_name;
+	       if (world_rank == 0) {
+		       if (parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>()) {
+			       std::cout << "Using LEGENDRE for SC LOOP " << std::endl << std::endl;
+		       } else {
+			       std::cout << "Using Matsubara for SC LOOP " << std::endl << std::endl;
+		       }
+	       }
 	       boost::shared_ptr<Selfenergy> self_energy(
-		    new Selfenergy(parms, world_rank, h5_archive, h5_group_name, true));
+		       new Selfenergy(parms, world_rank, h5_archive, h5_group_name, true));
 	       h5_archive.close();
 	       {
 		    boost::timer::auto_cpu_timer all_loop;
