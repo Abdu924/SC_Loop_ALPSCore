@@ -66,6 +66,9 @@ void define_parameters(alps::params &parameters) {
      // Define ct-hyb related parameters
      parameters
 	  .description("hybridization expansion simulation")
+	  .define<std::string>("input-file","", "hdf5 input file with relevant data")
+	  .define<int >("action", "int describing the action to be performed")
+	  .define<bool>("from_alps3", false, "is the input produced by Alps3?")
 	  .define<long>("SEED", 42, "PRNG seed")
 	  .define<bool>("cthyb.ACCURATE_COVARIANCE", false, "TODO: UNDERSTAND WHAT THIS DOES")
 	  .define<std::string>("cthyb.BASEPATH","", "path in hdf5 file to which results are stored")
@@ -153,46 +156,86 @@ void define_parameters(alps::params &parameters) {
 	  ;
 }
 
-tuple<string, int, bool> handle_command_line(po::variables_map vm, po::options_description desc) {
-     int computation_type;
-     bool from_alps3(false);
-     if (vm.count("help")) {
-	  cout << desc << "\n";
-	  exit(1);
-     }
-     // Read hdf5 input define base_name for computation
-     if (vm.count("input-file"))
-     {
-	  cout << "Input file is: "
-	       << vm["input-file"].as<string>() << "\n";
-     }
-     if (vm.count("compute_delta"))
-     {
-	  cout << "Computing hybridization function\n";
-	  computation_type = 0;
-     } else if (vm.count("mix")) {
-	  cout << "Running mix action\n";
-	  computation_type = 1;
-     } else if (vm.count("dump_hamilt")) {
-	  cout << "Dumping Hamiltonian\n";
-	  computation_type = 2;
-     } else if (vm.count("debug")) {
-	  cout << "Debug mode\n";
-	  computation_type = 3;
-     } else if (vm.count("compute_bubble")) {
-	  cout << "Computing bubble\n";
-	  computation_type = 4;
+tuple<string, int, bool> handle_command_line(alps::params par) {
+     int computation_type(-1);
+     bool from_alps3(par["from_alps3"].as<bool>());
+     string input_file("");
+     if (!par.exists("input-file")) {
+	  std::cout << "You must provide the name of the input file" << std::endl;
+	  par["help"] = true;
      } else {
-	  cout << desc << "\n";
-	  exit(1);
+	  input_file = par["input-file"].as<string>();
+	  cout << "Input file is: " << input_file << "\n";
      }
-     if (vm.count("from_alps3")) {
-	  from_alps3 = true;
+     if (!par.exists("action")) {
+	  std::cout << "You must provide the name of the action to be performed" << std::endl;
+	  par["help"] = true;
+     } else {
+	  if (par["action"].as<int>() == 0) {
+	       cout << "Computing hybridization function" << "\n";
+	  } else if (par["action"].as<int>() == 1) {
+	       cout << "Running mix action" << "\n";
+	  } else if (par["action"].as<int>() == 2) {
+	       cout << "Dumping Hamiltonian" << "\n";
+	  } else if (par["action"].as<int>() == 3) {
+	       cout << "Debug mode" << "\n";
+	  } else if (par["action"].as<int>() == 4) {
+	       cout << "Computing bubble" << "\n";
+	  } else {
+	       std::cout << "The requested action was not recognized" << std::endl;
+	       par["help"] = true;
+	  }
+     }
+     if (!par["help"])
+	  computation_type = par["action"];
+     if (from_alps3) {
 	  cout << "Taking ***MATRIX RESULT*** as input format\n";
      }
-     string input_file(vm["input-file"].as<string>());
+
      return tuple<string, int, bool>(input_file, computation_type, from_alps3);
 }
+
+
+// tuple<string, int, bool> handle_command_line() {
+//      int computation_type;
+//      bool from_alps3(false);
+//      if (vm.count("help")) {
+// 	  cout << desc << "\n";
+// 	  exit(1);
+//      }
+//      // Read hdf5 input define base_name for computation
+//      if (vm.count("input-file"))
+//      {
+// 	  cout << "Input file is: "
+// 	       << vm["input-file"].as<string>() << "\n";
+//      }
+//      if (vm.count("compute_delta"))
+//      {
+// 	  cout << "Computing hybridization function\n";
+// 	  computation_type = 0;
+//      } else if (vm.count("mix")) {
+// 	  cout << "Running mix action\n";
+// 	  computation_type = 1;
+//      } else if (vm.count("dump_hamilt")) {
+// 	  cout << "Dumping Hamiltonian\n";
+// 	  computation_type = 2;
+//      } else if (vm.count("debug")) {
+// 	  cout << "Debug mode\n";
+// 	  computation_type = 3;
+//      } else if (vm.count("compute_bubble")) {
+// 	  cout << "Computing bubble\n";
+// 	  computation_type = 4;
+//      } else {
+// 	  cout << desc << "\n";
+// 	  exit(1);
+//      }
+//      if (vm.count("from_alps3")) {
+// 	  from_alps3 = true;
+// 	  cout << "Taking ***MATRIX RESULT*** as input format\n";
+//      }
+//      string input_file(vm["input-file"].as<string>());
+//      return tuple<string, int, bool>(input_file, computation_type, from_alps3);
+// }
 
 double extract_chemical_potential(boost::shared_ptr<Bandstructure> bare_band,
 				  boost::shared_ptr<Chemicalpotential> chempot) {
@@ -235,22 +278,22 @@ int main(int argc, const char* argv[]) {
 	  alps::params parms(argc, argv);
 	  define_parameters(parms);
 	  // Declare the supported options.
-	  po::options_description desc("Allowed options");
-	  desc.add_options()
-	       ("help", "produce help message")
-	       ("compute_delta", "Evaluate hybridization function")
-	       ("compute_bubble", "Evaluate bubble (local and lattice)")
-	       ("mix", "post process QMC result: mix old and new self-energy values, including tail smoothing")
-	       ("dump_hamilt", "dump the Hamiltonian in reciprocal space. output file name taken from params")
-	       ("debug", "Enter debug mode")
-	       ("from_alps3", "Evaluate hybridization function or bubble, from results calculated with Alps3")
-	       ("input-file", po::value<string >(), "input file");
-	  po::variables_map vm;
-	  po::store(po::parse_command_line(argc, argv, desc), vm);
-	  po::notify(vm);
+	  //po::options_description desc("Allowed options");
+	  // desc.add_options()
+	  //      ("help", "produce help message")
+	  //      ("compute_delta", "Evaluate hybridization function")
+	  //      ("compute_bubble", "Evaluate bubble (local and lattice)")
+	  //      ("mix", "post process QMC result: mix old and new self-energy values, including tail smoothing")
+	  //      ("dump_hamilt", "dump the Hamiltonian in reciprocal space. output file name taken from params")
+	  //      ("debug", "Enter debug mode")
+	  //      ("from_alps3", "Evaluate hybridization function or bubble, from results calculated with Alps3")
+	  //      ("input-file", po::value<string >(), "input file");
+	  // po::variables_map vm;
+	  // po::store(po::parse_command_line(argc, argv, desc), vm);
+	  // po::notify(vm);
 	  // Initialize output behavior, check input number
 	  cout << fixed << setprecision(7);
-	  tie(tmp_file_name, computation_type, from_alps3) = handle_command_line(vm, desc);
+	  tie(tmp_file_name, computation_type, from_alps3) = handle_command_line(parms);
 	  init(world_rank, computation_type, output_file_name, old_output_file_name);
 	  const string input_file(tmp_file_name);
 	  // Note: the input (parameter) file also contains the
