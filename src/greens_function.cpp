@@ -262,6 +262,12 @@ void Greensfunction::read_single_site_full_gf_matsubara(alps::hdf5::archive &h5_
 void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, int site_index) {
      cplx_array_type raw_legendre_data(
 	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
+     if (l_max < 5) {
+	     std::string err_string = "L_MAX is less than 5, I think this is not reasonable, stopping now! (in " +
+		     std::string(__FUNCTION__) + ")";
+	     std::cerr << err_string << std::endl;
+	     throw runtime_error(err_string);
+     }
      // Read MC output, depending on engine.
      if (sampling_type == 1) {
 	  h5_archive["G1_LEGENDRE"] >> raw_legendre_data;
@@ -305,7 +311,6 @@ void Greensfunction::read_single_site_legendre(alps::hdf5::archive &h5_archive, 
 	       }
 	  }
      }
-
      measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for (int l_index = 0; l_index < l_max; l_index += 2) {
 	  // this is unnecessary, since these will be fixed later, but better for
@@ -351,7 +356,8 @@ void Greensfunction::symmetrize_matrix_elements() {
 
 void Greensfunction::display_fixed_legendre() {
      for (int l_index = 0; l_index < l_max; l_index++) {
-	  std::cout << gl_values_[l_index] << std:: endl << std::endl;
+	     std::cout << "GL values: " << std::endl;
+	     std::cout << gl_values_[l_index] << std:: endl << std::endl;
      }
 }
      

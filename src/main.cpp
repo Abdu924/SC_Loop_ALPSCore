@@ -191,7 +191,6 @@ tuple<string, int, bool> handle_command_line(alps::params par) {
      if (from_alps3) {
 	  cout << "Taking ***MATRIX RESULT*** as input format\n";
      }
-
      return tuple<string, int, bool>(input_file, computation_type, from_alps3);
 }
 
@@ -274,27 +273,12 @@ int main(int argc, const char* argv[]) {
 	  int computation_type;
 	  bool from_alps3(false);
 	  string tmp_file_name;
-	  //alps::params parms(argc, (const char**)argv, "/parameters");
+	  cout << fixed << setprecision(7);
 	  alps::params parms(argc, argv);
 	  define_parameters(parms);
-	  // Declare the supported options.
-	  //po::options_description desc("Allowed options");
-	  // desc.add_options()
-	  //      ("help", "produce help message")
-	  //      ("compute_delta", "Evaluate hybridization function")
-	  //      ("compute_bubble", "Evaluate bubble (local and lattice)")
-	  //      ("mix", "post process QMC result: mix old and new self-energy values, including tail smoothing")
-	  //      ("dump_hamilt", "dump the Hamiltonian in reciprocal space. output file name taken from params")
-	  //      ("debug", "Enter debug mode")
-	  //      ("from_alps3", "Evaluate hybridization function or bubble, from results calculated with Alps3")
-	  //      ("input-file", po::value<string >(), "input file");
-	  // po::variables_map vm;
-	  // po::store(po::parse_command_line(argc, argv, desc), vm);
-	  // po::notify(vm);
-	  // Initialize output behavior, check input number
-	  cout << fixed << setprecision(7);
 	  tie(tmp_file_name, computation_type, from_alps3) = handle_command_line(parms);
 	  init(world_rank, computation_type, output_file_name, old_output_file_name);
+	  std::cout << "Parameters : " << std::endl << parms << std::endl;	  
 	  const string input_file(tmp_file_name);
 	  // Note: the input (parameter) file also contains the
 	  // result of previous runs for sigma.
@@ -404,9 +388,9 @@ int main(int argc, const char* argv[]) {
 		    }
 		    if (parms["cthyb.MEASURE_legendre"]) {
 			 int sampling_type = from_alps3 ? 0 : 1;
+			 std::cout << "generate Leg GF" << std::endl;
 			 boost::shared_ptr<Greensfunction>
 			      legendre_greens_function(new Greensfunction(parms, world_rank, sampling_type, h5_archive));
-			 std::cout << "legendre" << std::endl;
 			 legendre_qmc_self_energy.reset(
 			      new Selfenergy(parms, world_rank, chempot, ref_site_index,
 					     h5_archive, legendre_greens_function));
@@ -414,7 +398,6 @@ int main(int argc, const char* argv[]) {
 		    MPI_Barrier(MPI_COMM_WORLD);
 		    h5_archive.close();
 		    // save old sigma
-		    std::cout << "legendre" << std::endl;
 		    alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
 		    std::string copy_h5_group_name("/old_sigma");
 		    if (!(old_self_energy->get_is_nil_sigma())) {
