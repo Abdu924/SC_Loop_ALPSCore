@@ -20,8 +20,9 @@ typedef boost::multi_array<double , 4> real_array_type;
 // }
 
 Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
+			       boost::shared_ptr<Chemicalpotential> chempot,
 			       int sampling_type, alps::hdf5::archive &h5_archive)
-     :GfBase(parms, world_rank), sampling_type(sampling_type) {
+     :GfBase(parms, world_rank, chempot), sampling_type(sampling_type) {
      basic_init(parms);
      feed_tail_params(ref_site_index, parms, h5_archive);
      read_bare_gf();
@@ -69,8 +70,8 @@ void Greensfunction::basic_init(const alps::params &parms) {
      n_matsubara_for_alps2 = static_cast<int>(parms["N_MATSUBARA"]);
      n_legendre = static_cast<int>(parms["cthyb.N_LEGENDRE"]);
      l_max = static_cast<int>(parms["mixing.L_MAX"]);
-     fix_sigma_0 = parms["mixing.FIX_SIGMA_0"].as<bool>();
-     fix_sigma_1 = parms["mixing.FIX_SIGMA_1"].as<bool>();
+     fix_c1 = parms["mixing.FIX_C1"].as<bool>();
+     fix_c2 = parms["mixing.FIX_C2"].as<bool>();
      init_gf_container();
 }
 
@@ -194,90 +195,86 @@ void Greensfunction::read_single_site_full_gf_matsubara(alps::hdf5::archive &h5_
 }
 
 void Greensfunction::read_single_site_raw_legendre(alps::hdf5::archive &h5_archive, int site_index) {
-	cplx_array_type raw_legendre_data(
-		boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
-	if (l_max < 5) {
-		std::string err_string = "L_MAX is less than 5, I think this is not reasonable, stopping now! (in " +
-			std::string(__FUNCTION__) + ")";
-		std::cerr << err_string << std::endl;
-		throw runtime_error(err_string);
-	}
-	// Read MC output, depending on engine.
-	if (sampling_type == 1) {
-		h5_archive["G1_LEGENDRE"] >> raw_legendre_data;
-	} else {
-		real_array_type real_raw_legendre_data(
-			boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre][2]);
-		h5_archive["G1_LEGENDRE"] >> real_raw_legendre_data;
-		for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
-			for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
-				for (int l_index = 0; l_index < l_max; l_index++) {
-					raw_legendre_data[row_index][col_index][l_index] =
-						std::complex<double>(real_raw_legendre_data[row_index][col_index][l_index][0],
-								     real_raw_legendre_data[row_index][col_index][l_index][1]);
-				}
-			}
-		}
-	}
-	// initialize raw_gl_matrices
-	raw_gl_matrices.clear();
-	for (int l_index = 0; l_index < l_max; l_index++) {
-		raw_gl_matrices.push_back(Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size));
-		for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
-			for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
-				raw_gl_matrices[l_index](row_index, col_index) =
-					raw_legendre_data[row_index][col_index][l_index];
-			}
-		}
-	}
-	if (sampling_type == 1) {
-		for (int l_index = 0; l_index < l_max; l_index++) {
-			// different convention for DMFT and QMC in Alps2...
-			raw_gl_matrices[l_index].transposeInPlace();
-		}
-	}
-	symmetrize_matrix_elements();
-	for (int l_index = 0; l_index < l_max; l_index++) {
-		for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
-			for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
-				gl_values_[l_index](row_index, col_index) = raw_gl_matrices[l_index](row_index, col_index);
-			}
-		}
-	}
+     cplx_array_type raw_legendre_data(
+	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
+     if (l_max < 5) {
+	  std::string err_string = "L_MAX is less than 5, I think this is not reasonable, stopping now! (in " +
+	       std::string(__FUNCTION__) + ")";
+	  std::cerr << err_string << std::endl;
+	  throw runtime_error(err_string);
+     }
+     // Read MC output, depending on engine.
+     if (sampling_type == 1) {
+	  h5_archive["G1_LEGENDRE"] >> raw_legendre_data;
+     } else {
+	  real_array_type real_raw_legendre_data(
+	       boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre][2]);
+	  h5_archive["G1_LEGENDRE"] >> real_raw_legendre_data;
+	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+		    for (int l_index = 0; l_index < l_max; l_index++) {
+			 raw_legendre_data[row_index][col_index][l_index] =
+			      std::complex<double>(real_raw_legendre_data[row_index][col_index][l_index][0],
+						   real_raw_legendre_data[row_index][col_index][l_index][1]);
+		    }
+	       }
+	  }
+     }
+     // initialize raw_gl_matrices
+     raw_gl_matrices.clear();
+     for (int l_index = 0; l_index < l_max; l_index++) {
+	  raw_gl_matrices.push_back(Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size));
+	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+		    raw_gl_matrices[l_index](row_index, col_index) =
+			 raw_legendre_data[row_index][col_index][l_index];
+	       }
+	  }
+     }
+     if (sampling_type == 1) {
+	  for (int l_index = 0; l_index < l_max; l_index++) {
+	       // different convention for DMFT and QMC in Alps2...
+	       raw_gl_matrices[l_index].transposeInPlace();
+	  }
+     }
+     symmetrize_matrix_elements();
+     for (int l_index = 0; l_index < l_max; l_index++) {
+	  for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+	       for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+		    gl_values_[l_index](row_index, col_index) = raw_gl_matrices[l_index](row_index, col_index);
+	       }
+	  }
+     }
 }
 
 void Greensfunction::fix_moments() {
-	// measure c_1
+	// measure the raw moments.
 	measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-	for (int l_index = 0; l_index < l_max; l_index += 2) {
-		// this is unnecessary, since these will be fixed later, but better for
-		// bug avoiding...
-		measured_c1 += tl_values[l_index] * gl_values_[l_index] / beta;
-	}
-	// measure c_2
 	measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-	for (int l_index = 1; l_index < l_max; l_index += 2) {
-		measured_c2 -= tl_values[l_index] * (double)l_index * (l_index + 1.0) *
-			gl_values_[l_index] / (std::pow(beta, 2));
+	measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	for (int l_index = 0; l_index < l_max; l_index ++) {
+		measured_c1 += tl_values[0][l_index] * gl_values_[l_index] / beta;
+		measured_c2 += tl_values[1][l_index] * gl_values_[l_index] / (std::pow(beta, 2));
+		measured_c3 += tl_values[2][l_index] * gl_values_[l_index] / (std::pow(beta, 3));
 	}
-	if (fix_sigma_0) {
+	if (fix_c1) {
 		// Fix c_1
 		// Cf paper by Boehnke et al. PRB 84, 075145 (2011)
 		// Eq 10.
-		for (int l_index = 0; l_index < l_max; l_index += 2) {
+		for (int l_index = 0; l_index < l_max; l_index++) {
 			gl_values_[l_index] = raw_gl_matrices[l_index] + (target_c1 - measured_c1) *
-				beta * tl_values[l_index] / tl_modulus;
+				beta * tl_values[0][l_index] / tl_modulus[0];
 		}
 		// now reset measured_c1 to its target value,
 		measured_c1 = target_c1;
+		// measure c_3
+		// if the even Legendre coefficients have been fixed, then this moment benefits as well
+		measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+		for (int l_index = 0; l_index < l_max; l_index ++) {
+		     measured_c3 += tl_values[2][l_index] * gl_values_[l_index] / (std::pow(beta, 3));
+		}
 	}
-	// measure c_3
-	// if the even Legendre coefficients have been fixed, then this moment benefits as well
-	measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-	for (int l_index = 0; l_index < l_max; l_index += 2) {
-		double l_factor = (double)l_index;
-		measured_c3 += 0.5 * tl_values[l_index] * gl_values_[l_index] *
-			(l_factor + 2.0) * (l_factor + 1.0) * l_factor * (l_factor - 1.0) / (std::pow(beta, 3));
+	if (fix_c2) {
 	}
 	//display_fixed_legendre();
 }
@@ -298,15 +295,30 @@ void Greensfunction::display_fixed_legendre() {
 	     std::cout << gl_values_[l_index] << std:: endl << std::endl;
      }
 }
-     
+
 void Greensfunction::init_gf_container() {
-     tl_values.resize(l_max);
-     tl_modulus = 0.0;
-     for (int l_index = 0; l_index < l_max; l_index++) {
-	  tl_values[l_index] = - 2.0 * std::sqrt(2.0 * l_index + 1.0);
+     int max_order(3);
+     tl_values.resize(max_order);
+     tl_modulus.resize(max_order);
+     for (int i = 0; i < max_order; i++) {
+	  tl_values[i].resize(l_max);
+	  tl_modulus[i] = 0.0;
+	  for (int l_index = 0; l_index < l_max; l_index++) {
+	       tl_values[i][l_index] = 0.0;
+	  }
      }
      for (int l_index = 0; l_index < l_max; l_index += 2) {
-	  tl_modulus += std::abs(std::pow(tl_values[l_index], 2));
+	  tl_values[0][l_index] = - 2.0 * std::sqrt(2.0 * l_index + 1.0);
+	  tl_modulus[0] += std::abs(std::pow(tl_values[0][l_index], 2));
+	  tl_values[2][l_index] = - std::sqrt(2.0 * l_index + 1.0) * (l_index + 2.0) *
+	       (l_index + 1.0) * (double)l_index * (l_index - 1.0);
+	  tl_modulus[2] += std::abs(std::pow(tl_values[2][l_index], 2));
+
+     }
+     for (int l_index = 1; l_index < l_max; l_index += 2) {
+	  tl_values[1][l_index] = 2.0 * std::sqrt(2.0 * l_index + 1.0) * 
+	       (l_index + 1.0) * (double)l_index;
+	  tl_modulus[1] += std::abs(std::pow(tl_values[1][l_index], 2));
      }
      gl_values_.resize(l_max);
      bare_gf_values_.resize(n_matsubara_for_alps2);

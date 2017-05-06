@@ -19,6 +19,7 @@ class Greensfunction: public GfBase {
       */
 public:
      Greensfunction(const alps::params &parms, int world_rank,
+		    boost::shared_ptr<Chemicalpotential> chempot,
 		    int sampling_type,  alps::hdf5::archive &h5_archive);
      Eigen::MatrixXcd get_dyson_result(int freq_index, bool is_negative);
      //void generate_t_coeffs(alps::hdf5::archive &h5_archive);
@@ -46,8 +47,8 @@ protected:
      int l_max;
      int ref_site_index;
      int sampling_type;
-     bool fix_sigma_0;
-     bool fix_sigma_1;
+     bool fix_c1;
+     bool fix_c2;
 	
      std::vector<Eigen::MatrixXcd > raw_gl_matrices;
      Eigen::MatrixXcd full_t_set;
@@ -56,8 +57,8 @@ protected:
      std::vector<Eigen::MatrixXcd> bare_gf_neg_values_;
      std::vector<Eigen::MatrixXcd> full_gf_values_;
      std::vector<Eigen::MatrixXcd> full_gf_neg_values_;
-     std::vector<std::complex<double> > tl_values;
-     std::complex<double> tl_modulus;
+     std::vector<std::vector<std::complex<double> > > tl_values;
+     std::vector<std::complex<double> > tl_modulus;
 private:
      int world_rank_;
 };

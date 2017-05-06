@@ -104,10 +104,10 @@ void define_parameters(alps::params &parameters) {
 		.define<bool>("cthyb.MEASURE_time",false, "measure in the time domain")
 		.define<bool>("mixing.analytic_sigma_tail", true,
 			      "decide whether to calculate of fit the self energy tail")
-		.define<bool>("mixing.FIX_SIGMA_0", false,
-			      "decide whether to fix zero order component of self-energy tail, when using Legendre sampling")
-		.define<bool>("mixing.FIX_SIGMA_1", false,
-			      "decide whether to fix zero order component of self-energy tail, when using legendre sampling")
+		.define<bool>("mixing.FIX_C1", false,
+			      "decide whether to fix 1st order of the tail of the GF, when using Legendre sampling")
+		.define<bool>("mixing.FIX_C2", false,
+			      "decide whether to fix the second order of the tail of the GF, when using legendre sampling")
 		.define<double>("MU", "chemical potential / orbital energy values")
 		.define<std::string>("MU_VECTOR", "file name for file with chemical potential / orbital energy values")
 		.define<bool>("MU_IN_HDF5", false,"true if the file MU_VECTOR points to a hdf5 file")
@@ -353,7 +353,8 @@ int main(int argc, const char* argv[]) {
 			 int sampling_type = from_alps3 ? 0 : 1;
 			 std::cout << "generate Leg GF" << std::endl;
 			 boost::shared_ptr<Greensfunction>
-			      legendre_greens_function(new Greensfunction(parms, world_rank, sampling_type, h5_archive));
+			      legendre_greens_function(new Greensfunction(parms, world_rank, chempot,
+									  sampling_type, h5_archive));
 			 legendre_qmc_self_energy.reset(
 			      new Selfenergy(parms, world_rank, chempot, ref_site_index,
 					     h5_archive, legendre_greens_function));
