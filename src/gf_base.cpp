@@ -1,0 +1,196 @@
+#include "gf_base.hpp"
+
+GfBase::GfBase(const alps::params &parms, int world_rank,
+	       boost::shared_ptr<Chemicalpotential> chempot):world_rank_(world_rank),
+			       chempot_(chempot) {
+     read_params(parms);
+}
+
+GfBase::GfBase(const alps::params &parms, int world_rank):world_rank_(world_rank) {
+     read_params(parms);
+}
+
+void GfBase::read_params(const alps::params &parms) {
+     n_blocks = static_cast<size_t>(parms["N_BLOCKS"]);
+     n_sites = parms.exists("N_SITES") ?
+	  static_cast<size_t>(parms["N_SITES"]) : 1;
+     per_site_orbital_size = parms.exists("N_ORBITALS") ?
+	  static_cast<size_t>(parms["N_ORBITALS"]) : 2;
+     tot_orbital_size = per_site_orbital_size * n_sites;
+     // Careful - this is the actual number of Matsubara frequencies.
+     // not the actual value of N for the max value of omega such that
+     // max_freq = 2N + 1 pi / beta, because n = 0 is also a frequency,
+     // so that n_matsubara = N + 1
+     n_matsubara = parms["N_MATSUBARA"];
+     matsubara_frequencies_ = Eigen::VectorXcd::Zero(n_matsubara);
+     for (size_t freq_index = 0; freq_index < n_matsubara; freq_index++) {
+	  matsubara_frequencies_(freq_index) =
+	       complex<double>(0.0, (2.0 * freq_index + 1) * M_PI / beta);
+     }
+     beta = static_cast<double>(parms["BETA"]);
+     interaction_matrix =
+	  Eigen::MatrixXcd::Constant(tot_orbital_size, tot_orbital_size, 0.0);
+     site_symmetry_matrix = Eigen::MatrixXcd::Constant(tot_orbital_size, tot_orbital_size, 1.0);
+     density_density_correl = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
+     a_dagger_b = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
+     if (n_blocks < per_site_orbital_size) {
+	  std::string base_name = "BLOCK_";
+	  std::string blocks_file_name = parms["BLOCKS"];
+	  alps::hdf5::archive ar(blocks_file_name, alps::hdf5::archive::READ);
+	  blocks.resize(n_blocks, std::vector<size_t>());
+	  for(std::size_t i=0; i < blocks.size(); ++i) {
+	       std::string block_name;
+	       block_name = base_name + boost::lexical_cast<std::string>(i);
+	       blocks[i].resize(4, 0);
+	       ar >> alps::make_pvp(block_name, blocks[i]);
+	  }
+     } else {
+	  // diagonal hopping - equivalent to each block holding one orbital
+	  blocks.resize(n_blocks, std::vector<size_t>());
+	  for(std::size_t i=0; i < blocks.size(); ++i) {
+	       std::vector<size_t> temp{i};
+	       blocks[i] = temp;
+	  }
+     }
+}
+
+void GfBase::get_interaction_matrix(int ref_site_index, const alps::params &parms) {
+     // TODO: get this uniform between alps3 and alps2
+     // Convention issue: no need to worry about it with interaction matrix,
+     // since it is symmetric for density-density interactions.
+     std::vector<double> u_elements;
+     u_elements.resize(per_site_orbital_size * per_site_orbital_size);
+     if (parms.exists("U_MATRIX")) {
+	  std::string ufilename = boost::lexical_cast<std::string>(parms["U_MATRIX"]);
+	  if (parms.exists("UMATRIX_IN_HDF5") &&
+	      boost::lexical_cast<bool>(parms["UMATRIX_IN_HDF5"])) {
+	       //attempt to read from h5 archive
+	       alps::hdf5::archive u_archive(ufilename, alps::hdf5::archive::READ);
+	       u_archive >> alps::make_pvp("/Umatrix", u_elements);
+	  } else {
+	       std::cerr << "U matrix is not defined properly in hdf5 input file in function "
+		    + std::string(__FUNCTION__);
+	       throw std::runtime_error("pb reading U_MATRIX");	       
+	  }
+     } else {
+	  std::cerr << "U_MATRIX param is absent from hdf5 input file in function "
+	       + std::string(__FUNCTION__);
+	  throw std::runtime_error("pb reading U_MATRIX");
+     }
+     Eigen::MatrixXcd interaction_matrix =
+	  Eigen::MatrixXcd::Constant(tot_orbital_size, tot_orbital_size, 0.0);
+     int cur_index = 0;
+     for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+	  for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++, cur_index++) {
+	       interaction_matrix.block(ref_site_index * per_site_orbital_size,
+					ref_site_index * per_site_orbital_size,
+					per_site_orbital_size,
+					per_site_orbital_size)(orb1, orb2) =
+		    u_elements[cur_index];
+	  }
+     }
+}
+
+void GfBase::get_density_density_correl(int ref_site_index,
+					const alps::params &parms,
+					alps::hdf5::archive &h5_archive) {
+     // a_dagger_b is picked from the
+     // values of G(tau = beta)
+     // density density correlation
+     // is available in observables.dat or in the hdf5 file.
+     // HERE - maybe not
+     if (parms["from_alps3"].as<bool>()) {
+	  std::string density_density_result_name = "DENSITY_DENSITY_CORRELATION_FUNCTIONS";
+	  // density density data
+	  typedef boost::multi_array<double, 3> array_type;
+	  int n_tau_for_density = boost::lexical_cast<int>(parms["measurement.nn_corr.n_tau"]);
+	  int n_orbital_pairs_for_density = per_site_orbital_size * (per_site_orbital_size + 1) / 2;
+	  array_type density_data(
+	       boost::extents[n_orbital_pairs_for_density][n_tau_for_density][2]);
+	  h5_archive[density_density_result_name] >> density_data;
+	  // Build density density data
+	  std::string fname = boost::lexical_cast<std::string>(parms["measurement.nn_corr.def"]);
+	  std::ifstream infile(fname.c_str());
+	  if(!infile.good()) {
+	       cout << "Could not find file " << fname <<
+		    " for definition of density density data" << endl;
+	       throw runtime_error("Bad input for density density calcs !");
+	  } else {
+	       double cur_dd_correl;
+	       int data_index, orb1, orb2, nb_lines;
+	       std::string line;
+	       std::getline(infile, line);
+	       std::istringstream iss(line);
+	       iss >> nb_lines;
+	       for (int i = 0; i < nb_lines; i++) {
+		    std::string line2;
+		    std::getline(infile, line2);
+		    std::istringstream iss2(line2);
+		    iss2 >> data_index >> orb1 >> orb2;
+		    cur_dd_correl = density_data[data_index][0][0];
+		    density_density_correl.block(ref_site_index * per_site_orbital_size,
+						 ref_site_index * per_site_orbital_size,
+						 per_site_orbital_size,
+						 per_site_orbital_size)(orb1, orb2)
+			 = cur_dd_correl;
+		    density_density_correl.block(ref_site_index * per_site_orbital_size,
+						 ref_site_index * per_site_orbital_size,
+						 per_site_orbital_size,
+						 per_site_orbital_size)(orb2, orb1)
+			 = cur_dd_correl;
+	       }
+	  }
+     } else {
+	  // TODO use uniform N_TAU
+	  int n_tau = boost::lexical_cast<int>(parms["N_TAU"]) + 1;
+	  std::string gtau_path("/od_hyb_G_tau/");
+	  double cur_dd_correl;
+	  for(int block_index = 0; block_index < n_blocks; ++block_index) {
+	       int cur_index = 0;
+	       for(int line_idx = 0; line_idx < blocks[block_index].size(); ++line_idx) {
+		    for(int col_idx = 0; col_idx < blocks[block_index].size();
+			++col_idx) {
+			 std::stringstream density_path;
+			 // ATTENTION here: convention of QMC is F_ij = -T<c_i c^dag_j>,
+			 // but DMFT is looking for  c^dag_i c_j
+			 cur_index = line_idx + col_idx * blocks[block_index].size();
+			 if (line_idx == col_idx) {
+			      density_path << "/simulation/results/density_" <<
+				   boost::lexical_cast<std::string>(line_idx) + "/mean/value";
+			 } else {
+			      if (line_idx > col_idx) {
+				   density_path << "/simulation/results/nn_" <<
+					boost::lexical_cast<std::string>(line_idx) + "_" +
+					boost::lexical_cast<std::string>(col_idx)
+					+ "/mean/value";
+			      } else {
+				   density_path << "/simulation/results/nn_" <<
+					boost::lexical_cast<std::string>(col_idx) + "_" +
+					boost::lexical_cast<std::string>(line_idx)
+					+ "/mean/value";
+			      }
+			 }
+			 // VERY CAREFUL HERE
+			 // What comes out of QMC is G_{kl} =  -<T c_k(tau) c^dagger_l(tau')>
+			 // we need c^\dagger_k c_l here, so transpose -
+			 // see above in the construction!!
+			 h5_archive >> alps::make_pvp(density_path.str(), cur_dd_correl);
+			 density_density_correl.block(ref_site_index * per_site_orbital_size,
+						      ref_site_index * per_site_orbital_size,
+						      per_site_orbital_size,
+						      per_site_orbital_size)
+			      (blocks[block_index][line_idx],
+			       blocks[block_index][col_idx]) = cur_dd_correl;
+		    }
+	       }
+	  } 
+     }
+     // Print out some log for convergence check against
+     // similar output from dmft
+     cout << "<n_i n_j> :" << endl << density_density_correl.block(
+	  ref_site_index * per_site_orbital_size,
+	  ref_site_index * per_site_orbital_size,
+	  per_site_orbital_size,
+	  per_site_orbital_size).real() << endl;
+}
+
