@@ -8,7 +8,6 @@
 #include <alps/hdf5/archive.hpp>
 #include <alps/hdf5/pointer.hpp>
 #include <alps/hdf5/complex.hpp>
-//#include <alps/hdf5/multi_array.hpp>
 #include "greens_function.hpp"
 #include "hybridization_function.hpp"
 

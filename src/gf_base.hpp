@@ -24,6 +24,8 @@ public:
      void get_interaction_matrix(int ref_site_index, const alps::params &parms);
      void get_density_density_correl(int ref_site_index, const alps::params &parms,
 						 alps::hdf5::archive &h5_archive);
+     void get_a_dagger_b(int ref_site_index, const alps::params &parms,
+			 alps::hdf5::archive &h5_archive);
      void read_params(const alps::params &parms);
 
      Eigen::VectorXcd matsubara_frequencies_;

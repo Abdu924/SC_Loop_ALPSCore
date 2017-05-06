@@ -86,7 +86,7 @@ void define_parameters(alps::params &parameters) {
 		.define<int >("N_ORBITALS", "total number of spin-orbitals")
 		.define<double>("C_MAX", "parameter for tail adjustment of gf")
 		.define<double>("C_MIN", "parameter for tail adjustment of gf")
-		.define<double>("model.ALPHA", 1.0, "parameter for combination of new and old self-energies")	  
+		.define<double>("mixing.ALPHA", 0.5, "parameter for combination of new and old self-energies")	  
 		.define<bool>("cthyb.DMFT_FRAMEWORK", false,
 			      "true if we need to tie into a dmft framework")
 		.define<bool>("cthyb.GLOBALFLIP", false, "TODO: UNDERSTAND WHAT THIS DOES.")
@@ -370,12 +370,10 @@ int main(int argc, const char* argv[]) {
 							      ref_site_index, tail_order);
 			 }
 		    }
-		    double alpha = 0.5;
-		    if (!(old_self_energy->get_is_nil_sigma())) {
-			 alpha = parms["model.ALPHA"];
-		    } else {
+		    double alpha(parms["mixing.ALPHA"]);
+		    if (old_self_energy->get_is_nil_sigma()) {
 			 alpha = 1.0;
-			 cout << "Old self-energy not found => Forcing alpha" << endl;
+			 cout << "Old self-energy not found => Forcing alpha tp 1.0" << endl;
 		    }
 		    cout << "Using alpha = " << alpha << " for mixing " << endl;
 		    // apply mix with parameter alpha
@@ -390,10 +388,6 @@ int main(int argc, const char* argv[]) {
 			 }
 		    }
 		    if (parms["cthyb.MEASURE_legendre"]) {
-			 //int sampling_type = 1;
-			 //boost::shared_ptr<Greensfunction>
-			 //legendre_greens_function(new Greensfunction(parms, world_rank, sampling_type, w_h5_archive));
-			 //legendre_greens_function->generate_t_coeff(w_h5_archive);
 			 legendre_qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
 			 std::string new_h5_group_name("/current_legendre_sigma");
 			 legendre_qmc_self_energy->hdf5_dump(w_h5_archive, new_h5_group_name);

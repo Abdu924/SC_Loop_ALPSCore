@@ -46,8 +46,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       boost::shared_ptr<Chemicalpotential> chempot,
 		       int ref_site_index, alps::hdf5::archive h5_archive, int input_type,
 		       bool verbose)
-     :GfBase(parms, world_rank, chempot), input_type(input_type),
-      is_alps3(false) {
+     :GfBase(parms, world_rank, chempot), input_type(input_type), is_alps3(false) {
      basic_init(parms, verbose);
      is_analytic_tail = static_cast<bool>(parms["mixing.analytic_sigma_tail"]);
      std::string symmetry_file;
@@ -884,6 +883,8 @@ void Selfenergy::get_qmc_single_site_hdf5_data(size_t site_index,
 					boost::lexical_cast<std::string>(block_index) +
 					"/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
 				h5_archive >> alps::make_pvp(orbital_path.str(), temp_data);
+				if ((cur_index == 0)) {
+				}
 				for (size_t freq_index = 0; freq_index < n_matsubara; freq_index++) {
 					values_[freq_index].block(site_index * per_site_orbital_size,
 								  site_index * per_site_orbital_size,

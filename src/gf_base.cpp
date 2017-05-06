@@ -16,18 +16,18 @@ void GfBase::read_params(const alps::params &parms) {
 	  static_cast<size_t>(parms["N_SITES"]) : 1;
      per_site_orbital_size = parms.exists("N_ORBITALS") ?
 	  static_cast<size_t>(parms["N_ORBITALS"]) : 2;
-     tot_orbital_size = per_site_orbital_size * n_sites;
      // Careful - this is the actual number of Matsubara frequencies.
      // not the actual value of N for the max value of omega such that
      // max_freq = 2N + 1 pi / beta, because n = 0 is also a frequency,
      // so that n_matsubara = N + 1
      n_matsubara = parms["N_MATSUBARA"];
+     beta = static_cast<double>(parms["BETA"]);
+     tot_orbital_size = per_site_orbital_size * n_sites;
      matsubara_frequencies_ = Eigen::VectorXcd::Zero(n_matsubara);
      for (size_t freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  matsubara_frequencies_(freq_index) =
 	       complex<double>(0.0, (2.0 * freq_index + 1) * M_PI / beta);
      }
-     beta = static_cast<double>(parms["BETA"]);
      interaction_matrix =
 	  Eigen::MatrixXcd::Constant(tot_orbital_size, tot_orbital_size, 0.0);
      site_symmetry_matrix = Eigen::MatrixXcd::Constant(tot_orbital_size, tot_orbital_size, 1.0);
@@ -94,11 +94,8 @@ void GfBase::get_interaction_matrix(int ref_site_index, const alps::params &parm
 void GfBase::get_density_density_correl(int ref_site_index,
 					const alps::params &parms,
 					alps::hdf5::archive &h5_archive) {
-     // a_dagger_b is picked from the
-     // values of G(tau = beta)
      // density density correlation
      // is available in observables.dat or in the hdf5 file.
-     // HERE - maybe not
      if (parms["from_alps3"].as<bool>()) {
 	  std::string density_density_result_name = "DENSITY_DENSITY_CORRELATION_FUNCTIONS";
 	  // density density data
@@ -194,3 +191,78 @@ void GfBase::get_density_density_correl(int ref_site_index,
 	  per_site_orbital_size).real() << endl;
 }
 
+void GfBase::get_a_dagger_b(int ref_site_index,
+			    const alps::params &parms,
+			    alps::hdf5::archive &h5_archive) {
+     // a_dagger_b is picked from the
+     // values of G(tau = beta)
+     // density density correlation
+     // is available in observables.dat or in the hdf5 file.
+     // HERE - maybe not
+     // Convention issue: no need to worry about it with interaction matrix,
+     // since it is symmetric for density-density interactions.
+     // TODO : get rid of u_pd in Alps3
+     if (parms["from_alps3"].as<bool>()) {
+	  int n_tau = boost::lexical_cast<int>(parms["measurement.G1.n_tau"]) + 1;
+	  typedef boost::multi_array<complex<double> , 3> cplx_array_type;
+	  cplx_array_type raw_full_gf(
+	       boost::extents[n_tau][per_site_orbital_size][per_site_orbital_size]);	  
+	  h5_archive["/gtau/data"] >> raw_full_gf;
+	  // Build a_dagger_b data
+	  for(int block_index = 0; block_index < n_blocks; ++block_index) {
+	       for(int line_idx = 0; line_idx < blocks[block_index].size(); ++line_idx) {
+		    for(int col_idx = 0; col_idx < blocks[block_index].size(); ++col_idx) {
+			 // ATTENTION here: convention of QMC Alps2 is F_ij = -T<c_i c^dag_j>,
+			 // but DMFT is looking for  c^dag_i c_j
+			 // VERY CAREFUL HERE -- With Alps3 we are fine though!!
+			 // What comes out of QMC is G_{kl} =  -<T c_k(tau) c^dagger_l(tau')>
+			 // we need c^\dagger_k c_l here, so transpose -
+			 a_dagger_b.block(ref_site_index * per_site_orbital_size,
+					  ref_site_index * per_site_orbital_size,
+					  per_site_orbital_size,
+					  per_site_orbital_size)
+			      (blocks[block_index][line_idx],
+			       blocks[block_index][col_idx]) =
+			      // ATTENTION: DIFFERENT SIGN CONVENTION FROM FORTRAN
+			      // HERE
+			      // AND NEED TO SYMMETRIZE FOR DATA FROM ALPS3
+			      -0.5 * (raw_full_gf[n_tau - 1][line_idx][col_idx]
+				      + std::conj(raw_full_gf[n_tau - 1][col_idx][line_idx]));
+		    }
+	       }
+	  }
+     } else { // now Alps2 version
+	  int n_tau = boost::lexical_cast<int>(parms["N_TAU"]) + 1;
+	  std::string gtau_path("/od_hyb_G_tau/");
+	  std::vector<std::complex<double> > temp_data;
+	  temp_data.resize(n_tau);
+	  for(int block_index = 0; block_index < n_blocks; ++block_index) {
+	       int cur_index = 0;
+	       for(int line_idx = 0; line_idx < blocks[block_index].size(); ++line_idx) {
+		    for(int col_idx = 0; col_idx < blocks[block_index].size();
+			++col_idx) {
+			 std::stringstream orbital_path;
+			 // ATTENTION here: convention of QMC is F_ij = -T<c_i c^dag_j>,
+			 // but DMFT is looking for  c^dag_i c_j
+			 cur_index = line_idx + col_idx * blocks[block_index].size();
+			 orbital_path << gtau_path << boost::lexical_cast<std::string>(block_index) +
+			      "/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
+			 // VERY CAREFUL HERE
+			 // What comes out of QMC is G_{kl} =  -<T c_k(tau) c^dagger_l(tau')>
+			 // we need c^\dagger_k c_l here, so transpose -
+			 // see above in the construction!!
+			 h5_archive >> alps::make_pvp(orbital_path.str(), temp_data);
+			 a_dagger_b.block(ref_site_index * per_site_orbital_size,
+					  ref_site_index * per_site_orbital_size,
+					  per_site_orbital_size,
+					  per_site_orbital_size)
+			      (blocks[block_index][line_idx],
+			       blocks[block_index][col_idx]) =
+			      // ATTENTION: DIFFERENT SIGN CONVENTION FROM FORTRAN
+			      // HERE
+			      -temp_data.back();
+		    }
+	       }
+	  } 
+     }
+}
