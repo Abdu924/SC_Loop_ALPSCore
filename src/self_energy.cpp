@@ -519,6 +519,96 @@ void Selfenergy::compute_tail_coeffs( boost::shared_ptr<Greensfunction> greens_f
 	       greens_function->get_measured_c2());
 }
 
+// void Selfenergy::compute_tail_coeffs(int ref_site_index) {
+//      // 0.5 factor stems from the fact that the formal expression
+//      // of the Hamiltonian is without order in the thesis, while it has
+//      // order (a before b) in the papers ==> equivalent to specifying U/2
+//      // in the papers
+//      // For details of derivation of formulae, see Gull thesis,
+//      // Appendix B.4, or hopefully even better, my own thesis, appendices.
+//      // Sell also Ferber's thesis for order 3 coeff.
+//      cout << "analytic trail treatment for tail of SELF ENERGY"
+// 	  << endl << endl;
+//      Sigma_0_.block(ref_site_index * per_site_orbital_size,
+// 		    ref_site_index * per_site_orbital_size,
+// 		    per_site_orbital_size,
+// 		    per_site_orbital_size) =
+// 	  -0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
+// 					   ref_site_index * per_site_orbital_size,
+// 					   per_site_orbital_size,
+// 					   per_site_orbital_size) +
+// 		  interaction_matrix.block(ref_site_index * per_site_orbital_size,
+// 					   ref_site_index * per_site_orbital_size,
+// 					   per_site_orbital_size,
+// 					   per_site_orbital_size).transpose())
+// 	  .cwiseProduct(a_dagger_b.block(
+// 			     ref_site_index * per_site_orbital_size,
+// 			     ref_site_index * per_site_orbital_size,
+// 			     per_site_orbital_size,
+// 			     per_site_orbital_size));
+//      // Now deal with diagonal terms
+//      Sigma_0_.block(ref_site_index * per_site_orbital_size,
+// 		    ref_site_index * per_site_orbital_size,
+// 		    per_site_orbital_size,
+// 		    per_site_orbital_size).diagonal() =
+// 	  Eigen::VectorXcd::Zero(per_site_orbital_size);
+//      for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
+// 	  for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
+// 	       // HERE Note that there is some possible discrepancy to remove between
+// 	       // dmft and qmc: on the dmft side, the crystal field is
+// 	       // input via the diagonal elements of the hopping matrix,
+// 	       // while on the qmc side it is blent with mu in MUvector.
+// 	       // as a consequence, the energy of each orbital in the present code
+// 	       // is indeed the \epsilon_k needed in the formula from my thesis.
+// 	       Sigma_0_.block(ref_site_index * per_site_orbital_size,
+// 			      ref_site_index * per_site_orbital_size,
+// 			      per_site_orbital_size,
+// 			      per_site_orbital_size)(line_idx, line_idx) +=
+// 		    0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
+// 						    ref_site_index * per_site_orbital_size,
+// 						    per_site_orbital_size,
+// 						    per_site_orbital_size)(line_idx, col_idx) +
+// 			   interaction_matrix.block(ref_site_index * per_site_orbital_size,
+// 						    ref_site_index * per_site_orbital_size,
+// 						    per_site_orbital_size,
+// 						    per_site_orbital_size)(col_idx, line_idx))*
+// 		    density_density_correl.block(ref_site_index * per_site_orbital_size,
+// 						 ref_site_index * per_site_orbital_size,
+// 						 per_site_orbital_size,
+// 						 per_site_orbital_size)(col_idx, col_idx);
+// 	       for(int ter_idx = 0; ter_idx < per_site_orbital_size; ++ter_idx) {
+// 		    Sigma_1_.block(ref_site_index * per_site_orbital_size,
+// 				   ref_site_index * per_site_orbital_size,
+// 				   per_site_orbital_size,
+// 				   per_site_orbital_size)(line_idx, line_idx) +=
+// 			 interaction_matrix.block(ref_site_index * per_site_orbital_size,
+// 						  ref_site_index * per_site_orbital_size,
+// 						  per_site_orbital_size,
+// 						  per_site_orbital_size)(line_idx, col_idx) *
+// 			 interaction_matrix.block(ref_site_index * per_site_orbital_size,
+// 						  ref_site_index * per_site_orbital_size,
+// 						  per_site_orbital_size,
+// 						  per_site_orbital_size)(line_idx, ter_idx) *
+// 			 (density_density_correl.block(ref_site_index * per_site_orbital_size,
+// 						       ref_site_index * per_site_orbital_size,
+// 						       per_site_orbital_size,
+// 						       per_site_orbital_size)(ter_idx, col_idx) -
+// 			  density_density_correl.block(ref_site_index * per_site_orbital_size,
+// 						       ref_site_index * per_site_orbital_size,
+// 						       per_site_orbital_size,
+// 						       per_site_orbital_size)(ter_idx, ter_idx) *
+// 			  density_density_correl.block(ref_site_index * per_site_orbital_size,
+// 						       ref_site_index * per_site_orbital_size,
+// 						       per_site_orbital_size,
+// 						       per_site_orbital_size)(col_idx, col_idx));
+// 	       }
+// 	  }
+//      }
+//      if (!is_analytic_tail) {
+// 	  fit_tails(ref_site_index);
+//      }
+// }
+
 void Selfenergy::compute_tail_coeffs(int ref_site_index) {
      // 0.5 factor stems from the fact that the formal expression
      // of the Hamiltonian is without order in the thesis, while it has
@@ -532,26 +622,13 @@ void Selfenergy::compute_tail_coeffs(int ref_site_index) {
      Sigma_0_.block(ref_site_index * per_site_orbital_size,
 		    ref_site_index * per_site_orbital_size,
 		    per_site_orbital_size,
-		    per_site_orbital_size) =
-	  -0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
-					   ref_site_index * per_site_orbital_size,
-					   per_site_orbital_size,
-					   per_site_orbital_size) +
-		  interaction_matrix.block(ref_site_index * per_site_orbital_size,
-					   ref_site_index * per_site_orbital_size,
-					   per_site_orbital_size,
-					   per_site_orbital_size).transpose())
-	  .cwiseProduct(a_dagger_b.block(
-			     ref_site_index * per_site_orbital_size,
-			     ref_site_index * per_site_orbital_size,
-			     per_site_orbital_size,
-			     per_site_orbital_size));
-     // Now deal with diagonal terms
-     Sigma_0_.block(ref_site_index * per_site_orbital_size,
+		    per_site_orbital_size) = target_c2;
+     for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
+	  Sigma_0_.block(ref_site_index * per_site_orbital_size,
 		    ref_site_index * per_site_orbital_size,
 		    per_site_orbital_size,
-		    per_site_orbital_size).diagonal() =
-	  Eigen::VectorXcd::Zero(per_site_orbital_size);
+		    per_site_orbital_size).diagonal()(line_idx) += (*chempot_)[line_idx];
+     }	  
      for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
 	  for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
 	       // HERE Note that there is some possible discrepancy to remove between
@@ -560,22 +637,6 @@ void Selfenergy::compute_tail_coeffs(int ref_site_index) {
 	       // while on the qmc side it is blent with mu in MUvector.
 	       // as a consequence, the energy of each orbital in the present code
 	       // is indeed the \epsilon_k needed in the formula from my thesis.
-	       Sigma_0_.block(ref_site_index * per_site_orbital_size,
-			      ref_site_index * per_site_orbital_size,
-			      per_site_orbital_size,
-			      per_site_orbital_size)(line_idx, line_idx) +=
-		    0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						    ref_site_index * per_site_orbital_size,
-						    per_site_orbital_size,
-						    per_site_orbital_size)(line_idx, col_idx) +
-			   interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						    ref_site_index * per_site_orbital_size,
-						    per_site_orbital_size,
-						    per_site_orbital_size)(col_idx, line_idx))*
-		    density_density_correl.block(ref_site_index * per_site_orbital_size,
-						 ref_site_index * per_site_orbital_size,
-						 per_site_orbital_size,
-						 per_site_orbital_size)(col_idx, col_idx);
 	       for(int ter_idx = 0; ter_idx < per_site_orbital_size; ++ter_idx) {
 		    Sigma_1_.block(ref_site_index * per_site_orbital_size,
 				   ref_site_index * per_site_orbital_size,
