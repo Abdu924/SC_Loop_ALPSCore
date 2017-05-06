@@ -52,6 +52,9 @@ void GfBase::read_params(const alps::params &parms) {
 	       blocks[i] = temp;
 	  }
      }
+     measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
 }
 
 void GfBase::get_interaction_matrix(int ref_site_index, const alps::params &parms) {
@@ -273,4 +276,12 @@ void GfBase::feed_tail_params(int ref_site_index,
      get_interaction_matrix(ref_site_index, parms);
      get_density_density_correl(ref_site_index, parms, h5_archive);
      get_a_dagger_b(ref_site_index, parms, h5_archive);
+}
+
+Eigen::MatrixXcd GfBase::get_measured_c2() {
+     return measured_c2;
+}
+
+Eigen::MatrixXcd GfBase::get_measured_c3() {
+     return measured_c3;
 }

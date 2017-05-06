@@ -21,8 +21,6 @@ public:
      Greensfunction(const alps::params &parms, int world_rank,
 		    int sampling_type,  alps::hdf5::archive &h5_archive);
      Eigen::MatrixXcd get_dyson_result(int freq_index, bool is_negative);
-     Eigen::MatrixXcd get_measured_c2();
-     Eigen::MatrixXcd get_measured_c3();
      //void generate_t_coeffs(alps::hdf5::archive &h5_archive);
      
      virtual ~Greensfunction() {}
@@ -53,7 +51,6 @@ protected:
 	
      std::vector<Eigen::MatrixXcd > raw_gl_matrices;
      Eigen::MatrixXcd full_t_set;
-     Eigen::MatrixXcd measured_c1, measured_c2, measured_c3;
      std::vector<Eigen::MatrixXcd> gl_values_;
      std::vector<Eigen::MatrixXcd> bare_gf_values_;
      std::vector<Eigen::MatrixXcd> bare_gf_neg_values_;

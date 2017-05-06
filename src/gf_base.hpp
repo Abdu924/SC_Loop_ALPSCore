@@ -40,6 +40,8 @@ public:
      size_t tot_orbital_size;
      double beta;
      std::vector<std::vector<size_t> > blocks;
+     Eigen::MatrixXcd get_measured_c2();
+     Eigen::MatrixXcd get_measured_c3();
 
 protected:
      int world_rank_;
@@ -47,6 +49,7 @@ protected:
      Eigen::MatrixXcd site_symmetry_matrix;
      Eigen::MatrixXcd a_dagger_b;
      Eigen::MatrixXcd density_density_correl;
+     Eigen::MatrixXcd measured_c1, measured_c2, measured_c3;
      std::vector<Eigen::MatrixXcd> qmc_tail;
      boost::shared_ptr<Chemicalpotential> chempot_;
      int n_matsubara;

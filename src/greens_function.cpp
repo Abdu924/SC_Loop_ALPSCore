@@ -115,14 +115,6 @@ void Greensfunction::read_bare_gf() {
      }
 }
 
-Eigen::MatrixXcd Greensfunction::get_measured_c2() {
-     return measured_c2;
-}
-
-Eigen::MatrixXcd Greensfunction::get_measured_c3() {
-     return measured_c3;
-}
-
 Eigen::MatrixXcd Greensfunction::get_dyson_result(int freq_index, bool is_negative_freq) {
      assert(freq_index < n_matsubara_for_alps2);
      if (!is_negative_freq) {
@@ -309,9 +301,6 @@ void Greensfunction::display_fixed_legendre() {
 }
      
 void Greensfunction::init_gf_container() {
-     measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-     measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-     measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      tl_values.resize(l_max);
      tl_modulus = 0.0;
      for (int l_index = 0; l_index < l_max; l_index++) {
