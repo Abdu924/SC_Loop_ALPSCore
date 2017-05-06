@@ -4,12 +4,17 @@
 #include<iostream>
 #include <complex>
 #include <cmath>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <iomanip>
 #include <alps/params.hpp>
-#include "chemical_potential.hpp"
 #include <boost/multi_array.hpp>
 #include <alps/hdf5/archive.hpp>
 #include <alps/hdf5/complex.hpp>
 #include <alps/hdf5/multi_array.hpp>
+#include <alps/hdf5/pointer.hpp>
+#include "chemical_potential.hpp"
 
 using namespace std;
 

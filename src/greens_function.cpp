@@ -1,13 +1,4 @@
 //#include <boost/math/special_functions/bessel.hpp>
-#include <iostream>
-#include <cmath>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <iomanip>
-#include <alps/hdf5/archive.hpp>
-#include <alps/hdf5/pointer.hpp>
-#include <alps/hdf5/complex.hpp>
 #include "greens_function.hpp"
 #include "hybridization_function.hpp"
 

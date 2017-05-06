@@ -1,14 +1,4 @@
 #include <boost/multi_array.hpp>
-#include <iostream>
-#include <cmath>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <iomanip>
-#include <alps/hdf5/archive.hpp>
-#include <alps/hdf5/pointer.hpp>
-#include <alps/hdf5/complex.hpp>
-#include <alps/hdf5/multi_array.hpp>
 #include "self_energy.hpp"
 
 /*
