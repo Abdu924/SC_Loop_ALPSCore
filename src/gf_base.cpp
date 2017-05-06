@@ -291,6 +291,13 @@ Eigen::MatrixXcd GfBase::get_measured_c3() {
 }
 
 void GfBase::get_target_c2(int ref_site_index) {
+     // 0.5 factor stems from the fact that the formal expression
+     // of the Hamiltonian is without order in the thesis, while it has
+     // order (a before b) in the papers ==> equivalent to specifying U/2
+     // in the papers
+     // For details of derivation of formulae, see Gull thesis,
+     // Appendix B.4, or hopefully even better, my own thesis, appendices.
+     // Sell also Ferber's thesis for order 3 coeff.
      std::cout << "Compute target moments for GF" << std::endl << std::endl;
      target_c2 = -0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
 						  ref_site_index * per_site_orbital_size,
