@@ -32,7 +32,8 @@ public:
      void get_a_dagger_b(int ref_site_index, const alps::params &parms,
 			 alps::hdf5::archive &h5_archive);
      void read_params(const alps::params &parms);
-
+     void get_target_c2(int ref_site_index);
+     
      Eigen::VectorXcd matsubara_frequencies_;
      size_t n_blocks;
      size_t n_sites;
@@ -50,6 +51,7 @@ protected:
      Eigen::MatrixXcd a_dagger_b;
      Eigen::MatrixXcd density_density_correl;
      Eigen::MatrixXcd measured_c1, measured_c2, measured_c3;
+     Eigen::MatrixXcd target_c1, target_c2, target_c3;
      std::vector<Eigen::MatrixXcd> qmc_tail;
      boost::shared_ptr<Chemicalpotential> chempot_;
      int n_matsubara;

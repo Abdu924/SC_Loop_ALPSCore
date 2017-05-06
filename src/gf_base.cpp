@@ -55,6 +55,9 @@ void GfBase::read_params(const alps::params &parms) {
      measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     target_c1 = Eigen::MatrixXcd::Identity(per_site_orbital_size, per_site_orbital_size);
+     target_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     target_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
 }
 
 void GfBase::get_interaction_matrix(int ref_site_index, const alps::params &parms) {
@@ -284,4 +287,48 @@ Eigen::MatrixXcd GfBase::get_measured_c2() {
 
 Eigen::MatrixXcd GfBase::get_measured_c3() {
      return measured_c3;
+}
+
+void GfBase::get_target_c2(int ref_site_index) {
+     std::cout << "Compute target moments for GF" << std::endl << std::endl;
+     target_c2 = -0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
+						  ref_site_index * per_site_orbital_size,
+						  per_site_orbital_size,
+						  per_site_orbital_size) +
+			 interaction_matrix.block(ref_site_index * per_site_orbital_size,
+						  ref_site_index * per_site_orbital_size,
+						  per_site_orbital_size,
+						  per_site_orbital_size).transpose())
+	  .cwiseProduct(a_dagger_b.block(
+			     ref_site_index * per_site_orbital_size,
+			     ref_site_index * per_site_orbital_size,
+			     per_site_orbital_size,
+			     per_site_orbital_size));
+     // Now deal with diagonal terms
+     target_c2.diagonal() =
+	  Eigen::VectorXcd::Zero(per_site_orbital_size);
+     for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
+	  target_c2(line_idx, line_idx) = -(*chempot_)[line_idx];
+	  for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
+	       // HERE Note that there is some possible discrepancy to remove between
+	       // dmft and qmc: on the dmft side, the crystal field is
+	       // input via the diagonal elements of the hopping matrix,
+	       // while on the qmc side it is blent with mu in MUvector.
+	       // as a consequence, the energy of each orbital in the present code
+	       // is indeed the \epsilon_k needed in the formula from my thesis.
+	       target_c2(line_idx, line_idx) +=
+		    0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
+						    ref_site_index * per_site_orbital_size,
+						    per_site_orbital_size,
+						    per_site_orbital_size)(line_idx, col_idx) +
+			   interaction_matrix.block(ref_site_index * per_site_orbital_size,
+						    ref_site_index * per_site_orbital_size,
+						    per_site_orbital_size,
+						    per_site_orbital_size)(col_idx, line_idx))*
+		    density_density_correl.block(ref_site_index * per_site_orbital_size,
+						 ref_site_index * per_site_orbital_size,
+						 per_site_orbital_size,
+						 per_site_orbital_size)(col_idx, col_idx);
+	  }
+     }
 }
