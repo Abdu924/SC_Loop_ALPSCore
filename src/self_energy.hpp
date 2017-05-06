@@ -1,17 +1,10 @@
-#ifndef SELF_ENERGY__
-#define SELF_ENERGY__
-#include <Eigen/Dense>
-#include<vector>
-#include<iostream>
-#include <complex>
-#include <cmath>
-#include <alps/params.hpp>
-#include "chemical_potential.hpp"
+#pragma once
+#include "gf_base.hpp"
 #include "greens_function.hpp"
 
 using namespace std;
 
-class Selfenergy {
+class Selfenergy: public GfBase {
      /*
       * class providing interface for the self-energy
       */
@@ -56,24 +49,6 @@ public:
      
 protected:
      void compute_order2_partial_sum();
-     Eigen::MatrixXcd Sigma_0_;
-     Eigen::MatrixXcd Sigma_1_;	
-     std::vector<std::vector<size_t> > blocks;
-     //The properties of the tail
-     // same structure as the underlying data, but scalar quantities
-     static const size_t tail_fit_length;
-     Eigen::VectorXcd matsubara_frequencies_;
-
-     //Some useful parameteres
-     size_t per_site_orbital_size;
-     size_t n_blocks;
-     size_t n_sites;
-     size_t tot_orbital_size;
-     bool is_nil_sigma;
-     bool is_diagonal;
-     double beta;
-     size_t n_matsubara_freqs;
-     double order2_partial_sum_;
      void read_input_sigma(const alps::params &parms,
 			   alps::hdf5::archive h5_archive,
 			   string h5_group_name);
@@ -90,15 +65,16 @@ protected:
 						       int asymptotic_order);
      void get_qmc_single_site_hdf5_data(size_t site_index,
 					alps::hdf5::archive h5_archive, string rootpath);
+
+     Eigen::MatrixXcd Sigma_0_;
+     Eigen::MatrixXcd Sigma_1_;	
+     static const size_t tail_fit_length;
+     bool is_nil_sigma;
+     bool is_diagonal;
+     size_t n_matsubara_freqs;
+     double order2_partial_sum_;
 	  
 private:
-     int world_rank_;
-     Eigen::MatrixXcd interaction_matrix;
-     Eigen::MatrixXcd site_symmetry_matrix;
-     Eigen::MatrixXcd a_dagger_b;
-     Eigen::MatrixXcd density_density_correl;
-     std::vector<Eigen::MatrixXcd> qmc_tail;
-     boost::shared_ptr<Chemicalpotential> chempot_;
      bool enforce_real;
      int input_type;
      bool is_alps3;
@@ -118,7 +94,6 @@ private:
 			   const alps::params &parms,
 			   alps::hdf5::archive &h5_archive);
      void compute_tail_coeffs(boost::shared_ptr<Greensfunction> greens_function,
-			      boost::shared_ptr<Chemicalpotential> chempot,
 			      int ref_site_index);
      void compute_tail_coeffs(int ref_site_index);
      void fit_tails(int ref_site_index);
@@ -128,5 +103,3 @@ private:
      
      static const std::string density_density_result_name;
 };
-
-#endif //SELF_ENERGY__

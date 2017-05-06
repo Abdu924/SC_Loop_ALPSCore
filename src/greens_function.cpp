@@ -1,4 +1,4 @@
-#include <boost/math/special_functions/bessel.hpp>
+//#include <boost/math/special_functions/bessel.hpp>
 #include <iostream>
 #include <cmath>
 #include <fstream>
@@ -8,7 +8,7 @@
 #include <alps/hdf5/archive.hpp>
 #include <alps/hdf5/pointer.hpp>
 #include <alps/hdf5/complex.hpp>
-#include <alps/hdf5/multi_array.hpp>
+//#include <alps/hdf5/multi_array.hpp>
 #include "greens_function.hpp"
 #include "hybridization_function.hpp"
 
@@ -31,7 +31,7 @@ typedef boost::multi_array<double , 4> real_array_type;
 
 Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
 			       int sampling_type, alps::hdf5::archive &h5_archive)
-     :sampling_type(sampling_type), world_rank_(world_rank) {
+     :GfBase(parms, world_rank), sampling_type(sampling_type) {
      basic_init(parms);
      read_bare_gf();
      read_t_coeffs(h5_archive);
@@ -75,17 +75,9 @@ void Greensfunction::read_t_coeffs(alps::hdf5::archive &h5_archive) {
 
 void Greensfunction::basic_init(const alps::params &parms) {
      ref_site_index = 0;
-     n_blocks = static_cast<size_t>(parms["N_BLOCKS"]);
-     n_sites = parms.exists("N_SITES") ?
-	  static_cast<size_t>(parms["N_SITES"]) : 1;
-     per_site_orbital_size = parms.exists("N_ORBITALS") ?
-	  static_cast<size_t>(parms["N_ORBITALS"]) : 2;
-     tot_orbital_size = per_site_orbital_size * n_sites;
-     n_matsubara = static_cast<int>(parms["measurement.G1.N_MATSUBARA"]);
      n_matsubara_for_alps2 = static_cast<int>(parms["N_MATSUBARA"]);
      n_legendre = static_cast<int>(parms["cthyb.N_LEGENDRE"]);
      l_max = static_cast<int>(parms["mixing.L_MAX"]);
-     beta = static_cast<double>(parms["BETA"]);
      fix_sigma_0 = parms["mixing.FIX_SIGMA_0"].as<bool>();
      fix_sigma_1 = parms["mixing.FIX_SIGMA_1"].as<bool>();
      init_gf_container();

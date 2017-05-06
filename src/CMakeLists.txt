@@ -37,7 +37,7 @@ include_directories(
 find_package(Boost REQUIRED system thread timer chrono)
 
 add_executable(${PROJECT_NAME} main.cpp band_structure.cpp self_energy.cpp
-  dmft_model.cpp hybridization_function.cpp tail_manager.cpp greens_function.cpp)
+  dmft_model.cpp hybridization_function.cpp tail_manager.cpp greens_function.cpp gf_base.cpp)
 
 set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-deprecated)
 target_link_libraries(${PROJECT_NAME} ${ALPSCore_LIBRARIES} ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})

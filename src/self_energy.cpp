@@ -29,7 +29,7 @@ double square_inverse(complex<double> omega) {
 Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       alps::hdf5::archive h5_archive, string h5_group_name,
 		       bool verbose)
-     :world_rank_(world_rank), is_alps3(false), is_analytic_tail(true) {
+     :GfBase(parms, world_rank), is_alps3(false), is_analytic_tail(true) {
      basic_init(parms, verbose);
      read_input_sigma(parms, h5_archive, h5_group_name);
      if (verbose) {
@@ -46,7 +46,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       boost::shared_ptr<Chemicalpotential> chempot,
 		       int ref_site_index, alps::hdf5::archive h5_archive, int input_type,
 		       bool verbose)
-     :world_rank_(world_rank), chempot_(chempot), input_type(input_type),
+     :GfBase(parms, world_rank, chempot), input_type(input_type),
       is_alps3(false) {
      basic_init(parms, verbose);
      is_analytic_tail = static_cast<bool>(parms["mixing.analytic_sigma_tail"]);
@@ -84,7 +84,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       boost::shared_ptr<Chemicalpotential> chempot,
 		       int ref_site_index, alps::hdf5::archive h5_archive,
 		       boost::shared_ptr<Greensfunction> greens_function)
-     :world_rank_(world_rank), chempot_(chempot), input_type(1), is_alps3(true) {
+     :GfBase(parms, world_rank, chempot), input_type(1), is_alps3(true) {
      basic_init(parms);
      // defaults to true
      is_analytic_tail = static_cast<bool>(parms["mixing.analytic_sigma_tail"]);
@@ -105,7 +105,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      read_symmetry_definition(symmetry_file);
      read_qmc_sigma(ref_site_index, greens_function);
      //feed_tail_params(ref_site_index, parms, h5_archive);
-     compute_tail_coeffs(greens_function, chempot, ref_site_index);
+     compute_tail_coeffs(greens_function, ref_site_index);
      log_sigma_tails(ref_site_index);
      compute_qmc_tail(ref_site_index);
      // No need to append tails when data comes from Legendre
@@ -160,7 +160,7 @@ void Selfenergy::symmetrize_matrix_elements(int ref_site_index) {
      Eigen::MatrixXcd temp_matrix =
 	  Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      if (enforce_real) {
-	  for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+	  for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	       temp_matrix = values_[freq_index].block(ref_site_index * per_site_orbital_size,
 						       ref_site_index * per_site_orbital_size,
 						       per_site_orbital_size,
@@ -220,8 +220,8 @@ void Selfenergy::symmetrize_matrix_elements(int ref_site_index) {
 		      temp_matrix);
      } else {
 	  // use G_ij(i omega_n) = G^*_ji(-i omega_n)
-	  for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
-	       temp_matrix = neg_values_[n_matsubara_freqs - 1 - freq_index].
+	  for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
+	       temp_matrix = neg_values_[n_matsubara - 1 - freq_index].
 		    block(ref_site_index * per_site_orbital_size,
 			  ref_site_index * per_site_orbital_size,
 			  per_site_orbital_size,
@@ -292,7 +292,7 @@ void Selfenergy::symmetrize_sites(int ref_site_index) {
 				   ref_site_index * per_site_orbital_size,
 				   per_site_orbital_size,
 				   per_site_orbital_size);
-	       for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+	       for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 		    values_[freq_index].block(site_index * per_site_orbital_size,
 					      site_index * per_site_orbital_size,
 					      per_site_orbital_size,
@@ -315,7 +315,7 @@ void Selfenergy::symmetrize_sites(int ref_site_index) {
      a_dagger_b = a_dagger_b.cwiseProduct(site_symmetry_matrix);
      Sigma_0_ = Sigma_0_.cwiseProduct(site_symmetry_matrix);
      Sigma_1_ = Sigma_1_.cwiseProduct(site_symmetry_matrix);
-     for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+     for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  values_[freq_index] = values_[freq_index].cwiseProduct(site_symmetry_matrix);
 	  qmc_tail[freq_index] = qmc_tail[freq_index].cwiseProduct(site_symmetry_matrix);
      }
@@ -323,7 +323,7 @@ void Selfenergy::symmetrize_sites(int ref_site_index) {
 
 void Selfenergy::run_dyson_equation(int ref_site_index,
 				    boost::shared_ptr<Greensfunction> greens_function) {
-     for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+     for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  values_[freq_index].block(ref_site_index * per_site_orbital_size,
 				    ref_site_index * per_site_orbital_size,
 				    per_site_orbital_size,
@@ -345,13 +345,8 @@ void Selfenergy::basic_init(const alps::params &parms, bool verbose) {
      // Sensitive parameter - if too large, the noise at high frequency is translated
      // into shifts in the Legendre representation, and badly wrong estimates
      // of the tails.
+     is_diagonal = (n_blocks < per_site_orbital_size) ? false : true;
      matsubara_tail_estimate_region = std::round(2.0 * static_cast<double>(parms["C_MIN"]));
-     n_blocks = static_cast<size_t>(parms["N_BLOCKS"]);
-     n_sites = parms.exists("N_SITES") ?
-	  static_cast<size_t>(parms["N_SITES"]) : 1;
-     per_site_orbital_size = parms.exists("N_ORBITALS") ?
-	  static_cast<size_t>(parms["N_ORBITALS"]) : 2;
-     tot_orbital_size = per_site_orbital_size * n_sites;
      if (parms.exists("REAL_DELTA")) {
 	  enforce_real = static_cast<bool>(parms["REAL_DELTA"]);
      } else {
@@ -360,57 +355,14 @@ void Selfenergy::basic_init(const alps::params &parms, bool verbose) {
 	  // enforced for backwards compatibility.
 	  enforce_real = true;
      }
-     // Careful - this is the actual number of Matsubara frequencies.
-     // not the actual value of N for the max value of omega such that
-     // max_freq = 2N + 1 pi / beta, because n = 0 is also a frequency,
-     // so that n_matsubara_freqs = N + 1
-     if (is_alps3) {
-	  //n_matsubara_freqs = static_cast<size_t>(parms["measurement.G1.N_MATSUBARA"]);
-	  n_matsubara_freqs = static_cast<size_t>(parms["N_MATSUBARA"]);
-     } else {
-	  n_matsubara_freqs = static_cast<size_t>(parms["N_MATSUBARA"]);
-     }
      init_sigma_container();
-     beta = static_cast<double>(parms["BETA"]);
-     matsubara_frequencies_ = Eigen::VectorXcd::Zero(n_matsubara_freqs);
-     for (size_t freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
-	  matsubara_frequencies_(freq_index) =
-	       complex<double>(0.0, (2.0 * freq_index + 1) * M_PI / beta);
-     }
-     interaction_matrix =
-	  Eigen::MatrixXcd::Constant(tot_orbital_size, tot_orbital_size, 0.0);
-     site_symmetry_matrix = Eigen::MatrixXcd::Constant(tot_orbital_size, tot_orbital_size, 1.0);
-     density_density_correl = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
-     a_dagger_b = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      Sigma_0_ = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      Sigma_1_ = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
-     if (n_blocks < per_site_orbital_size) {
-	  is_diagonal = false;
-	  std::string base_name = "BLOCK_";
-	  std::string blocks_file_name = parms["BLOCKS"];
-	  alps::hdf5::archive ar(blocks_file_name, alps::hdf5::archive::READ);
-	  blocks.resize(n_blocks, std::vector<size_t>());
-	  for(std::size_t i=0; i < blocks.size(); ++i) {
-	       std::string block_name;
-	       block_name = base_name + boost::lexical_cast<std::string>(i);
-	       blocks[i].resize(4, 0);
-	       ar >> alps::make_pvp(block_name, blocks[i]);
-	  }
-     } else {
-	  // diagonal hopping - equivalent to each block holding one orbital
-	  is_diagonal = true;
-	  blocks.resize(n_blocks, std::vector<size_t>());
-	  for(std::size_t i=0; i < blocks.size(); ++i) {
-	       std::vector<size_t> temp{i};
-	       blocks[i] = temp;
-	  }
-     }
 }
 
 void Selfenergy::read_qmc_sigma(int ref_site_index,
 				boost::shared_ptr<Greensfunction> greens_function) {
      run_dyson_equation(ref_site_index, greens_function);
-     // No need to symmetrize for alps3 data coming from Legendre
 }
 
 void Selfenergy::read_qmc_sigma(int ref_site_index, alps::hdf5::archive h5_archive) {
@@ -445,7 +397,7 @@ void Selfenergy::symmetrize_qmc_sigma(int ref_site_index) {
      Eigen::MatrixXcd temp_matrix =
 	  Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      if (enforce_real) {
-	  for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+	  for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	       temp_matrix = values_[freq_index].block(ref_site_index * per_site_orbital_size,
 						       ref_site_index * per_site_orbital_size,
 						       per_site_orbital_size,
@@ -463,8 +415,8 @@ void Selfenergy::symmetrize_qmc_sigma(int ref_site_index) {
 	  }
      } else {
 	  // use G_ij(i omega_n) = G^*_ji(-i omega_n)
-	  for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
-	       temp_matrix = neg_values_[n_matsubara_freqs - 1 - freq_index].
+	  for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
+	       temp_matrix = neg_values_[n_matsubara - 1 - freq_index].
 		    block(ref_site_index * per_site_orbital_size,
 			  ref_site_index * per_site_orbital_size,
 			  per_site_orbital_size,
@@ -485,11 +437,11 @@ void Selfenergy::symmetrize_qmc_sigma(int ref_site_index) {
 }
 
 void Selfenergy::init_sigma_container() {
-     values_.resize(n_matsubara_freqs);
-     neg_values_.resize(n_matsubara_freqs);
+     values_.resize(n_matsubara);
+     neg_values_.resize(n_matsubara);
      is_nil_sigma = false;
      //initialize self-energy
-     for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+     for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  values_[freq_index] =
 	       Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
 	  neg_values_[freq_index] =
@@ -716,7 +668,6 @@ void Selfenergy::fit_tails(int ref_site_index) {
 }
 
 void Selfenergy::compute_tail_coeffs( boost::shared_ptr<Greensfunction> greens_function,
-				      boost::shared_ptr<Chemicalpotential> chempot,
 				      int ref_site_index) {
      cout << "SELF ENERGY tails from Legendre cumulatives" << endl << endl;
      Sigma_0_.block(ref_site_index * per_site_orbital_size,
@@ -728,7 +679,7 @@ void Selfenergy::compute_tail_coeffs( boost::shared_ptr<Greensfunction> greens_f
      			ref_site_index * per_site_orbital_size,
      			per_site_orbital_size,
      			per_site_orbital_size)(orbital, orbital) +=
-     	       (*chempot)[orbital];
+     	       (*chempot_)[orbital];
      }
      Sigma_1_.block(ref_site_index * per_site_orbital_size,
 		    ref_site_index * per_site_orbital_size,
@@ -848,7 +799,7 @@ void Selfenergy::log_sigma_tails(int ref_site_index) {
 void Selfenergy::compute_qmc_tail(int ref_site_index) {
      //initialize qmc tail
      qmc_tail.clear();
-     for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+     for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  qmc_tail.push_back(Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size));
 	  qmc_tail[freq_index].block(ref_site_index * per_site_orbital_size,
 				     ref_site_index * per_site_orbital_size,
@@ -885,8 +836,8 @@ void Selfenergy::append_qmc_tail(int ref_site_index,
      }
      conn_func(0) = 1.0;
      conn_func(raw_steps - 1) = 0.0;
-     Eigen::VectorXd append_weights(n_matsubara_freqs);
-     for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+     Eigen::VectorXd append_weights(n_matsubara);
+     for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  if (std::abs(matsubara_frequencies_[freq_index]) < c_min) {
 	       append_weights(freq_index) = 1.0;
 	  } else if (std::abs(matsubara_frequencies_[freq_index]) > c_max) {
@@ -921,7 +872,7 @@ void Selfenergy::get_qmc_single_site_hdf5_data(size_t site_index,
 					       alps::hdf5::archive h5_archive,
 					       string rootpath) {
 	std::vector<std::complex<double>> temp_data;
-	temp_data.resize(2 * n_matsubara_freqs);
+	temp_data.resize(2 * n_matsubara);
 	for (size_t block_index = 0; block_index < n_blocks; block_index++) {
 		size_t cur_index = 0;
 		for (size_t orb1 = 0; orb1 < blocks[block_index].size(); orb1++) {
@@ -933,7 +884,7 @@ void Selfenergy::get_qmc_single_site_hdf5_data(size_t site_index,
 					boost::lexical_cast<std::string>(block_index) +
 					"/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
 				h5_archive >> alps::make_pvp(orbital_path.str(), temp_data);
-				for (size_t freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+				for (size_t freq_index = 0; freq_index < n_matsubara; freq_index++) {
 					values_[freq_index].block(site_index * per_site_orbital_size,
 								  site_index * per_site_orbital_size,
 								  per_site_orbital_size,
@@ -947,7 +898,7 @@ void Selfenergy::get_qmc_single_site_hdf5_data(size_t site_index,
 								      per_site_orbital_size)
 					     (blocks[block_index][orb1],
 					      blocks[block_index][orb2]) =
-					     temp_data[n_matsubara_freqs + freq_index];
+					     temp_data[n_matsubara + freq_index];
 				}
 			}
 		}
@@ -958,7 +909,7 @@ void Selfenergy::get_single_site_hdf5_data(size_t site_index,
 					   alps::hdf5::archive h5_archive,
 					   string rootpath) {
      std::vector<std::complex<double>> temp_data;
-     temp_data.resize(n_matsubara_freqs);
+     temp_data.resize(n_matsubara);
      for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
 	  for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
 	       std::stringstream orbital_pair_path;
@@ -967,7 +918,7 @@ void Selfenergy::get_single_site_hdf5_data(size_t site_index,
 		    boost::lexical_cast<std::string>(orb2) + "/values/value";
 	       h5_archive >> alps::make_pvp(orbital_pair_path.str(),
 	       			    temp_data);
-	       for (size_t freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+	       for (size_t freq_index = 0; freq_index < n_matsubara; freq_index++) {
 		    values_[freq_index].block(site_index * per_site_orbital_size,
 					      site_index * per_site_orbital_size,
 					      per_site_orbital_size,
@@ -1052,7 +1003,7 @@ void Selfenergy::read_input_sigma(const alps::params &parms,
 		    for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
 			 for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
 			      for (size_t freq_index = 0;
-				   freq_index < n_matsubara_freqs; freq_index++) {
+				   freq_index < n_matsubara; freq_index++) {
 				   std::string line;
 				   std::getline(infile, line);
 				   std::istringstream iss(line);
@@ -1108,7 +1059,7 @@ void Selfenergy::compute_order2_partial_sum() {
 void Selfenergy::apply_linear_combination(boost::shared_ptr<Selfenergy> const &old_sigma,
 					  double alpha)
 {
-     for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+     for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  values_[freq_index] = alpha * values_[freq_index] +
 	       (1.0 - alpha) * old_sigma->values_[freq_index];
      }
@@ -1132,7 +1083,7 @@ int Selfenergy::get_n_sites() {
      return static_cast<int>(n_sites);
 }
 
-size_t Selfenergy::get_n_matsubara_freqs() { return n_matsubara_freqs; }
+size_t Selfenergy::get_n_matsubara_freqs() { return n_matsubara; }
 
 std::complex<double> Selfenergy::get_matsubara_frequency(size_t n) {
      return matsubara_frequencies_(n);
@@ -1154,8 +1105,8 @@ void Selfenergy::hdf5_dump(alps::hdf5::archive h5_archive, string h5_group_name)
 			 boost::lexical_cast<std::string>(line_idx) + "/"
 			 + boost::lexical_cast<std::string>(col_idx) + "/values/value";
 		    std::vector<std::complex<double>> temp_data;
-		    temp_data.resize(n_matsubara_freqs);
-		    for (int freq_index = 0; freq_index < n_matsubara_freqs; freq_index++) {
+		    temp_data.resize(n_matsubara);
+		    for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 			 temp_data[freq_index] =
 			      values_[freq_index].block(site_index * per_site_orbital_size,
 							site_index * per_site_orbital_size,
