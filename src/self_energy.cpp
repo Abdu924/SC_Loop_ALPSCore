@@ -496,7 +496,7 @@ void Selfenergy::fit_tails(int ref_site_index) {
      }
 }
 
-void Selfenergy::compute_tail_coeffs( boost::shared_ptr<Greensfunction> greens_function,
+void Selfenergy::compute_tail_coeffs(boost::shared_ptr<Greensfunction> greens_function,
 				      int ref_site_index) {
      cout << "SELF ENERGY tails from Legendre cumulatives" << endl << endl;
      Sigma_0_.block(ref_site_index * per_site_orbital_size,
