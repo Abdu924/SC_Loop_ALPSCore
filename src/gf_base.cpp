@@ -77,7 +77,7 @@ void GfBase::get_interaction_matrix(int ref_site_index, const alps::params &parm
 	       + std::string(__FUNCTION__);
 	  throw std::runtime_error("pb reading U_MATRIX");
      }
-     Eigen::MatrixXcd interaction_matrix =
+     interaction_matrix =
 	  Eigen::MatrixXcd::Constant(tot_orbital_size, tot_orbital_size, 0.0);
      int cur_index = 0;
      for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
