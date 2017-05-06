@@ -45,4 +45,8 @@ protected:
      std::vector<Eigen::MatrixXcd> qmc_tail;
      boost::shared_ptr<Chemicalpotential> chempot_;
      int n_matsubara;
+
+     void feed_tail_params(int ref_site_index,
+			   const alps::params &parms,
+			   alps::hdf5::archive &h5_archive);     
 };

@@ -90,9 +90,6 @@ private:
      void read_symmetry_definition(std::string symmetry_file);
      std::vector<double> get_u_elements(const alps::params &parms);
      void log_sigma_tails(int ref_site_index);
-     void feed_tail_params(int ref_site_index,
-			   const alps::params &parms,
-			   alps::hdf5::archive &h5_archive);
      void compute_tail_coeffs(boost::shared_ptr<Greensfunction> greens_function,
 			      int ref_site_index);
      void compute_tail_coeffs(int ref_site_index);

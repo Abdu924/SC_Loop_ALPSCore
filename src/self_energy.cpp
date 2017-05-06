@@ -471,14 +471,6 @@ std::vector<double> Selfenergy::get_u_elements(const alps::params &parms) {
      return u_elements;
 }
 
-void Selfenergy::feed_tail_params(int ref_site_index,
-				  const alps::params &parms,
-				  alps::hdf5::archive &h5_archive) {
-     get_interaction_matrix(ref_site_index, parms);
-     get_density_density_correl(ref_site_index, parms, h5_archive);
-     get_a_dagger_b(ref_site_index, parms, h5_archive);
-}
-
 void Selfenergy::fit_tails(int ref_site_index) {
      cout << "Sigma_1_ is fitted numerically"
 	  << endl << endl;
