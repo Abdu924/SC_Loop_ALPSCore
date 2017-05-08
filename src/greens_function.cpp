@@ -248,35 +248,50 @@ void Greensfunction::read_single_site_raw_legendre(alps::hdf5::archive &h5_archi
 }
 
 void Greensfunction::fix_moments() {
-	// measure the raw moments.
-	measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-	measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-	measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-	for (int l_index = 0; l_index < l_max; l_index ++) {
-		measured_c1 += tl_values[0][l_index] * gl_values_[l_index] / beta;
-		measured_c2 += tl_values[1][l_index] * gl_values_[l_index] / (std::pow(beta, 2));
-		measured_c3 += tl_values[2][l_index] * gl_values_[l_index] / (std::pow(beta, 3));
-	}
-	if (fix_c1) {
-		// Fix c_1
-		// Cf paper by Boehnke et al. PRB 84, 075145 (2011)
-		// Eq 10.
-		for (int l_index = 0; l_index < l_max; l_index++) {
-			gl_values_[l_index] = raw_gl_matrices[l_index] + (target_c1 - measured_c1) *
-				beta * tl_values[0][l_index] / tl_modulus[0];
-		}
-		// now reset measured_c1 to its target value,
-		measured_c1 = target_c1;
-		// measure c_3
-		// if the even Legendre coefficients have been fixed, then this moment benefits as well
-		measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-		for (int l_index = 0; l_index < l_max; l_index ++) {
-		     measured_c3 += tl_values[2][l_index] * gl_values_[l_index] / (std::pow(beta, 3));
-		}
-	}
-	if (fix_c2) {
-	}
-	//display_fixed_legendre();
+     // measure the raw moments.
+     measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     for (int l_index = 0; l_index < l_max; l_index ++) {
+	  measured_c1 += tl_values[0][l_index] * gl_values_[l_index] / beta;
+	  measured_c2 += tl_values[1][l_index] * gl_values_[l_index] / (std::pow(beta, 2));
+	  measured_c3 += tl_values[2][l_index] * gl_values_[l_index] / (std::pow(beta, 3));
+     }
+     std::cout << " measured_c2 " << std::endl << measured_c2 << std::endl;
+     if (fix_c1) {
+	  std::cout << "Fixing c1 in Legendre" << std::endl;
+	  // Fix c_1
+	  // Cf paper by Boehnke et al. PRB 84, 075145 (2011)
+	  // Eq 10.
+	  for (int l_index = 0; l_index < l_max; l_index++) {
+	       gl_values_[l_index] = raw_gl_matrices[l_index] + (target_c1 - measured_c1) *
+		    beta * tl_values[0][l_index] / tl_modulus[0];
+	  }
+	  // now reset measured_c1 to its target value,
+	  measured_c1 = target_c1;
+	  // measure c_3
+	  // if the even Legendre coefficients have been fixed, then this moment benefits as well
+	  measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	  for (int l_index = 0; l_index < l_max; l_index ++) {
+	       measured_c3 += tl_values[2][l_index] * gl_values_[l_index] / (std::pow(beta, 3));
+	  }
+     }
+     if (fix_c2) {
+	  std::cout << "Fixing c2 in Legendre" << std::endl;
+	  for (int l_index = 0; l_index < l_max; l_index++) {
+	       gl_values_[l_index] = raw_gl_matrices[l_index] +
+		    (target_c2 - measured_c2) * std::pow(beta, 2) *
+		    tl_values[1][l_index] / tl_modulus[1];
+	  }
+	  measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	  for (int l_index = 0; l_index < l_max; l_index ++) {
+	  measured_c2 += tl_values[1][l_index] * gl_values_[l_index] / (std::pow(beta, 2));
+	  }
+	  std::cout << " measured_c2 " << std::endl << measured_c2 << std::endl;
+	  std::cout << " target_c2 " << std::endl << target_c2 << std::endl;
+	  measured_c2 = target_c2;
+     }
+     //display_fixed_legendre();
 }
 
 void Greensfunction::symmetrize_matrix_elements() {

@@ -271,6 +271,9 @@ void GfBase::get_a_dagger_b(int ref_site_index,
 	       }
 	  } 
      }
+     Eigen::MatrixXcd temp_matrix = a_dagger_b;
+     temp_matrix.adjointInPlace();
+     a_dagger_b = 0.5 * (a_dagger_b + temp_matrix);
 }
 
 void GfBase::feed_tail_params(int ref_site_index,
