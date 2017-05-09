@@ -22,6 +22,8 @@ public:
 		    boost::shared_ptr<Chemicalpotential> chempot,
 		    int sampling_type,  alps::hdf5::archive &h5_archive);
      Eigen::MatrixXcd get_dyson_result(int freq_index, bool is_negative);
+     void dump_single_site_full_gf_matsubara(alps::hdf5::archive &h5_archive,
+					     int site_index=0);
      //void generate_t_coeffs(alps::hdf5::archive &h5_archive);
      
      virtual ~Greensfunction() {}
@@ -41,6 +43,7 @@ protected:
      void read_t_coeffs(alps::hdf5::archive &h5_archive);
      void symmetrize_matrix_elements();
      std::complex<double> get_t_coeff(int n, int l);
+     Eigen::MatrixXcd measure_moment(int order);
  
      int n_matsubara_for_alps2;
      int n_legendre;

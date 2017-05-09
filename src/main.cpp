@@ -343,6 +343,8 @@ int main(int argc, const char* argv[]) {
 							old_h5_group_name, verbose));
 		    boost::shared_ptr<Selfenergy> qmc_self_energy;
 		    boost::shared_ptr<Selfenergy> legendre_qmc_self_energy;
+		    boost::shared_ptr<Greensfunction>
+			 legendre_greens_function;
 		    if ((parms["cthyb.MEASURE_freq"]) && (!from_alps3)) {
 			 // S_omega or S_l_omega
 			 int input_type = 0;
@@ -352,9 +354,9 @@ int main(int argc, const char* argv[]) {
 		    if (parms["cthyb.MEASURE_legendre"]) {
 			 int sampling_type = from_alps3 ? 0 : 1;
 			 std::cout << "generate Leg GF" << std::endl;
-			 boost::shared_ptr<Greensfunction>
-			      legendre_greens_function(new Greensfunction(parms, world_rank, chempot,
-									  sampling_type, h5_archive));
+			 legendre_greens_function.reset(
+			      new Greensfunction(parms, world_rank, chempot,
+						 sampling_type, h5_archive));
 			 legendre_qmc_self_energy.reset(
 			      new Selfenergy(parms, world_rank, chempot, ref_site_index,
 					     h5_archive, legendre_greens_function));
@@ -389,6 +391,7 @@ int main(int argc, const char* argv[]) {
 			 }
 		    }
 		    if (parms["cthyb.MEASURE_legendre"]) {
+			 legendre_greens_function->dump_single_site_full_gf_matsubara(w_h5_archive, ref_site_index);
 			 legendre_qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
 			 std::string new_h5_group_name("/current_legendre_sigma");
 			 legendre_qmc_self_energy->hdf5_dump(w_h5_archive, new_h5_group_name);

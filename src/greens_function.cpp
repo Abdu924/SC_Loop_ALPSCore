@@ -194,6 +194,26 @@ void Greensfunction::read_single_site_full_gf_matsubara(alps::hdf5::archive &h5_
      }
 }
 
+void Greensfunction::dump_single_site_full_gf_matsubara(alps::hdf5::archive &h5_archive, int site_index) {
+     cplx_array_type raw_full_gf(boost::extents
+				 [per_site_orbital_size][per_site_orbital_size][n_matsubara]);
+     //typedef cplx_array_type::index_range range;
+     // cplx_array_type::array_view<3>::type myview =
+     //      raw_full_gf[ boost::indices[range(freq_index)][range()][range()] ];
+     for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
+	  for (int flavor = 0; flavor < per_site_orbital_size; ++flavor) {
+	       for (int flavor2 = 0; flavor2 < per_site_orbital_size; ++flavor2) {
+		    raw_full_gf[flavor][flavor2][freq_index]
+			 = full_gf_values_[freq_index].block(site_index * per_site_orbital_size,
+						      site_index * per_site_orbital_size,
+						      per_site_orbital_size,
+						      per_site_orbital_size)(flavor, flavor2);
+	       }
+	  }
+     }
+     h5_archive["/legendre_gf/data"] = raw_full_gf;
+}
+
 void Greensfunction::read_single_site_raw_legendre(alps::hdf5::archive &h5_archive, int site_index) {
      cplx_array_type raw_legendre_data(
 	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
@@ -247,16 +267,19 @@ void Greensfunction::read_single_site_raw_legendre(alps::hdf5::archive &h5_archi
      }
 }
 
+Eigen::MatrixXcd Greensfunction::measure_moment(int order) {
+     Eigen::MatrixXcd out = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     for (int l_index = 0; l_index < l_max; l_index ++) {
+	  out += tl_values[order][l_index] * gl_values_[l_index] / (std::pow(beta, order + 1));
+     }
+     return out;
+}
+
 void Greensfunction::fix_moments() {
      // measure the raw moments.
-     measured_c1 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-     measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-     measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-     for (int l_index = 0; l_index < l_max; l_index ++) {
-	  measured_c1 += tl_values[0][l_index] * gl_values_[l_index] / beta;
-	  measured_c2 += tl_values[1][l_index] * gl_values_[l_index] / (std::pow(beta, 2));
-	  measured_c3 += tl_values[2][l_index] * gl_values_[l_index] / (std::pow(beta, 3));
-     }
+     measured_c1 = measure_moment(0);
+     measured_c2 = measure_moment(1);
+     measured_c3 = measure_moment(2);
      std::cout << " measured_c2 " << std::endl << measured_c2 << std::endl;
      if (fix_c1) {
 	  std::cout << "Fixing c1 in Legendre" << std::endl;
@@ -271,10 +294,7 @@ void Greensfunction::fix_moments() {
 	  measured_c1 = target_c1;
 	  // measure c_3
 	  // if the even Legendre coefficients have been fixed, then this moment benefits as well
-	  measured_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-	  for (int l_index = 0; l_index < l_max; l_index ++) {
-	       measured_c3 += tl_values[2][l_index] * gl_values_[l_index] / (std::pow(beta, 3));
-	  }
+	  measured_c3 = measure_moment(2);
      }
      if (fix_c2) {
 	  std::cout << "Fixing c2 in Legendre" << std::endl;
@@ -283,10 +303,7 @@ void Greensfunction::fix_moments() {
 		    (target_c2 - measured_c2) * std::pow(beta, 2) *
 		    tl_values[1][l_index] / tl_modulus[1];
 	  }
-	  measured_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-	  for (int l_index = 0; l_index < l_max; l_index ++) {
-	  measured_c2 += tl_values[1][l_index] * gl_values_[l_index] / (std::pow(beta, 2));
-	  }
+	  measured_c2 = measure_moment(1);
 	  std::cout << " measured_c2 " << std::endl << measured_c2 << std::endl;
 	  std::cout << " target_c2 " << std::endl << target_c2 << std::endl;
 	  measured_c2 = target_c2;
