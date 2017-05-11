@@ -326,13 +326,13 @@ int main(int argc, const char* argv[]) {
 		    if (world_rank == 0) {
 			 cout << " total " << endl;
 		    }
-	       }		
+	       }
 	  } else if (computation_type == 1) {
 	       // perform "mix" action
 	       alps::hdf5::archive h5_archive(input_file, alps::hdf5::archive::READ);
 	       bool verbose = false;
 	       std::cout << "do mix" << std::endl;
-	       if (world_rank == 0) {		    
+	       if (world_rank == 0) {
 		    // Read the current sigma, and calculate the
 		    // sigma gotten from QMC + tails
 		    int ref_site_index = 0;
@@ -361,7 +361,6 @@ int main(int argc, const char* argv[]) {
 			      new Selfenergy(parms, world_rank, chempot, ref_site_index,
 					     h5_archive, legendre_greens_function));
 		    }
-		    MPI_Barrier(MPI_COMM_WORLD);
 		    h5_archive.close();
 		    // save old sigma
 		    alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
