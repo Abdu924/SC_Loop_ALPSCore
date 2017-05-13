@@ -20,6 +20,7 @@ class Greensfunction: public GfBase {
 public:
      Greensfunction(const alps::params &parms, int world_rank,
 		    boost::shared_ptr<Chemicalpotential> chempot,
+		    boost::shared_ptr<Bandstructure> const &lattice_bs,
 		    int sampling_type,  alps::hdf5::archive &h5_archive);
      Eigen::MatrixXcd get_dyson_result(int freq_index, bool is_negative);
      void dump_single_site_full_gf_matsubara(alps::hdf5::archive &h5_archive,

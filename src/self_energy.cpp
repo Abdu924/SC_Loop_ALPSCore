@@ -34,9 +34,10 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 // dmft :(
 Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       boost::shared_ptr<Chemicalpotential> chempot,
+		       boost::shared_ptr<Bandstructure> const &lattice_bs,
 		       int ref_site_index, alps::hdf5::archive h5_archive, int input_type,
 		       bool verbose)
-     :GfBase(parms, world_rank, chempot), input_type(input_type), is_alps3(false) {
+     :GfBase(parms, world_rank, chempot, lattice_bs), input_type(input_type), is_alps3(false) {
      basic_init(parms, verbose);
      is_analytic_tail = static_cast<bool>(parms["mixing.analytic_sigma_tail"]);
      std::string symmetry_file;
@@ -71,9 +72,10 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 // (matrix implementation)
 Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 		       boost::shared_ptr<Chemicalpotential> chempot,
+		       boost::shared_ptr<Bandstructure> const &lattice_bs,
 		       int ref_site_index, alps::hdf5::archive h5_archive,
 		       boost::shared_ptr<Greensfunction> greens_function)
-     :GfBase(parms, world_rank, chempot), input_type(1), is_alps3(true) {
+     :GfBase(parms, world_rank, chempot,lattice_bs ), input_type(1), is_alps3(true) {
      basic_init(parms);
      // defaults to true
      is_analytic_tail = static_cast<bool>(parms["mixing.analytic_sigma_tail"]);

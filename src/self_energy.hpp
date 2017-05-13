@@ -14,11 +14,13 @@ public:
 		string h5_group_name, bool verbose=false);
      Selfenergy(const alps::params &parms, int world_rank,
 		boost::shared_ptr<Chemicalpotential> chempot,
+		boost::shared_ptr<Bandstructure> const &lattice_bs,
 		int ref_site_index,
 		alps::hdf5::archive h5_archive, int input_type,
 		bool verbose=false);
      Selfenergy(const alps::params &parms, int world_rank,
 		boost::shared_ptr<Chemicalpotential> chempot,
+		boost::shared_ptr<Bandstructure> const &lattice_bs,
 		int ref_site_index, alps::hdf5::archive h5_archive, 
 		boost::shared_ptr<Greensfunction> greens_function);
      void display_asymptotics();

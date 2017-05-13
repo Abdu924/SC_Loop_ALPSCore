@@ -333,6 +333,8 @@ int main(int argc, const char* argv[]) {
 	       bool verbose = false;
 	       std::cout << "do mix" << std::endl;
 	       if (world_rank == 0) {
+		    boost::shared_ptr<Bandstructure> bare_band(
+			 new Bandstructure(parms, world_rank, true));
 		    // Read the current sigma, and calculate the
 		    // sigma gotten from QMC + tails
 		    int ref_site_index = 0;
@@ -343,12 +345,12 @@ int main(int argc, const char* argv[]) {
 							old_h5_group_name, verbose));
 		    boost::shared_ptr<Selfenergy> qmc_self_energy;
 		    boost::shared_ptr<Selfenergy> legendre_qmc_self_energy;
-		    boost::shared_ptr<Greensfunction>
-			 legendre_greens_function;
+		    boost::shared_ptr<Greensfunction> legendre_greens_function;
 		    if ((parms["cthyb.MEASURE_freq"]) && (!from_alps3)) {
 			 // S_omega or S_l_omega
 			 int input_type = 0;
-			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot, ref_site_index,
+			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot,
+							      bare_band, ref_site_index,
 							      h5_archive, input_type, verbose));
 		    }
 		    if (parms["cthyb.MEASURE_legendre"]) {
@@ -356,10 +358,10 @@ int main(int argc, const char* argv[]) {
 			 std::cout << "generate Leg GF" << std::endl;
 			 legendre_greens_function.reset(
 			      new Greensfunction(parms, world_rank, chempot,
-						 sampling_type, h5_archive));
+						 bare_band, sampling_type, h5_archive));
 			 legendre_qmc_self_energy.reset(
-			      new Selfenergy(parms, world_rank, chempot, ref_site_index,
-					     h5_archive, legendre_greens_function));
+			      new Selfenergy(parms, world_rank, chempot, bare_band,
+					     ref_site_index, h5_archive, legendre_greens_function));
 		    }
 		    h5_archive.close();
 		    // save old sigma

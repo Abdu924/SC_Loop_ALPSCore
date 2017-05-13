@@ -1,5 +1,4 @@
-#ifndef BAND_STRUCTUREH__
-#define BAND_STRUCTUREH__
+#pragma once
 
 #include <Eigen/Dense>
 #include <vector>
@@ -24,6 +23,8 @@ public:
      int get_orbital_size();	
      double get_weight_sum(int k_min, int k_max);
      double get_weight(int k_index);
+     Eigen::MatrixXcd get_local_hoppings();
+     Eigen::MatrixXcd get_V_matrix();
      Eigen::MatrixXcd get_epsilon_bar();
      Eigen::MatrixXcd get_epsilon_squared_bar();
      void compute_bare_dos(double chemical_potential);
@@ -105,5 +106,3 @@ private:
      int world_rank_;
      int world_size, n_points_per_proc;
 };
-
-#endif //BANDSTRUCTUREH__

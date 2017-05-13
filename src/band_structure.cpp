@@ -217,6 +217,18 @@ Eigen::MatrixXcd Bandstructure::get_k_basis_matrix(
      return m;
 }
 
+Eigen::MatrixXcd Bandstructure::get_local_hoppings() {
+     // Calculate FT of hoppings -> dispersion
+     Eigen::MatrixXcd m = hoppings_[0];
+     return m;
+}
+
+Eigen::MatrixXcd Bandstructure::get_V_matrix() {
+     // Calculate FT of hoppings -> dispersion
+     Eigen::MatrixXcd m = hoppings_[1];
+     return m;
+}
+
 std::vector<Eigen::MatrixXcd> Bandstructure::read_dispersion(const alps::params& parms,
 							     Eigen::Ref<Eigen::VectorXd> weights,
 							     bool verbose) {

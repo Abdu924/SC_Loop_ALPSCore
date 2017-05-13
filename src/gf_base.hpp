@@ -22,7 +22,8 @@ class GfBase {
 public:
      GfBase(const alps::params &parms, int world_rank);
      GfBase(const alps::params &parms, int world_rank,
-	    boost::shared_ptr<Chemicalpotential> chempot);
+	    boost::shared_ptr<Chemicalpotential> chempot,
+	    boost::shared_ptr<Bandstructure> const &lattice_bs);
      
      virtual ~GfBase() {}
 
@@ -33,6 +34,7 @@ public:
 			 alps::hdf5::archive &h5_archive);
      void read_params(const alps::params &parms);
      void get_target_c2(int ref_site_index);
+     void get_target_c3(int ref_site_index);
      
      Eigen::VectorXcd matsubara_frequencies_;
      size_t n_blocks;
@@ -54,6 +56,7 @@ protected:
      Eigen::MatrixXcd target_c1, target_c2, target_c3;
      std::vector<Eigen::MatrixXcd> qmc_tail;
      boost::shared_ptr<Chemicalpotential> chempot_;
+     boost::shared_ptr<Bandstructure> lattice_bs_;
      int n_matsubara;
 
      void feed_tail_params(int ref_site_index,

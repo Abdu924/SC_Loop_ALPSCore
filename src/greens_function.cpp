@@ -21,8 +21,9 @@ typedef boost::multi_array<double , 4> real_array_type;
 
 Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
 			       boost::shared_ptr<Chemicalpotential> chempot,
+			       boost::shared_ptr<Bandstructure> const &lattice_bs,
 			       int sampling_type, alps::hdf5::archive &h5_archive)
-     :GfBase(parms, world_rank, chempot), sampling_type(sampling_type) {
+     :GfBase(parms, world_rank, chempot, lattice_bs), sampling_type(sampling_type) {
      basic_init(parms);
      feed_tail_params(ref_site_index, parms, h5_archive);
      read_bare_gf();

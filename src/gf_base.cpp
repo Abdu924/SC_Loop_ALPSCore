@@ -1,8 +1,9 @@
 #include "gf_base.hpp"
 
 GfBase::GfBase(const alps::params &parms, int world_rank,
-	       boost::shared_ptr<Chemicalpotential> chempot):world_rank_(world_rank),
-			       chempot_(chempot) {
+	       boost::shared_ptr<Chemicalpotential> chempot,
+	       boost::shared_ptr<Bandstructure> const &lattice_bs):
+     world_rank_(world_rank), chempot_(chempot), lattice_bs_(lattice_bs) {
      read_params(parms);
 }
 
@@ -301,7 +302,7 @@ void GfBase::get_target_c2(int ref_site_index) {
      // For details of derivation of formulae, see Gull thesis,
      // Appendix B.4, or hopefully even better, my own thesis, appendices.
      // Sell also Ferber's thesis for order 3 coeff.
-     std::cout << "Compute target moments for GF" << std::endl << std::endl;
+     std::cout << "Compute target c2 for GF" << std::endl << std::endl;
      target_c2 = -0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
 						  ref_site_index * per_site_orbital_size,
 						  per_site_orbital_size,
@@ -342,4 +343,59 @@ void GfBase::get_target_c2(int ref_site_index) {
 						 per_site_orbital_size)(col_idx, col_idx);
 	  }
      }
+}
+
+
+void GfBase::get_target_c3(int ref_site_index) {
+     // 0.5 factor stems from the fact that the formal expression
+     // of the Hamiltonian is without order in the thesis, while it has
+     // order (a before b) in the papers ==> equivalent to specifying U/2
+     // in the papers
+     // For details of derivation of formulae, see Gull thesis,
+     // Appendix B.4, or hopefully even better, my own thesis, appendices.
+     // Sell also Ferber's thesis for order 3 coeff.
+     std::cout << "Compute target c3 for GF" << std::endl << std::endl;
+     target_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     // Get the local hoppings
+     Eigen::MatrixXcd bath_m1 = lattice_bs_->get_local_hoppings();
+     // and fix the diagonal elements (chempot includes atomic level energy:
+     // it is -epsilon + mu...)
+     for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx)
+	  bath_m1(line_idx, line_idx) = -(*chempot_)[line_idx];
+     Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
+     Eigen::MatrixXcd bath_m2 = bath_m1 * bath_m1.adjoint() +
+	  8.0 * (V_matrix * V_matrix.adjoint() + V_matrix.adjoint() * V_matrix);
+     target_c3 += bath_m2;
+     Eigen::MatrixXcd U_matrix = 0.5 * interaction_matrix.block(ref_site_index * per_site_orbital_size,
+								ref_site_index * per_site_orbital_size,
+								per_site_orbital_size,
+								per_site_orbital_size);
+     Eigen::MatrixXcd dd_matrix = density_density_correl.block(ref_site_index * per_site_orbital_size,
+							       ref_site_index * per_site_orbital_size,
+							       per_site_orbital_size,
+							       per_site_orbital_size);
+     Eigen::VectorXcd density_vector = dd_matrix.diagonal();
+     Eigen::MatrixXcd ab_matrix = a_dagger_b.block(
+	  ref_site_index * per_site_orbital_size,
+	  ref_site_index * per_site_orbital_size,
+	  per_site_orbital_size,
+	  per_site_orbital_size);
+     Eigen::MatrixXcd temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+	  temp.col(col_index) += U_matrix * density_vector;
+	  temp.row(col_index) += density_vector * U_matrix;
+     }
+     target_c3 += bath_m1.cwiseProduct(temp);
+     target_c3 -= ((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose();
+     target_c3 -= (bath_m1.transpose() * ((U_matrix.transpose()).cwiseProduct(ab_matrix))).transpose();
+     temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
+	  for(int k = 0; k < per_site_orbital_size; ++k) {
+	       for(int l = 0; l < per_site_orbital_size; ++l) {
+		    temp(line_idx, line_idx) += U_matrix(line_idx, k) * U_matrix(line_idx, l) *
+			 dd_matrix(k, l);
+	       }
+	  }
+     }
+     target_c3 += temp;
 }
