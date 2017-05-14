@@ -295,57 +295,87 @@ Eigen::MatrixXcd GfBase::get_measured_c3() {
      return measured_c3;
 }
 
-void GfBase::get_target_c2(int ref_site_index) {
-     // 0.5 factor stems from the fact that the formal expression
-     // of the Hamiltonian is without order in the thesis, while it has
-     // order (a before b) in the papers ==> equivalent to specifying U/2
-     // in the papers
-     // For details of derivation of formulae, see Gull thesis,
-     // Appendix B.4, or hopefully even better, my own thesis, appendices.
-     // Sell also Ferber's thesis for order 3 coeff.
-     std::cout << "Compute target c2 for GF" << std::endl << std::endl;
-     target_c2 = -0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						  ref_site_index * per_site_orbital_size,
-						  per_site_orbital_size,
-						  per_site_orbital_size) +
-			 interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						  ref_site_index * per_site_orbital_size,
-						  per_site_orbital_size,
-						  per_site_orbital_size).transpose())
-	  .cwiseProduct(a_dagger_b.block(
-			     ref_site_index * per_site_orbital_size,
-			     ref_site_index * per_site_orbital_size,
-			     per_site_orbital_size,
-			     per_site_orbital_size));
-     // Now deal with diagonal terms
-     target_c2.diagonal() =
-	  Eigen::VectorXcd::Zero(per_site_orbital_size);
-     for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
-	  target_c2(line_idx, line_idx) = -(*chempot_)[line_idx];
-	  for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
-	       // HERE Note that there is some possible discrepancy to remove between
-	       // dmft and qmc: on the dmft side, the crystal field is
-	       // input via the diagonal elements of the hopping matrix,
-	       // while on the qmc side it is blent with mu in MUvector.
-	       // as a consequence, the energy of each orbital in the present code
-	       // is indeed the \epsilon_k needed in the formula from my thesis.
-	       target_c2(line_idx, line_idx) +=
-		    0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						    ref_site_index * per_site_orbital_size,
-						    per_site_orbital_size,
-						    per_site_orbital_size)(line_idx, col_idx) +
-			   interaction_matrix.block(ref_site_index * per_site_orbital_size,
-						    ref_site_index * per_site_orbital_size,
-						    per_site_orbital_size,
-						    per_site_orbital_size)(col_idx, line_idx))*
-		    density_density_correl.block(ref_site_index * per_site_orbital_size,
-						 ref_site_index * per_site_orbital_size,
-						 per_site_orbital_size,
-						 per_site_orbital_size)(col_idx, col_idx);
-	  }
-     }
-}
+// void GfBase::get_target_c2(int ref_site_index) {
+//      // 0.5 factor stems from the fact that the formal expression
+//      // of the Hamiltonian is without order in the thesis, while it has
+//      // order (a before b) in the papers ==> equivalent to specifying U/2
+//      // in the papers
+//      // For details of derivation of formulae, see Gull thesis,
+//      // Appendix B.4, or hopefully even better, my own thesis, appendices.
+//      // Sell also Ferber's thesis for order 3 coeff.
+//      std::cout << "Compute target c2 for GF" << std::endl << std::endl;
+//      target_c2 = -0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
+// 						  ref_site_index * per_site_orbital_size,
+// 						  per_site_orbital_size,
+// 						  per_site_orbital_size) +
+// 			 interaction_matrix.block(ref_site_index * per_site_orbital_size,
+// 						  ref_site_index * per_site_orbital_size,
+// 						  per_site_orbital_size,
+// 						  per_site_orbital_size).transpose())
+// 	  .cwiseProduct(a_dagger_b.block(
+// 			     ref_site_index * per_site_orbital_size,
+// 			     ref_site_index * per_site_orbital_size,
+// 			     per_site_orbital_size,
+// 			     per_site_orbital_size));
+//      // Now deal with diagonal terms
+//      target_c2.diagonal() =
+// 	  Eigen::VectorXcd::Zero(per_site_orbital_size);
+//      for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
+// 	  target_c2(line_idx, line_idx) = -(*chempot_)[line_idx];
+// 	  for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
+// 	       // HERE Note that there is some possible discrepancy to remove between
+// 	       // dmft and qmc: on the dmft side, the crystal field is
+// 	       // input via the diagonal elements of the hopping matrix,
+// 	       // while on the qmc side it is blent with mu in MUvector.
+// 	       // as a consequence, the energy of each orbital in the present code
+// 	       // is indeed the \epsilon_k needed in the formula from my thesis.
+// 	       target_c2(line_idx, line_idx) +=
+// 		    0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
+// 						    ref_site_index * per_site_orbital_size,
+// 						    per_site_orbital_size,
+// 						    per_site_orbital_size)(line_idx, col_idx) +
+// 			   interaction_matrix.block(ref_site_index * per_site_orbital_size,
+// 						    ref_site_index * per_site_orbital_size,
+// 						    per_site_orbital_size,
+// 						    per_site_orbital_size)(col_idx, line_idx))*
+// 		    density_density_correl.block(ref_site_index * per_site_orbital_size,
+// 						 ref_site_index * per_site_orbital_size,
+// 						 per_site_orbital_size,
+// 						 per_site_orbital_size)(col_idx, col_idx);
+// 	  }
+//      }
+// }
 
+void GfBase::get_target_c2(int ref_site_index) {
+     std::cout << "Compute target c2 for GF" << std::endl << std::endl;
+     target_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     // Get the local hoppings
+     Eigen::MatrixXcd bath_m1 = lattice_bs_->get_local_hoppings();
+     // and fix the diagonal elements (chempot includes atomic level energy:
+     // it is -epsilon + mu...)
+     for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx)
+	  bath_m1(line_idx, line_idx) = -(*chempot_)[line_idx];
+     Eigen::MatrixXcd U_matrix = 0.5 * (interaction_matrix.block(ref_site_index * per_site_orbital_size,
+							  ref_site_index * per_site_orbital_size,
+							  per_site_orbital_size,
+							  per_site_orbital_size) +
+					interaction_matrix.block(ref_site_index * per_site_orbital_size,
+							  ref_site_index * per_site_orbital_size,
+							  per_site_orbital_size,
+								 per_site_orbital_size).transpose());
+     Eigen::MatrixXcd dd_matrix = density_density_correl.block(ref_site_index * per_site_orbital_size,
+							       ref_site_index * per_site_orbital_size,
+							       per_site_orbital_size,
+							       per_site_orbital_size);
+     Eigen::VectorXcd density_vector = dd_matrix.diagonal();
+     Eigen::MatrixXcd ab_matrix = a_dagger_b.block(ref_site_index * per_site_orbital_size,
+						   ref_site_index * per_site_orbital_size,
+						   per_site_orbital_size,
+						   per_site_orbital_size);
+     target_c2 -= U_matrix.transpose().cwiseProduct(ab_matrix);
+     target_c2 += bath_m1;
+     target_c2.diagonal() += U_matrix * density_vector;
+}
 
 void GfBase::get_target_c3(int ref_site_index) {
      // 0.5 factor stems from the fact that the formal expression
@@ -366,35 +396,44 @@ void GfBase::get_target_c3(int ref_site_index) {
      Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
      Eigen::MatrixXcd bath_m2 = bath_m1 * bath_m1.adjoint() +
 	  8.0 * (V_matrix * V_matrix.adjoint() + V_matrix.adjoint() * V_matrix);
+     std::cout << "bath_m1 * bath_m1.adjoint()" << std::endl << bath_m1 * bath_m1.adjoint()
+	       << std::endl << std::endl;
+     std::cout << "8.0 * (V_matrix * V_matrix.adjoint() + V_matrix.adjoint() * V_matrix)"
+	       << std::endl << 8.0 * (V_matrix * V_matrix.adjoint() + V_matrix.adjoint() * V_matrix)
+	       << std::endl << std::endl;
      target_c3 += bath_m2;
-     std::cout << "bath_m2" << bath_m2 << std::endl << std::endl;
-     Eigen::MatrixXcd U_matrix = 0.5 * interaction_matrix.block(ref_site_index * per_site_orbital_size,
-								ref_site_index * per_site_orbital_size,
-								per_site_orbital_size,
-								per_site_orbital_size);
+     std::cout << "bath_m2" << std::endl << bath_m2 << std::endl << std::endl;
+     Eigen::MatrixXcd U_matrix = interaction_matrix.block(ref_site_index * per_site_orbital_size,
+							  ref_site_index * per_site_orbital_size,
+							  per_site_orbital_size,
+							  per_site_orbital_size);
+     std::cout << "U_matrix" << std::endl << U_matrix << std::endl << std::endl;
      Eigen::MatrixXcd dd_matrix = density_density_correl.block(ref_site_index * per_site_orbital_size,
 							       ref_site_index * per_site_orbital_size,
 							       per_site_orbital_size,
 							       per_site_orbital_size);
      Eigen::VectorXcd density_vector = dd_matrix.diagonal();
-     Eigen::MatrixXcd ab_matrix = a_dagger_b.block(
-	  ref_site_index * per_site_orbital_size,
-	  ref_site_index * per_site_orbital_size,
-	  per_site_orbital_size,
-	  per_site_orbital_size);
+     Eigen::MatrixXcd ab_matrix = a_dagger_b.block(ref_site_index * per_site_orbital_size,
+						   ref_site_index * per_site_orbital_size,
+						   per_site_orbital_size,
+						   per_site_orbital_size);
      Eigen::MatrixXcd temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
 	  temp.col(col_index) += U_matrix * density_vector;
 	  temp.row(col_index) += density_vector * U_matrix;
      }
+     //target_c3 += 2.0 * bath_m1.cwiseProduct(temp);
      target_c3 += bath_m1.cwiseProduct(temp);
-     std::cout << "bath_m1.cwiseProduct(temp)" << bath_m1.cwiseProduct(temp) << std::endl << std::endl;
+     std::cout << "bath_m1.cwiseProduct(temp)" << std::endl
+	       << bath_m1.cwiseProduct(temp) << std::endl << std::endl;
      target_c3 -= ((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose();
-     std::cout << "((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose()" <<
-	  ((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose() << std::endl << std::endl;
+     std::cout << "((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose()" << std::endl
+	       << ((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose() << std::endl << std::endl;
      target_c3 -= (bath_m1.transpose() * ((U_matrix.transpose()).cwiseProduct(ab_matrix))).transpose();
-     std::cout << "(bath_m1.transpose() * ((U_matrix.transpose()).cwiseProduct(ab_matrix))).transpose()"
-	       << (bath_m1.transpose() * ((U_matrix.transpose()).cwiseProduct(ab_matrix))).transpose()
+     target_c3 -= U_matrix.cwiseProduct(ab_matrix.transpose()) * bath_m1;
+     std::cout << "U_matrix.cwiseProduct(ab_matrix.transpose()) * bath_m1"
+	       << std::endl
+	       << U_matrix.cwiseProduct(ab_matrix.transpose()) * bath_m1
 	       << std::endl << std::endl;
      temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
@@ -405,6 +444,6 @@ void GfBase::get_target_c3(int ref_site_index) {
 	       }
 	  }
      }
-     std::cout << "temp" << temp << std::endl << std::endl;
-     target_c3 += temp;
+     std::cout << "temp" << std::endl << temp << std::endl << std::endl;
+     target_c3.diagonal() += temp.diagonal();
 }
