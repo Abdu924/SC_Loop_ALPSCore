@@ -366,6 +366,7 @@ void GfBase::get_target_c3(int ref_site_index) {
      Eigen::MatrixXcd bath_m2 = bath_m1 * bath_m1.adjoint() +
 	  8.0 * (V_matrix * V_matrix.adjoint() + V_matrix.adjoint() * V_matrix);
      target_c3 += bath_m2;
+     std::cout << "bath_m2" << bath_m2 << std::endl << std::endl;
      Eigen::MatrixXcd U_matrix = 0.5 * interaction_matrix.block(ref_site_index * per_site_orbital_size,
 								ref_site_index * per_site_orbital_size,
 								per_site_orbital_size,
@@ -386,8 +387,14 @@ void GfBase::get_target_c3(int ref_site_index) {
 	  temp.row(col_index) += density_vector * U_matrix;
      }
      target_c3 += bath_m1.cwiseProduct(temp);
+     std::cout << "bath_m1.cwiseProduct(temp)" << bath_m1.cwiseProduct(temp) << std::endl << std::endl;
      target_c3 -= ((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose();
+     std::cout << "((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose()" <<
+	  ((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose() << std::endl << std::endl;
      target_c3 -= (bath_m1.transpose() * ((U_matrix.transpose()).cwiseProduct(ab_matrix))).transpose();
+     std::cout << "(bath_m1.transpose() * ((U_matrix.transpose()).cwiseProduct(ab_matrix))).transpose()"
+	       << (bath_m1.transpose() * ((U_matrix.transpose()).cwiseProduct(ab_matrix))).transpose()
+	       << std::endl << std::endl;
      temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
 	  for(int k = 0; k < per_site_orbital_size; ++k) {
@@ -397,5 +404,6 @@ void GfBase::get_target_c3(int ref_site_index) {
 	       }
 	  }
      }
+     std::cout << "temp" << temp << std::endl << std::endl;
      target_c3 += temp;
 }
