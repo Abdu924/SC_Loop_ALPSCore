@@ -41,6 +41,7 @@ std::complex<double> Greensfunction::get_t_coeff(int n, int l) {
 
 void Greensfunction::generate_data(alps::hdf5::archive &h5_archive) {
      read_single_site_raw_legendre(h5_archive);
+     //for (int rep = 0; rep < 100;rep++)
      fix_moments();
      get_matsubara_from_legendre();
 }
@@ -301,16 +302,14 @@ void Greensfunction::fix_moments() {
 	  std::cout << "Fixing c2 in Legendre" << std::endl;
 	  Eigen::MatrixXcd distance =
 	       Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	  Eigen::MatrixXcd delta =
+	       Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
 	  for (int l_index = 0; l_index < l_max; l_index++) {
-	       gl_values_[l_index] = raw_gl_matrices[l_index] +
-		    (target_c2 - measured_c2) * std::pow(beta, 2) *
+	       delta = (target_c2 - measured_c2) * std::pow(beta, 2) *
 		    tl_values[1][l_index] / tl_modulus[1];
-	       distance += ((target_c2 - measured_c2) * std::pow(beta, 2) *
-			    tl_values[1][l_index] / tl_modulus[1]).cwiseProduct(
-				 ((target_c2 - measured_c2) * std::pow(beta, 2) *
-				  tl_values[1][l_index] / tl_modulus[1]).conjugate());
+	       gl_values_[l_index] = raw_gl_matrices[l_index] + delta;
+	       distance += tl_values[1][l_index] * delta / (std::pow(beta, 2));
 	  }
-	  distance = distance.array().sqrt();
 	  std::cout << " measured_c2 " << std::endl << measured_c2 << std::endl;
 	  measured_c2 = measure_moment(1);
 	  std::cout << " target_c2 " << std::endl << target_c2 << std::endl;
@@ -321,23 +320,20 @@ void Greensfunction::fix_moments() {
 	  std::cout << "Fixing c3 in Legendre" << std::endl;
 	  Eigen::MatrixXcd distance =
 	       Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	  Eigen::MatrixXcd delta =
+	       Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
 	  for (int l_index = 0; l_index < l_max; l_index++) {
-	       gl_values_[l_index] = raw_gl_matrices[l_index] +
-		    (target_c3 - measured_c3) * std::pow(beta, 3) *
+	       delta = (target_c3 - measured_c3) * std::pow(beta, 3) *
 		    tl_values[2][l_index] / tl_modulus[2];
-	       distance += ((target_c3 - measured_c3) * std::pow(beta, 3) *
-			    tl_values[2][l_index] / tl_modulus[2]).cwiseProduct(
-				 ((target_c3 - measured_c3) * std::pow(beta, 3) *
-				  tl_values[2][l_index] / tl_modulus[2]).conjugate());
+	       gl_values_[l_index] = raw_gl_matrices[l_index] + delta;
+	       distance += tl_values[2][l_index] * delta / (std::pow(beta, 3));
 	  }
-	  distance = distance.array().sqrt();
 	  std::cout << " measured_c3 " << std::endl << measured_c3 << std::endl;
 	  measured_c3 = measure_moment(2);
 	  std::cout << " target_c3 " << std::endl << target_c3 << std::endl;
 	  std::cout << " distance " << std::endl << distance << std::endl;
 	  //measured_c2 = target_c3;
      }
-
      //display_fixed_legendre();
 }
 

@@ -412,6 +412,7 @@ void GfBase::get_target_c3(int ref_site_index) {
 							       ref_site_index * per_site_orbital_size,
 							       per_site_orbital_size,
 							       per_site_orbital_size);
+     std::cout << "dd_matrix" << std::endl << dd_matrix << std::endl << std::endl;
      Eigen::VectorXcd density_vector = dd_matrix.diagonal();
      Eigen::MatrixXcd ab_matrix = a_dagger_b.block(ref_site_index * per_site_orbital_size,
 						   ref_site_index * per_site_orbital_size,
