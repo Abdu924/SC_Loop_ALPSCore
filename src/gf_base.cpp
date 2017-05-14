@@ -284,6 +284,7 @@ void GfBase::feed_tail_params(int ref_site_index,
      get_density_density_correl(ref_site_index, parms, h5_archive);
      get_a_dagger_b(ref_site_index, parms, h5_archive);
      get_target_c2(ref_site_index);
+     get_target_c3(ref_site_index);
 }
 
 Eigen::MatrixXcd GfBase::get_measured_c2() {

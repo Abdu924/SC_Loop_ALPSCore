@@ -332,9 +332,9 @@ int main(int argc, const char* argv[]) {
 	       alps::hdf5::archive h5_archive(input_file, alps::hdf5::archive::READ);
 	       bool verbose = false;
 	       std::cout << "do mix" << std::endl;
+	       boost::shared_ptr<Bandstructure> bare_band(
+		    new Bandstructure(parms, world_rank, true));
 	       if (world_rank == 0) {
-		    boost::shared_ptr<Bandstructure> bare_band(
-			 new Bandstructure(parms, world_rank, true));
 		    // Read the current sigma, and calculate the
 		    // sigma gotten from QMC + tails
 		    int ref_site_index = 0;
@@ -403,7 +403,6 @@ int main(int argc, const char* argv[]) {
 		    }
 		    w_h5_archive.close();
 	       }
-	       MPI_Barrier(MPI_COMM_WORLD);
 	  } else if (computation_type == 2) {
 	       // dump hamiltonian
 	       boost::shared_ptr<Bandstructure> bare_band(
