@@ -41,7 +41,7 @@ std::complex<double> Greensfunction::get_t_coeff(int n, int l) {
 
 void Greensfunction::generate_data(alps::hdf5::archive &h5_archive) {
      read_single_site_raw_legendre(h5_archive);
-     for (int rep = 0; rep < 100;rep++)
+     for (int rep = 0; rep < 100; rep++)
 	  fix_moments();
      get_matsubara_from_legendre();
 }

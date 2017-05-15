@@ -326,79 +326,83 @@ void GfBase::get_target_c2(int ref_site_index) {
      target_c2.diagonal() += U_matrix * density_vector;
 }
 
-// void GfBase::get_target_c3(int ref_site_index) {
-//      // 0.5 factor stems from the fact that the formal expression
-//      // of the Hamiltonian is without order in the thesis, while it has
-//      // order (a before b) in the papers ==> equivalent to specifying U/2
-//      // in the papers
-//      // For details of derivation of formulae, see Gull thesis,
-//      // Appendix B.4, or hopefully even better, my own thesis, appendices.
-//      // Sell also Ferber's thesis for order 3 coeff.
-//      std::cout << "Compute target c3 for GF" << std::endl << std::endl;
-//      target_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-//      // Get the local hoppings
-//      Eigen::MatrixXcd bath_m1 = lattice_bs_->get_local_hoppings();
-//      // and fix the diagonal elements (chempot includes atomic level energy:
-//      // it is -epsilon + mu...)
-//      for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx)
-// 	  bath_m1(line_idx, line_idx) = -(*chempot_)[line_idx];
-//      Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
-//      Eigen::MatrixXcd bath_m2 = bath_m1 * bath_m1.adjoint() +
-// 	  8.0 * (V_matrix * V_matrix.adjoint() + V_matrix.adjoint() * V_matrix);
-//      std::cout << "bath_m1 * bath_m1.adjoint()" << std::endl << bath_m1 * bath_m1.adjoint()
-// 	       << std::endl << std::endl;
-//      std::cout << "8.0 * (V_matrix * V_matrix.adjoint() + V_matrix.adjoint() * V_matrix)"
-// 	       << std::endl << 8.0 * (V_matrix * V_matrix.adjoint() + V_matrix.adjoint() * V_matrix)
-// 	       << std::endl << std::endl;
-//      target_c3 += bath_m2;
-//      std::cout << "bath_m2" << std::endl << bath_m2 << std::endl << std::endl;
-//      Eigen::MatrixXcd U_matrix = interaction_matrix.block(ref_site_index * per_site_orbital_size,
-// 							  ref_site_index * per_site_orbital_size,
-// 							  per_site_orbital_size,
-// 							  per_site_orbital_size);
-//      std::cout << "U_matrix" << std::endl << U_matrix << std::endl << std::endl;
-//      Eigen::MatrixXcd dd_matrix = density_density_correl.block(ref_site_index * per_site_orbital_size,
-// 							       ref_site_index * per_site_orbital_size,
-// 							       per_site_orbital_size,
-// 							       per_site_orbital_size);
-//      std::cout << "dd_matrix" << std::endl << dd_matrix << std::endl << std::endl;
-//      Eigen::VectorXcd density_vector = dd_matrix.diagonal();
-//      Eigen::MatrixXcd ab_matrix = a_dagger_b.block(ref_site_index * per_site_orbital_size,
-// 						   ref_site_index * per_site_orbital_size,
-// 						   per_site_orbital_size,
-// 						   per_site_orbital_size);
-//      Eigen::MatrixXcd temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-//      for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
-// 	  temp.col(col_index) += U_matrix * density_vector;
-// 	  temp.row(col_index) += density_vector * U_matrix;
-//      }
-//      //target_c3 += 2.0 * bath_m1.cwiseProduct(temp);
-//      target_c3 += bath_m1.cwiseProduct(temp);
-//      std::cout << "bath_m1.cwiseProduct(temp)" << std::endl
-// 	       << bath_m1.cwiseProduct(temp) << std::endl << std::endl;
-//      target_c3 -= ((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose();
-//      std::cout << "((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose()" << std::endl
-// 	       << ((U_matrix.cwiseProduct(ab_matrix)) * bath_m1.transpose()).transpose() << std::endl << std::endl;
-//      target_c3 -= (bath_m1.transpose() * ((U_matrix.transpose()).cwiseProduct(ab_matrix))).transpose();
-//      target_c3 -= U_matrix.cwiseProduct(ab_matrix.transpose()) * bath_m1;
-//      std::cout << "U_matrix.cwiseProduct(ab_matrix.transpose()) * bath_m1"
-// 	       << std::endl
-// 	       << U_matrix.cwiseProduct(ab_matrix.transpose()) * bath_m1
-// 	       << std::endl << std::endl;
-//      temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
-//      for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
-// 	  for(int k = 0; k < per_site_orbital_size; ++k) {
-// 	       for(int l = 0; l < per_site_orbital_size; ++l) {
-// 		    temp(line_idx, line_idx) += U_matrix(line_idx, k) * U_matrix(line_idx, l) *
-// 			 dd_matrix(k, l);
-// 	       }
-// 	  }
-//      }
-//      std::cout << "temp" << std::endl << temp << std::endl << std::endl;
-//      target_c3.diagonal() += temp.diagonal();
-// }
-
 void GfBase::get_target_c3(int ref_site_index) {
+     // 0.5 factor stems from the fact that the formal expression
+     // of the Hamiltonian is without order in the thesis, while it has
+     // order (a before b) in the papers ==> equivalent to specifying U/2
+     // in the papers
+     // For details of derivation of formulae, see Gull thesis,
+     // Appendix B.4, or hopefully even better, my own thesis, appendices.
+     // Sell also Ferber's thesis for order 3 coeff.
+     std::cout << "Compute target c3 for GF" << std::endl << std::endl;
+     target_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     // Get the local hoppings
+     Eigen::MatrixXcd bath_m1 = lattice_bs_->get_local_hoppings();
+     // and fix the diagonal elements (chempot includes atomic level energy:
+     // it is -epsilon + mu...)
+     for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx)
+	  bath_m1(line_idx, line_idx) = -(*chempot_)[line_idx];
+     Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
+     Eigen::MatrixXcd bath_m2 = bath_m1 * bath_m1.adjoint() +
+	  8.0 * (V_matrix * V_matrix.adjoint() + V_matrix.adjoint() * V_matrix);
+     target_c3 += bath_m2;
+     Eigen::MatrixXcd U_matrix = interaction_matrix.block(ref_site_index * per_site_orbital_size,
+							  ref_site_index * per_site_orbital_size,
+							  per_site_orbital_size,
+							  per_site_orbital_size);
+     //std::cout << "U_matrix" << std::endl << U_matrix << std::endl << std::endl;
+     Eigen::MatrixXcd dd_matrix = density_density_correl.block(ref_site_index * per_site_orbital_size,
+							       ref_site_index * per_site_orbital_size,
+							       per_site_orbital_size,
+							       per_site_orbital_size);
+     //std::cout << "dd_matrix" << std::endl << dd_matrix << std::endl << std::endl;
+     Eigen::VectorXcd density_vector = dd_matrix.diagonal();
+     Eigen::MatrixXcd ab_matrix = a_dagger_b.block(ref_site_index * per_site_orbital_size,
+						   ref_site_index * per_site_orbital_size,
+						   per_site_orbital_size,
+						   per_site_orbital_size);
+     Eigen::MatrixXcd temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+	  temp.col(col_index) += U_matrix * density_vector;
+     }
+     for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+	  temp.row(row_index) += density_vector.transpose() * U_matrix;
+     }     
+     //target_c3 += 2.0 * bath_m1.cwiseProduct(temp);
+     target_c3 += bath_m1.cwiseProduct(temp);
+     target_c3 -= (bath_m1 * (U_matrix.cwiseProduct(ab_matrix)).transpose());
+     target_c3 -= (bath_m1.transpose() * ((U_matrix.transpose()).cwiseProduct(ab_matrix))).transpose();
+     //target_c3 -= U_matrix.cwiseProduct(ab_matrix.transpose()) * bath_m1;
+     Eigen::MatrixXcd factor_3 =
+	  -U_matrix.cwiseProduct((ab_matrix.transpose()).cwiseProduct(temp));
+     Eigen::MatrixXcd factor_4 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
+	  for (int col_index = 0; col_index < per_site_orbital_size; col_index++) {
+	       for (int l_index = 0; l_index < per_site_orbital_size; l_index++) {
+		    factor_4(row_index, col_index) += (U_matrix(row_index, l_index) +
+						       U_matrix(col_index, l_index)) *
+			 ab_matrix(col_index, l_index) *
+			 ab_matrix(l_index, row_index);
+	       }
+	  }
+     }
+     //target_c3 += (factor_3 + U_matrix.cwiseProduct(factor_4));
+     target_c3 += (factor_3);
+     temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
+	  for(int k = 0; k < per_site_orbital_size; ++k) {
+	       for(int l = 0; l < per_site_orbital_size; ++l) {
+		    temp(line_idx, line_idx) += U_matrix(line_idx, k) * U_matrix(line_idx, l) *
+			 dd_matrix(k, l);
+	       }
+	  }
+     }
+     target_c3.diagonal() += temp.diagonal();
+     std::cout << "NEW TARGET C3" << std::endl << target_c3 << std::endl << std::endl;
+}
+
+void GfBase::get_new_target_c3(int ref_site_index) {
+     get_new_target_c3(ref_site_index);
      target_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      Eigen::MatrixXcd temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
@@ -434,5 +438,24 @@ void GfBase::get_target_c3(int ref_site_index) {
 	       }
 	  }
      }
+     Eigen::MatrixXcd ab_matrix = a_dagger_b.block(ref_site_index * per_site_orbital_size,
+						   ref_site_index * per_site_orbital_size,
+						   per_site_orbital_size,
+						   per_site_orbital_size);
+     Eigen::MatrixXcd U_matrix = interaction_matrix.block(ref_site_index * per_site_orbital_size,
+							  ref_site_index * per_site_orbital_size,
+							  per_site_orbital_size,
+							  per_site_orbital_size);
+     Eigen::MatrixXcd temp2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
+	  for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
+	       for(int ter_idx = 0; ter_idx < per_site_orbital_size; ++ter_idx) {
+		    temp2(line_idx, col_idx) += U_matrix(line_idx, ter_idx) *
+			 U_matrix(ter_idx, col_idx) * ab_matrix(ter_idx, line_idx) *
+			 ab_matrix(col_idx, ter_idx);
+	       }
+	  }
+     }     
      target_c3 = target_c2 * target_c2 + temp;
+     std::cout << "FAKE TARGET C3" << std::endl << target_c3 << std::endl << std::endl;
 }

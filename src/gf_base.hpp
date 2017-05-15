@@ -35,6 +35,7 @@ public:
      void read_params(const alps::params &parms);
      void get_target_c2(int ref_site_index);
      void get_target_c3(int ref_site_index);
+     void get_new_target_c3(int ref_site_index);
      
      Eigen::VectorXcd matsubara_frequencies_;
      size_t n_blocks;
