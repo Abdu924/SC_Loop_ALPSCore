@@ -73,16 +73,31 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 	  proc_k_lattice_[k_index] = Eigen::VectorXd::Zero(3);
      }
      if (world_rank_ != 0) {
+	  world_weights_ = Eigen::VectorXd::Zero(n_points_per_proc * world_size);
+	  world_k_lattice_.resize(n_points_per_proc * world_size);
+	  world_dispersion_.resize(n_points_per_proc * world_size);
 	  hoppings_.resize(nb_r_points);
 	  r_lattice_.resize(nb_r_points);
 	  for (int i = 0; i < nb_r_points; i++) {
 	       hoppings_[i] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
 	       r_lattice_[i] = Eigen::VectorXi::Zero(3);
 	  }
+	  for (int i = 0; i < n_points_per_proc * world_size; i++) {
+	       world_k_lattice_[i] = Eigen::VectorXd::Zero(3);
+	       world_dispersion_[i] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
+	  }
 	  epsilon_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
 	  epsilon_squared_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
      }
      // scatter the weights to each process
+     for (int i = 0; i < n_points_per_proc * world_size; i++) {
+	  MPI_Bcast(world_k_lattice_[i].data(), world_k_lattice_[i].size(),
+	  	    MPI::DOUBLE, 0, MPI_COMM_WORLD);
+	  MPI_Bcast(world_dispersion_[i].data(), world_dispersion_[i].size(),
+	  	    MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+     }
+     MPI_Bcast(world_weights_.data(), world_weights_.size(),
+	       MPI::DOUBLE, 0, MPI_COMM_WORLD);
      MPI_Scatter(world_weights_.data(), n_points_per_proc, MPI::DOUBLE,
 		 weights_.data(), n_points_per_proc, MPI::DOUBLE, 0, MPI_COMM_WORLD);
 
@@ -404,16 +419,16 @@ void Bandstructure::check_flavor_dim_consistency(const alps::params& parms,
 						 int dimension) {
      int n_sites = 1;
      int n_flavors = static_cast<int>(parms["N_ORBITALS"]) * n_sites;
-     if(dimension != n_flavors) {
-	  cerr << "ERROR: Bandstructure: FLAVORS from parameter file "
-	       "differs from the number of bands available in DISPFILE = "
-	       << parms["DISPFILE"] << endl;
+	if(dimension != n_flavors) {
+		cerr<<"ERROR: Bandstructure: FLAVORS from parameter file "
+			"differs from the number of bands available in DISPFILE = "
+		    << parms["DISPFILE"] << endl;
 	  cerr << "n_flavors: " << n_flavors << endl;
 	  cerr << "dimension " << dimension << endl; 
-	  throw runtime_error("Parameter conflict in DISPFILE !");
-     } else {
-	  orbital_size_ = static_cast<int>(dimension);
-     }
+		throw runtime_error("Parameter conflict in DISPFILE !");
+	} else {
+	     orbital_size_ = static_cast<int>(dimension);
+	}
 }
 
 void Bandstructure::compute_bare_dos(double chemical_potential) {

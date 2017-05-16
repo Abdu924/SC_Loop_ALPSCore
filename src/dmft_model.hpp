@@ -90,5 +90,6 @@ private:
      static const size_t current_dimension;
      static const string k_resolved_occupation_dump_name;     
 };
+
   
 #endif //DMFT_MODEL__

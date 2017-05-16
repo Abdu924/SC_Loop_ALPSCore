@@ -50,6 +50,7 @@ public:
       * of Eigen arrays -- still under investigation.
       */
      std::vector<Eigen::MatrixXcd> dispersion_;
+     std::vector<Eigen::MatrixXcd> world_dispersion_;
   
 protected:
      void init_world_containers(int n_points);
@@ -67,11 +68,15 @@ protected:
      Eigen::MatrixXcd epsilon_squared_bar;
      std::vector<std::vector<double> > k_lattice_;
      std::vector<Eigen::VectorXd> proc_k_lattice_;
+     std::vector<Eigen::VectorXd> world_k_lattice_;
+     std::vector<int> next_k_along_x;
+     std::vector<int> next_k_along_y;
      // Lattice for bseq
      std::vector<Eigen::VectorXd> secondary_q_lattice_;
      std::vector<Eigen::VectorXi> r_lattice_;
      std::vector<Eigen::MatrixXcd> hoppings_;
      Eigen::VectorXd weights_;
+     Eigen::VectorXd world_weights_;
      int orbital_size_;
      std::vector<Eigen::VectorXd> bare_dos;
      std::vector<Eigen::VectorXd> world_bare_dos;
