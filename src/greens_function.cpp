@@ -41,8 +41,13 @@ std::complex<double> Greensfunction::get_t_coeff(int n, int l) {
 
 void Greensfunction::generate_data(alps::hdf5::archive &h5_archive) {
      read_single_site_raw_legendre(h5_archive);
-     for (int rep = 0; rep < 100; rep++)
-	  fix_moments();
+     int converge_repet = 100;
+     bool verbose = false;
+     for (int rep = 0; rep < converge_repet; rep++) {
+	  if (rep == converge_repet - 1)
+	       verbose = true;
+	  fix_moments(verbose);
+     }
      get_matsubara_from_legendre();
 }
 
@@ -277,14 +282,14 @@ Eigen::MatrixXcd Greensfunction::measure_moment(int order) {
      return out;
 }
 
-void Greensfunction::fix_moments() {
+void Greensfunction::fix_moments(bool verbose) {
      // measure the raw moments.
      measured_c1 = measure_moment(0);
      measured_c2 = measure_moment(1);
      measured_c3 = measure_moment(2);
-     std::cout << " measured_c2 " << std::endl << measured_c2 << std::endl;
      if (fix_c1) {
-	  std::cout << "Fixing c1 in Legendre" << std::endl;
+	  if (verbose)
+	       std::cout << "Fixing c1 in Legendre" << std::endl;
 	  // Fix c_1
 	  // Cf paper by Boehnke et al. PRB 84, 075145 (2011)
 	  // Eq 10.
@@ -300,43 +305,39 @@ void Greensfunction::fix_moments() {
 	  measured_c3 = measure_moment(2);
      }
      if (fix_c2) {
-	  std::cout << "Fixing c2 in Legendre" << std::endl;
-	  Eigen::MatrixXcd distance =
-	       Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	  if (verbose)
+	       std::cout << "Fixing c2 in Legendre" << std::endl;
+	  //Eigen::MatrixXcd distance =
+	  //     Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
 	  Eigen::MatrixXcd delta =
 	       Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
 	  for (int l_index = 0; l_index < l_max; l_index++) {
 	       delta = (target_c2 - measured_c2) * std::pow(beta, 2) *
 		    tl_values[1][l_index] / tl_modulus[1];
 	       gl_values_[l_index] += delta;
-	       distance += tl_values[1][l_index] * delta / (std::pow(beta, 2));
+	       //distance += tl_values[1][l_index] * delta / (std::pow(beta, 2));
 	  }
-	  std::cout << " measured_c2 before " << std::endl << measured_c2 << std::endl;
 	  measured_c2 = measure_moment(1);
-	  std::cout << " measured_c2 after " << std::endl << measured_c2 << std::endl;
-	  std::cout << " target_c2 " << std::endl << target_c2 << std::endl;
-	  std::cout << " distance " << std::endl << distance << std::endl;
+	  if (verbose)
+	       std::cout << " target_c2 " << std::endl << target_c2 << std::endl;
      }
      if (fix_c2) {
-	  std::cout << "Fixing c3 in Legendre" << std::endl;
-	  Eigen::MatrixXcd distance =
-	       Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+	  if (verbose)
+	       std::cout << "Fixing c3 in Legendre" << std::endl;
+	  //Eigen::MatrixXcd distance =
+	  //     Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
 	  Eigen::MatrixXcd delta =
 	       Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
 	  for (int l_index = 0; l_index < l_max; l_index++) {
 	       delta = (target_c3 - measured_c3) * std::pow(beta, 3) *
 		    tl_values[2][l_index] / tl_modulus[2];
 	       gl_values_[l_index] += delta;
-	       distance += tl_values[2][l_index] * delta / (std::pow(beta, 3));
+	       //distance += tl_values[2][l_index] * delta / (std::pow(beta, 3));
 	  }
-	  std::cout << " measured_c3 before " << std::endl << measured_c3 << std::endl;
 	  measured_c3 = measure_moment(2);
-	  std::cout << " measured_c3 after " << std::endl << measured_c3 << std::endl;
-	  std::cout << " target_c3 " << std::endl << target_c3 << std::endl;
-	  std::cout << " distance " << std::endl << distance << std::endl;
-	  std::cout << " measured_c1 before " << std::endl << measured_c1 << std::endl;
 	  measured_c1 = measure_moment(0);
-	  std::cout << " measured_c1 after " << std::endl << measured_c1 << std::endl;
+	  if (verbose)
+	       std::cout << "target_c3 " << std::endl << target_c3 << std::endl;
      }
      //display_fixed_legendre();
 }

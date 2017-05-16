@@ -32,7 +32,7 @@ public:
 protected:
      void read_single_site_raw_legendre(alps::hdf5::archive &h5_archive,
 					int site_index=0);
-     void fix_moments();
+     void fix_moments(bool verbose);
      void read_single_site_full_gf_matsubara(alps::hdf5::archive &h5_archive,
 					     int site_index=0);
      void read_bare_gf();

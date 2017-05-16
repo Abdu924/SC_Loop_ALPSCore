@@ -296,7 +296,7 @@ Eigen::MatrixXcd GfBase::get_measured_c3() {
 }
 
 void GfBase::get_target_c2(int ref_site_index) {
-     std::cout << "Compute target c2 for GF" << std::endl << std::endl;
+     //std::cout << "Compute target c2 for GF" << std::endl << std::endl;
      target_c2 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      // Get the local hoppings
      Eigen::MatrixXcd bath_m1 = lattice_bs_->get_local_hoppings();
@@ -334,7 +334,7 @@ void GfBase::get_target_c3(int ref_site_index) {
      // For details of derivation of formulae, see Gull thesis,
      // Appendix B.4, or hopefully even better, my own thesis, appendices.
      // Sell also Ferber's thesis for order 3 coeff.
-     std::cout << "Compute target c3 for GF" << std::endl << std::endl;
+     //std::cout << "Compute target c3 for GF" << std::endl << std::endl;
      target_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      // Get the local hoppings
      Eigen::MatrixXcd bath_m1 = lattice_bs_->get_local_hoppings();
@@ -350,12 +350,10 @@ void GfBase::get_target_c3(int ref_site_index) {
 							  ref_site_index * per_site_orbital_size,
 							  per_site_orbital_size,
 							  per_site_orbital_size);
-     //std::cout << "U_matrix" << std::endl << U_matrix << std::endl << std::endl;
      Eigen::MatrixXcd dd_matrix = density_density_correl.block(ref_site_index * per_site_orbital_size,
 							       ref_site_index * per_site_orbital_size,
 							       per_site_orbital_size,
 							       per_site_orbital_size);
-     //std::cout << "dd_matrix" << std::endl << dd_matrix << std::endl << std::endl;
      Eigen::VectorXcd density_vector = dd_matrix.diagonal();
      Eigen::MatrixXcd ab_matrix = a_dagger_b.block(ref_site_index * per_site_orbital_size,
 						   ref_site_index * per_site_orbital_size,
@@ -368,11 +366,9 @@ void GfBase::get_target_c3(int ref_site_index) {
      for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
 	  temp.row(row_index) += density_vector.transpose() * U_matrix;
      }     
-     //target_c3 += 2.0 * bath_m1.cwiseProduct(temp);
      target_c3 += bath_m1.cwiseProduct(temp);
      target_c3 -= (bath_m1 * (U_matrix.cwiseProduct(ab_matrix)).transpose());
      target_c3 -= (bath_m1.transpose() * ((U_matrix.transpose()).cwiseProduct(ab_matrix))).transpose();
-     //target_c3 -= U_matrix.cwiseProduct(ab_matrix.transpose()) * bath_m1;
      Eigen::MatrixXcd factor_3 =
 	  -U_matrix.cwiseProduct((ab_matrix.transpose()).cwiseProduct(temp));
      Eigen::MatrixXcd factor_4 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
@@ -386,6 +382,7 @@ void GfBase::get_target_c3(int ref_site_index) {
 	       }
 	  }
      }
+     //std::cout << "factor_4" << std::endl << U_matrix.cwiseProduct(factor_4) << std::endl << std::endl;
      //target_c3 += (factor_3 + U_matrix.cwiseProduct(factor_4));
      target_c3 += (factor_3);
      temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
@@ -398,7 +395,7 @@ void GfBase::get_target_c3(int ref_site_index) {
 	  }
      }
      target_c3.diagonal() += temp.diagonal();
-     std::cout << "NEW TARGET C3" << std::endl << target_c3 << std::endl << std::endl;
+     //std::cout << "TARGET C3" << std::endl << target_c3 << std::endl << std::endl;
 }
 
 void GfBase::get_new_target_c3(int ref_site_index) {

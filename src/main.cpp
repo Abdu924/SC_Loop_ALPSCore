@@ -347,6 +347,7 @@ int main(int argc, const char* argv[]) {
 		    boost::shared_ptr<Selfenergy> legendre_qmc_self_energy;
 		    boost::shared_ptr<Greensfunction> legendre_greens_function;
 		    if ((parms["cthyb.MEASURE_freq"]) && (!from_alps3)) {
+			 std::cout << "generate Matsubara Sigma" << std::endl;
 			 // S_omega or S_l_omega
 			 int input_type = 0;
 			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot,
