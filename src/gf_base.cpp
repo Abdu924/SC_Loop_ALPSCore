@@ -251,7 +251,8 @@ void GfBase::get_a_dagger_b(int ref_site_index,
 			 std::stringstream orbital_path;
 			 // ATTENTION here: convention of QMC is F_ij = -T<c_i c^dag_j>,
 			 // but DMFT is looking for  c^dag_i c_j
-			 cur_index = line_idx + col_idx * blocks[block_index].size();
+			 //cur_index = line_idx + col_idx * blocks[block_index].size();
+			 cur_index = col_idx + line_idx * blocks[block_index].size();
 			 orbital_path << gtau_path << boost::lexical_cast<std::string>(block_index) +
 			      "/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
 			 // VERY CAREFUL HERE
