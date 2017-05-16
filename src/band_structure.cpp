@@ -8,9 +8,6 @@ using namespace std;
 
 Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool verbose)
      :world_rank_(world_rank) {
-     std::vector<Eigen::MatrixXcd> world_dispersion_;
-     Eigen::VectorXd world_weights_;
-     std::vector<Eigen::VectorXd> world_k_lattice_;
      int N_Qmesh = parms.exists("N_QBSEQ") ?
 	  static_cast<int>(parms["N_QBSEQ"]) : 0;
      generate_bseq_lattice(N_Qmesh);
@@ -73,19 +70,34 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 	  proc_k_lattice_[k_index] = Eigen::VectorXd::Zero(3);
      }
      if (world_rank_ != 0) {
+	  world_weights_ = Eigen::VectorXd::Zero(n_points_per_proc * world_size);
+	  world_k_lattice_.resize(n_points_per_proc * world_size);
+	  world_dispersion_.resize(n_points_per_proc * world_size);
 	  hoppings_.resize(nb_r_points);
 	  r_lattice_.resize(nb_r_points);
 	  for (int i = 0; i < nb_r_points; i++) {
 	       hoppings_[i] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
 	       r_lattice_[i] = Eigen::VectorXi::Zero(3);
 	  }
+	  for (int i = 0; i < n_points_per_proc * world_size; i++) {
+	       world_k_lattice_[i] = Eigen::VectorXd::Zero(3);
+	       world_dispersion_[i] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
+	  }
 	  epsilon_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
 	  epsilon_squared_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
      }
+     // Broadcast world dispersion, weights, k_lattie
+     for (int i = 0; i < n_points_per_proc * world_size; i++) {
+	  MPI_Bcast(world_k_lattice_[i].data(), world_k_lattice_[i].size(),
+	  	    MPI::DOUBLE, 0, MPI_COMM_WORLD);
+	  MPI_Bcast(world_dispersion_[i].data(), world_dispersion_[i].size(),
+	  	    MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+     }
+     MPI_Bcast(world_weights_.data(), world_weights_.size(),
+	       MPI::DOUBLE, 0, MPI_COMM_WORLD);
      // scatter the weights to each process
      MPI_Scatter(world_weights_.data(), n_points_per_proc, MPI::DOUBLE,
 		 weights_.data(), n_points_per_proc, MPI::DOUBLE, 0, MPI_COMM_WORLD);
-
      // scatter the dispersion to each process
      for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
 	  if (world_rank == 0) {
