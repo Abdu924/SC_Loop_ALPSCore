@@ -286,6 +286,36 @@ void DMFTModel::reset_occupation_matrices(size_t orbital_size)  {
      k_resolved_occupation_matrices.clear();
 }
 
+Eigen::MatrixXcd DMFTModel::get_full_greens_function(double chemical_potential) {
+     size_t k_min(0);
+     size_t k_max = lattice_bs_->get_lattice_size();
+     size_t orbital_size = lattice_bs_->get_orbital_size();
+     double beta = sigma_->get_beta();
+     size_t N_max = sigma_->get_n_matsubara_freqs();
+     Eigen::MatrixXcd from_zero_plus_to_zero_minus = Eigen::VectorXcd::Constant(
+	  orbital_size, 1.0).asDiagonal();
+     Eigen::MatrixXcd greens_function(orbital_size, orbital_size);
+     Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);	
+     std::complex<double> mu = std::complex<double>(chemical_potential);
+     Eigen::VectorXcd to_add(orbital_size);
+     for (int k_index = k_min; k_index < k_max; k_index++) {
+	  double l_weight = lattice_bs_->get_weight(k_index);
+	  if (abs(l_weight) < 1e-6) {
+	       if (world_rank_ == 0) {
+		    cout << "skipping k point" << endl;
+	       }
+	       continue;
+	  }
+	  for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+	       to_add = Eigen::VectorXcd::Constant
+		    (orbital_size, mu + sigma_->get_matsubara_frequency(freq_index));		  
+	       inverse_gf = - lattice_bs_->dispersion_[k_index] - sigma_->values_[freq_index];
+	       inverse_gf.diagonal() += to_add;
+	       greens_function = inverse_gf.inverse();
+	  }
+     }
+}
+
 /*
  * For documentation, refer to thesis by E. Gull, Appendix B, in particular B.1 - B.4
  * B.22-23 and B. 34. The following Implementation follows his notation. See also

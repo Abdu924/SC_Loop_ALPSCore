@@ -516,9 +516,14 @@ void Selfenergy::compute_tail_coeffs(boost::shared_ptr<Greensfunction> greens_fu
 		    ref_site_index * per_site_orbital_size,
 		    per_site_orbital_size,
 		    per_site_orbital_size) =
-	  greens_function->get_measured_c3() - (
+	  Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
+     Sigma_1_.block(ref_site_index * per_site_orbital_size,
+		    ref_site_index * per_site_orbital_size,
+		    per_site_orbital_size,
+		    per_site_orbital_size).diagonal() =
+	  (greens_function->get_measured_c3() - (
 	       greens_function->get_measured_c2() *
-	       greens_function->get_measured_c2());
+	       greens_function->get_measured_c2())).diagonal();
 }
 
 void Selfenergy::compute_tail_coeffs(int ref_site_index) {

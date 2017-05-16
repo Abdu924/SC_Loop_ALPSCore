@@ -52,6 +52,7 @@ private:
 				    double chemical_potential, double beta);
      void compute_analytical_tail(double chemical_potential, int k_index, double beta);
      double compute_derivative_tail(size_t orbital_size, double beta);
+     Eigen::MatrixXcd get_full_greens_function(double chemical_potential);
 		
      boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::shared_ptr<Selfenergy> sigma_;

@@ -187,7 +187,7 @@ void GfBase::get_density_density_correl(int ref_site_index,
 			       blocks[block_index][col_idx]) = cur_dd_correl;
 		    }
 	       }
-	  } 
+	  }
      }
      // Print out some log for convergence check against
      // similar output from dmft
