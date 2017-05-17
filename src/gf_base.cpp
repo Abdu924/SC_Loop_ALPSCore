@@ -327,7 +327,7 @@ void GfBase::get_target_c2(int ref_site_index) {
      target_c2 -= U_matrix.transpose().cwiseProduct(ab_matrix);
      target_c2 += bath_m1;
      target_c2.diagonal() += U_matrix * density_vector;
-     target_c2.transposeInPlace();
+     //target_c2.transposeInPlace();
 }
 
 void GfBase::get_target_c3(int ref_site_index) {
@@ -399,7 +399,7 @@ void GfBase::get_target_c3(int ref_site_index) {
 	  }
      }
      target_c3.diagonal() += temp.diagonal();
-     target_c3.transposeInPlace();
+     //target_c3.transposeInPlace();
      //std::cout << "TARGET C3" << std::endl << target_c3 << std::endl << std::endl;
 }
 

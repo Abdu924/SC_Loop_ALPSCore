@@ -45,9 +45,94 @@ DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
      tail_manager = temp_tail_manager;
 }
 
-std::vector<Eigen::MatrixXcd> DMFTModel::get_dx_greens_functions(double chemical_potential) {
-	std::vector<Eigen::MatrixXcd> output;
-	return output;
+Eigen::MatrixXcd DMFTModel::get_gf_derivative(int derivationindex, int k_index,
+				   int freq_index, double chemical_potential) {
+     int orbital_size = lattice_bs_->get_orbital_size();
+     Eigen::MatrixXcd output = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
+     if (derivationindex == 1) {
+	  output = get_dx_greens_function(k_index, freq_index, chemical_potential);
+     } else if (derivationindex == 2) {
+	  output = get_dy_greens_function(k_index, freq_index, chemical_potential);
+     } else if (derivationindex == 0) {
+	  output = get_domega_greens_function(k_index, freq_index, chemical_potential);
+     } else {
+	  throw std::runtime_error("Wrong index for GF derivation");
+     }
+     return output;
+}
+
+Eigen::MatrixXcd DMFTModel::get_domega_greens_function(
+     int k_index, int freq_index, double chemical_potential) {
+     int orbital_size = lattice_bs_->get_orbital_size();
+     int N_max = sigma_->get_n_matsubara_freqs();
+     Eigen::MatrixXcd output = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
+     if (freq_index < N_max - 1) {
+	  Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);
+	  Eigen::MatrixXcd greens_function(orbital_size, orbital_size);
+	  Eigen::MatrixXcd do_greens_function(orbital_size, orbital_size);
+	  Eigen::MatrixXcd do_inverse_gf(orbital_size, orbital_size);
+	  std::complex<double> mu = std::complex<double>(chemical_potential);
+	  Eigen::VectorXcd to_add(orbital_size);
+	  Eigen::VectorXcd do_to_add(orbital_size);
+	  to_add = Eigen::VectorXcd::Constant
+	       (orbital_size, mu + sigma_->get_matsubara_frequency(freq_index));
+	  to_add = Eigen::VectorXcd::Constant
+	       (orbital_size, mu + sigma_->get_matsubara_frequency(freq_index + 1));
+	  inverse_gf = -lattice_bs_->dispersion_[k_index] - sigma_->values_[freq_index];
+	  do_inverse_gf = -lattice_bs_->dispersion_[k_index] - sigma_->values_[freq_index + 1];
+	  inverse_gf.diagonal() += to_add;
+	  do_inverse_gf.diagonal() += do_to_add;
+	  greens_function = inverse_gf.inverse();
+	  do_greens_function = do_inverse_gf.inverse();
+	  output = (do_inverse_gf - greens_function) / (
+	       sigma_->get_matsubara_frequency(freq_index + 1) -
+	       sigma_->get_matsubara_frequency(freq_index));
+     }
+     return output;
+}
+
+Eigen::MatrixXcd DMFTModel::get_dx_greens_function(
+     int k_index, int freq_index, double chemical_potential) {
+     int orbital_size = lattice_bs_->get_orbital_size();
+     Eigen::MatrixXcd output = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
+     Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);
+     Eigen::MatrixXcd greens_function(orbital_size, orbital_size);
+     Eigen::MatrixXcd dx_greens_function(orbital_size, orbital_size);
+     Eigen::MatrixXcd dx_inverse_gf(orbital_size, orbital_size);
+     std::complex<double> mu = std::complex<double>(chemical_potential);
+     Eigen::VectorXcd to_add(orbital_size);
+     to_add = Eigen::VectorXcd::Constant
+	  (orbital_size, mu + sigma_->get_matsubara_frequency(freq_index));		  
+     inverse_gf = -lattice_bs_->dispersion_[k_index] - sigma_->values_[freq_index];
+     dx_inverse_gf = -lattice_bs_->dispersion_dx_[k_index] - sigma_->values_[freq_index];
+     inverse_gf.diagonal() += to_add;
+     dx_inverse_gf.diagonal() += to_add;
+     greens_function = inverse_gf.inverse();
+     dx_greens_function = dx_inverse_gf.inverse();
+     output = (dx_inverse_gf - greens_function) / lattice_bs_->get_x_dim();
+     return output;
+}
+
+Eigen::MatrixXcd DMFTModel::get_dy_greens_function(
+     int k_index, int freq_index, double chemical_potential) {
+     int orbital_size = lattice_bs_->get_orbital_size();
+     Eigen::MatrixXcd output = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
+     Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);
+     Eigen::MatrixXcd greens_function(orbital_size, orbital_size);
+     Eigen::MatrixXcd dy_greens_function(orbital_size, orbital_size);
+     Eigen::MatrixXcd dy_inverse_gf(orbital_size, orbital_size);
+     std::complex<double> mu = std::complex<double>(chemical_potential);
+     Eigen::VectorXcd to_add(orbital_size);
+     to_add = Eigen::VectorXcd::Constant
+	  (orbital_size, mu + sigma_->get_matsubara_frequency(freq_index));		  
+     inverse_gf = -lattice_bs_->dispersion_[k_index] - sigma_->values_[freq_index];
+     dy_inverse_gf = -lattice_bs_->dispersion_dy_[k_index] - sigma_->values_[freq_index];
+     inverse_gf.diagonal() += to_add;
+     dy_inverse_gf.diagonal() += to_add;
+     greens_function = inverse_gf.inverse();
+     dy_greens_function = dy_inverse_gf.inverse();
+     output = (dy_inverse_gf - greens_function) / lattice_bs_->get_y_dim();
+     return output;
 }
 
 tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_mu,
