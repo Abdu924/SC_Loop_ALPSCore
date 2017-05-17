@@ -11,6 +11,8 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      std::vector<Eigen::MatrixXcd> world_dispersion_;
      Eigen::VectorXd world_weights_;
      std::vector<Eigen::VectorXd> world_k_lattice_;
+     std::vector<Eigen::VectorXd> world_k_lattice_dx_;
+     std::vector<Eigen::VectorXd> world_k_lattice_dy_;
      int N_Qmesh = parms.exists("N_QBSEQ") ?
 	  static_cast<int>(parms["N_QBSEQ"]) : 0;
      generate_bseq_lattice(N_Qmesh);
@@ -49,14 +51,24 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 	       epsilon_squared_bar /= weight_sum;
 	  }
 	  world_k_lattice_.clear();
+	  world_k_lattice_dx_.clear();
+	  world_k_lattice_dy_.clear();
 	  for (int k_index = 0; k_index < k_lattice_.size(); k_index++) {
 	       world_k_lattice_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
 					  k_lattice_[k_index][1],
 					   k_lattice_[k_index][2]).finished());
+	       world_k_lattice_dx_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
+					   k_lattice_[k_index][1],
+					   k_lattice_[k_index][2]).finished());
+	       world_k_lattice_dy_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
+					      k_lattice_[k_index][1],
+					      k_lattice_[k_index][2]).finished());
 	  }
 	  for(int k_index = k_lattice_.size(); k_index < n_points_per_proc * world_size;
 	      k_index++) {
 	       world_k_lattice_.push_back(Eigen::VectorXd::Zero(3));
+	       world_k_lattice_dx_.push_back(Eigen::VectorXd::Zero(3));
+	       world_k_lattice_dy_.push_back(Eigen::VectorXd::Zero(3));
 	  }
      }
      // Broadcast the quantities defined on master only by code above.
@@ -68,9 +80,13 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      weights_.resize(n_points_per_proc);
      dispersion_.resize(n_points_per_proc);
      proc_k_lattice_.resize(n_points_per_proc);
+     proc_k_lattice_dx_.resize(n_points_per_proc);
+     proc_k_lattice_dy_.resize(n_points_per_proc);
      for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
 	  dispersion_[k_index] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
 	  proc_k_lattice_[k_index] = Eigen::VectorXd::Zero(3);
+	  proc_k_lattice_dx_[k_index] = Eigen::VectorXd::Zero(3);
+	  proc_k_lattice_dy_[k_index] = Eigen::VectorXd::Zero(3);
      }
      if (world_rank_ != 0) {
 	  hoppings_.resize(nb_r_points);
@@ -124,6 +140,26 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      	       proc_k_lattice_[k_index] = world_k_lattice_[k_index];
      	  }
      }
+     for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
+     	  if (world_rank == 0) {
+     	       for (int proc_index = 1; proc_index < world_size; proc_index++) {		    
+     		    MPI_Send(world_k_lattice_dx_[proc_index * n_points_per_proc + k_index].data(),
+     			     world_k_lattice_dx_[proc_index * n_points_per_proc + k_index].size(),
+     			     MPI::DOUBLE, proc_index, 0, MPI_COMM_WORLD);
+     	       }
+     	  } else {
+     	       MPI_Recv(proc_k_lattice_dx_[k_index].data(),
+     			proc_k_lattice_dx_[k_index].size(),
+     			MPI::DOUBLE,
+     			0, 0, MPI_COMM_WORLD,
+     			MPI_STATUS_IGNORE);
+     	  }
+     	  if (world_rank == 0) {
+     	       proc_k_lattice_dx_[k_index] = world_k_lattice_dx_[k_index];
+     	  }
+     }
+
+     MPI_Barrier(MPI_COMM_WORLD);
      // Broadcast lattice and hoppings to all processes
      // for dispersion computation
      for (int i = 0; i < nb_r_points; i++) {
@@ -159,19 +195,36 @@ std::vector<Eigen::MatrixXcd> Bandstructure::generate_band_from_hoppings(
      std::vector<Eigen::MatrixXcd> output;
      int n_k_points;
      double kx, ky, kz, phase_factor;
+     double kx_dx, ky_dy;
      // Read input file
      output.clear();
      k_lattice_.clear();
+     k_lattice_dx_.clear();
+     k_lattice_dy_.clear();
      // Calculate FT of hoppings -> dispersion
      Eigen::MatrixXcd m(orbital_size_, orbital_size_);
      for (int k1 = 0; k1 < x_dim; ++k1) {
 	  for (int k2 = 0; k2 < y_dim; ++k2) {
 	       for (int k3 = 0; k3 < z_dim; ++k3) {
 		    kx = double(k1) / double(x_dim);
+		    if (k1 < (x_dim - 1)) {
+			 kx_dx = double(k1 + 1) / double(x_dim);
+		    } else {
+			 kx_dx = double(k1) / double(x_dim);
+		    }
 		    ky = double(k2) / double(y_dim);
+		    if (k2 < (y_dim - 1)) {
+			 ky_dy = double(k2 + 1) / double(y_dim);
+		    } else {
+			 ky_dy = double(k2) / double(y_dim);
+		    }
 		    kz = double(k3) / double(z_dim);
 		    std::vector<double> tmp {kx, ky, kz};
 		    k_lattice_.push_back(tmp);
+		    std::vector<double> tmp_dx {kx_dx, ky, kz};
+		    k_lattice_dx_.push_back(tmp_dx);
+		    std::vector<double> tmp_dy {kx, ky_dy, kz};
+		    k_lattice_dy_.push_back(tmp_dy);
 		    m = get_k_basis_matrix((Eigen::VectorXd(3) << kx, ky, kz).finished());
 		    //Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
 		    // Check Hermiticity

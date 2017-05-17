@@ -251,8 +251,8 @@ void GfBase::get_a_dagger_b(int ref_site_index,
 			 std::stringstream orbital_path;
 			 // ATTENTION here: convention of QMC is F_ij = -T<c_i c^dag_j>,
 			 // but DMFT is looking for  c^dag_i c_j
-			 //cur_index = line_idx + col_idx * blocks[block_index].size();
-			 cur_index = col_idx + line_idx * blocks[block_index].size();
+			 cur_index = line_idx + col_idx * blocks[block_index].size();
+			 //cur_index = col_idx + line_idx * blocks[block_index].size();
 			 orbital_path << gtau_path << boost::lexical_cast<std::string>(block_index) +
 			      "/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
 			 // VERY CAREFUL HERE
@@ -325,6 +325,7 @@ void GfBase::get_target_c2(int ref_site_index) {
      target_c2 -= U_matrix.transpose().cwiseProduct(ab_matrix);
      target_c2 += bath_m1;
      target_c2.diagonal() += U_matrix * density_vector;
+     target_c2.transposeInPlace();
 }
 
 void GfBase::get_target_c3(int ref_site_index) {
@@ -396,6 +397,7 @@ void GfBase::get_target_c3(int ref_site_index) {
 	  }
      }
      target_c3.diagonal() += temp.diagonal();
+     target_c3.transposeInPlace();
      //std::cout << "TARGET C3" << std::endl << target_c3 << std::endl << std::endl;
 }
 

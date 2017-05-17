@@ -66,7 +66,11 @@ protected:
      Eigen::MatrixXcd epsilon_bar;
      Eigen::MatrixXcd epsilon_squared_bar;
      std::vector<std::vector<double> > k_lattice_;
+     std::vector<std::vector<double> > k_lattice_dx_;
+     std::vector<std::vector<double> > k_lattice_dy_;
      std::vector<Eigen::VectorXd> proc_k_lattice_;
+     std::vector<Eigen::VectorXd> proc_k_lattice_dx_;
+     std::vector<Eigen::VectorXd> proc_k_lattice_dy_;
      // Lattice for bseq
      std::vector<Eigen::VectorXd> secondary_q_lattice_;
      std::vector<Eigen::VectorXi> r_lattice_;
