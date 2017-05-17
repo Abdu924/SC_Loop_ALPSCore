@@ -39,6 +39,9 @@ public:
 	Eigen::VectorXd get_q_point(int q_index) {return secondary_q_lattice_[q_index];};
 	Eigen::VectorXd get_k_plus_q_point(int k_index, int q_index);
 	int get_nb_points_for_bseq() {return secondary_q_lattice_.size();};
+	vector<Eigen::MatrixXcd> generate_dx_dispersion();
+	vector<Eigen::MatrixXcd> generate_dy_dispersion();
+
 	virtual ~Bandstructure() {}
 
 	/*

@@ -79,11 +79,15 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 	MPI_Bcast(&n_points_per_proc, 1, MPI::INT, 0, MPI_COMM_WORLD);     
 	weights_.resize(n_points_per_proc);
 	dispersion_.resize(n_points_per_proc);
+	dispersion_dx_.resize(n_points_per_proc);
+	dispersion_dy_.resize(n_points_per_proc);
 	proc_k_lattice_.resize(n_points_per_proc);
 	proc_k_lattice_dx_.resize(n_points_per_proc);
 	proc_k_lattice_dy_.resize(n_points_per_proc);
 	for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
 		dispersion_[k_index] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
+		dispersion_dx_[k_index] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
+		dispersion_dy_[k_index] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
 		proc_k_lattice_[k_index] = Eigen::VectorXd::Zero(3);
 		proc_k_lattice_dx_[k_index] = Eigen::VectorXd::Zero(3);
 		proc_k_lattice_dy_[k_index] = Eigen::VectorXd::Zero(3);
@@ -101,7 +105,6 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 	// scatter the weights to each process
 	MPI_Scatter(world_weights_.data(), n_points_per_proc, MPI::DOUBLE,
 		    weights_.data(), n_points_per_proc, MPI::DOUBLE, 0, MPI_COMM_WORLD);
-
 	// scatter the dispersion to each process
 	for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
 		if (world_rank == 0) {
@@ -194,6 +197,10 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 		  MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 	MPI_Bcast(epsilon_squared_bar.data(), epsilon_squared_bar.size(),
 		  MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+	// Now everything is available in each process for computation of
+	// the dispersion with displaced lattice
+	dispersion_dx_ = generate_dx_dispersion();
+	dispersion_dy_ = generate_dy_dispersion();
 }
 
 void Bandstructure::generate_bseq_lattice(int n_q_mesh) {
@@ -264,6 +271,30 @@ std::vector<Eigen::MatrixXcd> Bandstructure::generate_band_from_hoppings(
      {
 	  output.push_back(Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_));
 	  weights(i) = 0.0;
+     }
+     return output;
+}
+
+std::vector<Eigen::MatrixXcd> Bandstructure::generate_dx_dispersion() {
+     std::vector<Eigen::MatrixXcd> output;
+     Eigen::MatrixXcd m(orbital_size_, orbital_size_);
+     for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
+	     m = get_k_basis_matrix(
+		     (Eigen::VectorXd(3) <<
+		      proc_k_lattice_dx_[0], proc_k_lattice_dx_[1], proc_k_lattice_dx_[2]).finished());
+	     output.push_back(m);
+     }
+     return output;
+}
+
+std::vector<Eigen::MatrixXcd> Bandstructure::generate_dy_dispersion() {
+     std::vector<Eigen::MatrixXcd> output;
+     Eigen::MatrixXcd m(orbital_size_, orbital_size_);
+     for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
+	     m = get_k_basis_matrix(
+		     (Eigen::VectorXd(3) <<
+		      proc_k_lattice_dy_[0], proc_k_lattice_dy_[1], proc_k_lattice_dy_[2]).finished());
+	     output.push_back(m);
      }
      return output;
 }
