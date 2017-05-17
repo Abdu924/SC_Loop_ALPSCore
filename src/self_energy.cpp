@@ -100,7 +100,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      log_sigma_tails(ref_site_index);
      compute_qmc_tail(ref_site_index);
      // No need to append tails when data comes from Legendre
-     append_qmc_tail(ref_site_index, parms);
+     //append_qmc_tail(ref_site_index, parms);
      symmetrize_sites(ref_site_index);
      // precompute some matsubara frequency sums for later use
      // in the Fourier transforms.
