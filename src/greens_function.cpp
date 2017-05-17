@@ -261,7 +261,7 @@ void Greensfunction::read_single_site_raw_legendre(alps::hdf5::archive &h5_archi
      if (sampling_type == 1) {
 	  for (int l_index = 0; l_index < l_max; l_index++) {
 	       // different convention for DMFT and QMC in Alps2...
-	       raw_gl_matrices[l_index].transposeInPlace();
+	       //raw_gl_matrices[l_index].transposeInPlace();
 	  }
      }
      symmetrize_matrix_elements();
