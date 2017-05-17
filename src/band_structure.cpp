@@ -7,174 +7,193 @@
 using namespace std;
 
 Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool verbose)
-     :world_rank_(world_rank) {
-     std::vector<Eigen::MatrixXcd> world_dispersion_;
-     Eigen::VectorXd world_weights_;
-     std::vector<Eigen::VectorXd> world_k_lattice_;
-     std::vector<Eigen::VectorXd> world_k_lattice_dx_;
-     std::vector<Eigen::VectorXd> world_k_lattice_dy_;
-     int N_Qmesh = parms.exists("N_QBSEQ") ?
-	  static_cast<int>(parms["N_QBSEQ"]) : 0;
-     generate_bseq_lattice(N_Qmesh);
-     if (world_rank == 0) {
-	  int n_k_points;
-	  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-	  cout << "Using " << world_size << " processors" << endl;
-	  if (parms.exists("HOPPINGFILE")) {
-	       double unique_weight;
-	       n_k_points = x_dim * y_dim * z_dim;
-	       unique_weight = 1.0 / double(n_k_points);
-	       read_hoppings(parms, verbose);
-	       init_world_containers(n_k_points);
-	       world_weights_ =
-		    Eigen::VectorXd::Constant(n_points_per_proc * world_size,
-					      unique_weight);
-	       world_dispersion_ = generate_band_from_hoppings(verbose, world_weights_, unique_weight);
-	  } else if (parms.exists("DISPFILE")) {
-	       double weight_sum;
-	       int index;
-	       n_k_points = read_nb_k_points(parms, verbose);
-	       init_world_containers(n_k_points);
-	       world_weights_ = Eigen::VectorXd::Zero(n_points_per_proc * world_size);
-	       world_dispersion_ = read_dispersion(parms, world_weights_, verbose);
-	       //manage_mpi_padding();
-	       index = world_dispersion_.size();
-	       for (int i = index; i < n_points_per_proc * world_size; i++)
-	       {
-		    world_dispersion_[i] =
-			 Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
-		    world_weights_(i) = 0.0;
-	       }
-	       weight_sum = world_weights_.sum();
-	       world_weights_ /= weight_sum;
-	       epsilon_bar /= weight_sum;
-	       epsilon_squared_bar /= weight_sum;
-	  }
-	  world_k_lattice_.clear();
-	  world_k_lattice_dx_.clear();
-	  world_k_lattice_dy_.clear();
-	  for (int k_index = 0; k_index < k_lattice_.size(); k_index++) {
-	       world_k_lattice_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
-					  k_lattice_[k_index][1],
-					   k_lattice_[k_index][2]).finished());
-	       world_k_lattice_dx_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
-					   k_lattice_[k_index][1],
-					   k_lattice_[k_index][2]).finished());
-	       world_k_lattice_dy_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
-					      k_lattice_[k_index][1],
-					      k_lattice_[k_index][2]).finished());
-	  }
-	  for(int k_index = k_lattice_.size(); k_index < n_points_per_proc * world_size;
-	      k_index++) {
-	       world_k_lattice_.push_back(Eigen::VectorXd::Zero(3));
-	       world_k_lattice_dx_.push_back(Eigen::VectorXd::Zero(3));
-	       world_k_lattice_dy_.push_back(Eigen::VectorXd::Zero(3));
-	  }
-     }
-     // Broadcast the quantities defined on master only by code above.
-     MPI_Bcast(&orbital_size_, 1, MPI::INT, 0, MPI_COMM_WORLD);
-     MPI_Bcast(&nb_r_points, 1, MPI::INT, 0, MPI_COMM_WORLD);
-     MPI_Bcast(&world_size, 1, MPI::INT, 0, MPI_COMM_WORLD);
-     MPI_Bcast(&real_n_points, 1, MPI::INT, 0, MPI_COMM_WORLD);
-     MPI_Bcast(&n_points_per_proc, 1, MPI::INT, 0, MPI_COMM_WORLD);     
-     weights_.resize(n_points_per_proc);
-     dispersion_.resize(n_points_per_proc);
-     proc_k_lattice_.resize(n_points_per_proc);
-     proc_k_lattice_dx_.resize(n_points_per_proc);
-     proc_k_lattice_dy_.resize(n_points_per_proc);
-     for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
-	  dispersion_[k_index] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
-	  proc_k_lattice_[k_index] = Eigen::VectorXd::Zero(3);
-	  proc_k_lattice_dx_[k_index] = Eigen::VectorXd::Zero(3);
-	  proc_k_lattice_dy_[k_index] = Eigen::VectorXd::Zero(3);
-     }
-     if (world_rank_ != 0) {
-	  hoppings_.resize(nb_r_points);
-	  r_lattice_.resize(nb_r_points);
-	  for (int i = 0; i < nb_r_points; i++) {
-	       hoppings_[i] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
-	       r_lattice_[i] = Eigen::VectorXi::Zero(3);
-	  }
-	  epsilon_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
-	  epsilon_squared_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
-     }
-     // scatter the weights to each process
-     MPI_Scatter(world_weights_.data(), n_points_per_proc, MPI::DOUBLE,
-		 weights_.data(), n_points_per_proc, MPI::DOUBLE, 0, MPI_COMM_WORLD);
+	:world_rank_(world_rank) {
+	std::vector<Eigen::MatrixXcd> world_dispersion_;
+	Eigen::VectorXd world_weights_;
+	std::vector<Eigen::VectorXd> world_k_lattice_;
+	std::vector<Eigen::VectorXd> world_k_lattice_dx_;
+	std::vector<Eigen::VectorXd> world_k_lattice_dy_;
+	int N_Qmesh = parms.exists("N_QBSEQ") ?
+		static_cast<int>(parms["N_QBSEQ"]) : 0;
+	generate_bseq_lattice(N_Qmesh);
+	if (world_rank == 0) {
+		int n_k_points;
+		MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+		cout << "Using " << world_size << " processors" << endl;
+		if (parms.exists("HOPPINGFILE")) {
+			double unique_weight;
+			n_k_points = x_dim * y_dim * z_dim;
+			unique_weight = 1.0 / double(n_k_points);
+			read_hoppings(parms, verbose);
+			init_world_containers(n_k_points);
+			world_weights_ =
+				Eigen::VectorXd::Constant(n_points_per_proc * world_size,
+							  unique_weight);
+			world_dispersion_ = generate_band_from_hoppings(verbose, world_weights_, unique_weight);
+		} else if (parms.exists("DISPFILE")) {
+			double weight_sum;
+			int index;
+			n_k_points = read_nb_k_points(parms, verbose);
+			init_world_containers(n_k_points);
+			world_weights_ = Eigen::VectorXd::Zero(n_points_per_proc * world_size);
+			world_dispersion_ = read_dispersion(parms, world_weights_, verbose);
+			//manage_mpi_padding();
+			index = world_dispersion_.size();
+			for (int i = index; i < n_points_per_proc * world_size; i++)
+			{
+				world_dispersion_[i] =
+					Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
+				world_weights_(i) = 0.0;
+			}
+			weight_sum = world_weights_.sum();
+			world_weights_ /= weight_sum;
+			epsilon_bar /= weight_sum;
+			epsilon_squared_bar /= weight_sum;
+		}
+		world_k_lattice_.clear();
+		world_k_lattice_dx_.clear();
+		world_k_lattice_dy_.clear();
+		for (int k_index = 0; k_index < k_lattice_.size(); k_index++) {
+			world_k_lattice_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
+						    k_lattice_[k_index][1],
+						    k_lattice_[k_index][2]).finished());
+			world_k_lattice_dx_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
+						       k_lattice_[k_index][1],
+						       k_lattice_[k_index][2]).finished());
+			world_k_lattice_dy_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
+						       k_lattice_[k_index][1],
+						       k_lattice_[k_index][2]).finished());
+		}
+		for(int k_index = k_lattice_.size(); k_index < n_points_per_proc * world_size;
+		    k_index++) {
+			world_k_lattice_.push_back(Eigen::VectorXd::Zero(3));
+			world_k_lattice_dx_.push_back(Eigen::VectorXd::Zero(3));
+			world_k_lattice_dy_.push_back(Eigen::VectorXd::Zero(3));
+		}
+	}
+	// Broadcast the quantities defined on master only by code above.
+	MPI_Bcast(&orbital_size_, 1, MPI::INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&nb_r_points, 1, MPI::INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&world_size, 1, MPI::INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&real_n_points, 1, MPI::INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&n_points_per_proc, 1, MPI::INT, 0, MPI_COMM_WORLD);     
+	weights_.resize(n_points_per_proc);
+	dispersion_.resize(n_points_per_proc);
+	proc_k_lattice_.resize(n_points_per_proc);
+	proc_k_lattice_dx_.resize(n_points_per_proc);
+	proc_k_lattice_dy_.resize(n_points_per_proc);
+	for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
+		dispersion_[k_index] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
+		proc_k_lattice_[k_index] = Eigen::VectorXd::Zero(3);
+		proc_k_lattice_dx_[k_index] = Eigen::VectorXd::Zero(3);
+		proc_k_lattice_dy_[k_index] = Eigen::VectorXd::Zero(3);
+	}
+	if (world_rank_ != 0) {
+		hoppings_.resize(nb_r_points);
+		r_lattice_.resize(nb_r_points);
+		for (int i = 0; i < nb_r_points; i++) {
+			hoppings_[i] = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
+			r_lattice_[i] = Eigen::VectorXi::Zero(3);
+		}
+		epsilon_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
+		epsilon_squared_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
+	}
+	// scatter the weights to each process
+	MPI_Scatter(world_weights_.data(), n_points_per_proc, MPI::DOUBLE,
+		    weights_.data(), n_points_per_proc, MPI::DOUBLE, 0, MPI_COMM_WORLD);
 
-     // scatter the dispersion to each process
-     for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
-	  if (world_rank == 0) {
-	       for (int proc_index = 1; proc_index < world_size; proc_index++) {		    
-		    MPI_Send(world_dispersion_[proc_index * n_points_per_proc + k_index].data(),
-			     world_dispersion_[proc_index * n_points_per_proc + k_index].size(),
-			     MPI::DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD);
-	       }
-	  } else {
-	       MPI_Recv(dispersion_[k_index].data(),
-			dispersion_[k_index].size(),
-			MPI::DOUBLE_COMPLEX,
-			0, 0, MPI_COMM_WORLD,
-			MPI_STATUS_IGNORE);
-	  }
-	  if (world_rank == 0) {
-	       dispersion_[k_index] = world_dispersion_[k_index];
-	  }
-     }
-     // scatter the lattice points to each process
-     for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
-     	  if (world_rank == 0) {
-     	       for (int proc_index = 1; proc_index < world_size; proc_index++) {		    
-     		    MPI_Send(world_k_lattice_[proc_index * n_points_per_proc + k_index].data(),
-     			     world_k_lattice_[proc_index * n_points_per_proc + k_index].size(),
-     			     MPI::DOUBLE, proc_index, 0, MPI_COMM_WORLD);
-     	       }
-     	  } else {
-     	       MPI_Recv(proc_k_lattice_[k_index].data(),
-     			proc_k_lattice_[k_index].size(),
-     			MPI::DOUBLE,
-     			0, 0, MPI_COMM_WORLD,
-     			MPI_STATUS_IGNORE);
-     	  }
-     	  if (world_rank == 0) {
-     	       proc_k_lattice_[k_index] = world_k_lattice_[k_index];
-     	  }
-     }
-     for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
-     	  if (world_rank == 0) {
-     	       for (int proc_index = 1; proc_index < world_size; proc_index++) {		    
-     		    MPI_Send(world_k_lattice_dx_[proc_index * n_points_per_proc + k_index].data(),
-     			     world_k_lattice_dx_[proc_index * n_points_per_proc + k_index].size(),
-     			     MPI::DOUBLE, proc_index, 0, MPI_COMM_WORLD);
-     	       }
-     	  } else {
-     	       MPI_Recv(proc_k_lattice_dx_[k_index].data(),
-     			proc_k_lattice_dx_[k_index].size(),
-     			MPI::DOUBLE,
-     			0, 0, MPI_COMM_WORLD,
-     			MPI_STATUS_IGNORE);
-     	  }
-     	  if (world_rank == 0) {
-     	       proc_k_lattice_dx_[k_index] = world_k_lattice_dx_[k_index];
-     	  }
-     }
-
-     MPI_Barrier(MPI_COMM_WORLD);
-     // Broadcast lattice and hoppings to all processes
-     // for dispersion computation
-     for (int i = 0; i < nb_r_points; i++) {
-	  MPI_Bcast(hoppings_[i].data(), hoppings_[i].size(),
-		    MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
-     }
-     for (int i = 0; i < nb_r_points; i++) {
-	  MPI_Bcast(r_lattice_[i].data(), r_lattice_[i].size(),
-		    MPI::INT, 0, MPI_COMM_WORLD);
-     }
-     // Broadcast the averaged quantities to all processes
-     MPI_Bcast(epsilon_bar.data(), epsilon_bar.size(),
-	       MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
-     MPI_Bcast(epsilon_squared_bar.data(), epsilon_squared_bar.size(),
-	       MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+	// scatter the dispersion to each process
+	for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
+		if (world_rank == 0) {
+			for (int proc_index = 1; proc_index < world_size; proc_index++) {		    
+				MPI_Send(world_dispersion_[proc_index * n_points_per_proc + k_index].data(),
+					 world_dispersion_[proc_index * n_points_per_proc + k_index].size(),
+					 MPI::DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD);
+			}
+		} else {
+			MPI_Recv(dispersion_[k_index].data(),
+				 dispersion_[k_index].size(),
+				 MPI::DOUBLE_COMPLEX,
+				 0, 0, MPI_COMM_WORLD,
+				 MPI_STATUS_IGNORE);
+		}
+		if (world_rank == 0) {
+			dispersion_[k_index] = world_dispersion_[k_index];
+		}
+	}
+	// scatter the lattice points to each process
+	for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
+		if (world_rank == 0) {
+			for (int proc_index = 1; proc_index < world_size; proc_index++) {		    
+				MPI_Send(world_k_lattice_[proc_index * n_points_per_proc + k_index].data(),
+					 world_k_lattice_[proc_index * n_points_per_proc + k_index].size(),
+					 MPI::DOUBLE, proc_index, 0, MPI_COMM_WORLD);
+			}
+		} else {
+			MPI_Recv(proc_k_lattice_[k_index].data(),
+				 proc_k_lattice_[k_index].size(),
+				 MPI::DOUBLE,
+				 0, 0, MPI_COMM_WORLD,
+				 MPI_STATUS_IGNORE);
+		}
+		if (world_rank == 0) {
+			proc_k_lattice_[k_index] = world_k_lattice_[k_index];
+		}
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
+		if (world_rank == 0) {
+			for (int proc_index = 1; proc_index < world_size; proc_index++) {		    
+				MPI_Send(world_k_lattice_dx_[proc_index * n_points_per_proc + k_index].data(),
+					 world_k_lattice_dx_[proc_index * n_points_per_proc + k_index].size(),
+					 MPI::DOUBLE, proc_index, 0, MPI_COMM_WORLD);
+			}
+		} else {
+			MPI_Recv(proc_k_lattice_dx_[k_index].data(),
+				 proc_k_lattice_dx_[k_index].size(),
+				 MPI::DOUBLE,
+				 0, 0, MPI_COMM_WORLD,
+				 MPI_STATUS_IGNORE);
+		}
+		if (world_rank == 0) {
+			proc_k_lattice_dx_[k_index] = world_k_lattice_dx_[k_index];
+		}
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
+		if (world_rank == 0) {
+			for (int proc_index = 1; proc_index < world_size; proc_index++) {		    
+				MPI_Send(world_k_lattice_dy_[proc_index * n_points_per_proc + k_index].data(),
+					 world_k_lattice_dy_[proc_index * n_points_per_proc + k_index].size(),
+					 MPI::DOUBLE, proc_index, 0, MPI_COMM_WORLD);
+			}
+		} else {
+			MPI_Recv(proc_k_lattice_dy_[k_index].data(),
+				 proc_k_lattice_dy_[k_index].size(),
+				 MPI::DOUBLE,
+				 0, 0, MPI_COMM_WORLD,
+				 MPI_STATUS_IGNORE);
+		}
+		if (world_rank == 0) {
+			proc_k_lattice_dy_[k_index] = world_k_lattice_dy_[k_index];
+		}
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	// Broadcast lattice and hoppings to all processes
+	// for dispersion computation
+	for (int i = 0; i < nb_r_points; i++) {
+		MPI_Bcast(hoppings_[i].data(), hoppings_[i].size(),
+			  MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+	}
+	for (int i = 0; i < nb_r_points; i++) {
+		MPI_Bcast(r_lattice_[i].data(), r_lattice_[i].size(),
+			  MPI::INT, 0, MPI_COMM_WORLD);
+	}
+	// Broadcast the averaged quantities to all processes
+	MPI_Bcast(epsilon_bar.data(), epsilon_bar.size(),
+		  MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+	MPI_Bcast(epsilon_squared_bar.data(), epsilon_squared_bar.size(),
+		  MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 }
 
 void Bandstructure::generate_bseq_lattice(int n_q_mesh) {
