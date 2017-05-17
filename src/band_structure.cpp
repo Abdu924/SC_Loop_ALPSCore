@@ -281,7 +281,9 @@ std::vector<Eigen::MatrixXcd> Bandstructure::generate_dx_dispersion() {
      for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
 	     m = get_k_basis_matrix(
 		     (Eigen::VectorXd(3) <<
-		      proc_k_lattice_dx_[0], proc_k_lattice_dx_[1], proc_k_lattice_dx_[2]).finished());
+		      proc_k_lattice_dx_[k_index][0],
+		      proc_k_lattice_dx_[k_index][1],
+		      proc_k_lattice_dx_[k_index][2]).finished());
 	     output.push_back(m);
      }
      return output;
@@ -293,7 +295,9 @@ std::vector<Eigen::MatrixXcd> Bandstructure::generate_dy_dispersion() {
      for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
 	     m = get_k_basis_matrix(
 		     (Eigen::VectorXd(3) <<
-		      proc_k_lattice_dy_[0], proc_k_lattice_dy_[1], proc_k_lattice_dy_[2]).finished());
+		      proc_k_lattice_dy_[k_index][0],
+		      proc_k_lattice_dy_[k_index][1],
+		      proc_k_lattice_dy_[k_index][2]).finished());
 	     output.push_back(m);
      }
      return output;

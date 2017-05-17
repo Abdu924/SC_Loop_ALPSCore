@@ -54,13 +54,14 @@ private:
      double compute_derivative_tail(size_t orbital_size, double beta);
      std::vector<Eigen::MatrixXcd> get_full_greens_functions(double chemical_potential);
      Eigen::MatrixXcd get_dx_greens_function(
-	  int k_index, int freq_index, double chemical_potential);
+	  int k_index, int freq_index, double chemical_potential, bool negative_freq);
      Eigen::MatrixXcd get_domega_greens_function(
-	  int k_index, int freq_index, double chemical_potential);
+	  int k_index, int freq_index, double chemical_potential, bool negative_freq);
      Eigen::MatrixXcd get_dy_greens_function(
-	  int k_index, int freq_index, double chemical_potential);
+	  int k_index, int freq_index, double chemical_potential, bool negative_freq);
      Eigen::MatrixXcd get_gf_derivative(int derivationindex, int k_index,
-					int freq_index, double chemical_potential);
+					int freq_index, double chemical_potential,
+					bool negative_freq);
      boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::shared_ptr<Selfenergy> sigma_;
      int world_rank_;

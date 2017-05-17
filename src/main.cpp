@@ -65,6 +65,7 @@ void define_parameters(alps::params &parameters) {
 		.define<std::string>("input-file","", "hdf5 input file with relevant data")
 		.define<int >("action", "int describing the action to be performed")
 		.define<bool>("from_alps3", false, "is the input produced by Alps3?")
+	     .define<bool>("MEASURE_chern", false, "Compute Chern number?")
 		.define<long>("SEED", 42, "PRNG seed")
 		.define<bool>("cthyb.ACCURATE_COVARIANCE", false, "TODO: UNDERSTAND WHAT THIS DOES")
 		.define<std::string>("cthyb.BASEPATH","", "path in hdf5 file to which results are stored")
@@ -323,9 +324,11 @@ int main(int argc, const char* argv[]) {
 			 hybridization_function->compute_lattice_bubble();
 			 hybridization_function->dump_bubble_hdf5();
 		    }
-		    std::complex<double> chern =
-			 dmft_model->get_chern_number(new_chemical_potential);
-		    std::cout << "Chern: " << chern << std::endl << std::endl;
+		    if (parms["MEASURE_chern"] == true) {
+			 std::complex<double> chern =
+			      dmft_model->get_chern_number(new_chemical_potential);
+			 std::cout << "Chern: " << chern << std::endl << std::endl;
+		    }
 		    if (world_rank == 0) {
 			 cout << " total " << endl;
 		    }
