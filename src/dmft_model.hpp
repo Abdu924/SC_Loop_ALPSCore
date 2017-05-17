@@ -28,6 +28,7 @@ public:
      tuple<bool, double, double, double> get_mu_from_density(double initial_mu);
      tuple<bool, double, double> get_mu_from_density_bisec(double initial_mu,
 							   double mu_increment);
+     std::complex<double> get_chern_number(double chemical_potential);
      void display_occupation_matrix();
      double get_kinetic_energy();
      void dump_k_resolved_occupation_matrices();
@@ -70,6 +71,7 @@ private:
      vector<Eigen::MatrixXcd> world_k_resolved_occupation_matrices;
      Eigen::MatrixXcd occupation_matrix;
      Eigen::MatrixXcd world_occupation_matrix;
+     Eigen::MatrixXcd world_chern_matrix;
      std::vector<Eigen::VectorXcd> order_parameters;
      double kinetic_energy;
      static const size_t max_iter_for_bounds;     

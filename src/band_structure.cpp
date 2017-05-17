@@ -57,12 +57,12 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 			world_k_lattice_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
 						    k_lattice_[k_index][1],
 						    k_lattice_[k_index][2]).finished());
-			world_k_lattice_dx_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
-						       k_lattice_[k_index][1],
-						       k_lattice_[k_index][2]).finished());
-			world_k_lattice_dy_.push_back((Eigen::VectorXd(3) << k_lattice_[k_index][0],
-						       k_lattice_[k_index][1],
-						       k_lattice_[k_index][2]).finished());
+			world_k_lattice_dx_.push_back((Eigen::VectorXd(3) << k_lattice_dx_[k_index][0],
+						       k_lattice_dx_[k_index][1],
+						       k_lattice_dx_[k_index][2]).finished());
+			world_k_lattice_dy_.push_back((Eigen::VectorXd(3) << k_lattice_dy_[k_index][0],
+						       k_lattice_dy_[k_index][1],
+						       k_lattice_dy_[k_index][2]).finished());
 		}
 		for(int k_index = k_lattice_.size(); k_index < n_points_per_proc * world_size;
 		    k_index++) {

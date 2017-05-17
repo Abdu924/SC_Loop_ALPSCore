@@ -323,6 +323,9 @@ int main(int argc, const char* argv[]) {
 			 hybridization_function->compute_lattice_bubble();
 			 hybridization_function->dump_bubble_hdf5();
 		    }
+		    std::complex<double> chern =
+			 dmft_model->get_chern_number(new_chemical_potential);
+		    std::cout << "Chern: " << chern << std::endl << std::endl;
 		    if (world_rank == 0) {
 			 cout << " total " << endl;
 		    }

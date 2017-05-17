@@ -84,7 +84,7 @@ Eigen::MatrixXcd DMFTModel::get_domega_greens_function(
 	  do_inverse_gf.diagonal() += do_to_add;
 	  greens_function = inverse_gf.inverse();
 	  do_greens_function = do_inverse_gf.inverse();
-	  output = (do_inverse_gf - greens_function) / (
+	  output = inverse_gf * (do_inverse_gf - greens_function) / (
 	       sigma_->get_matsubara_frequency(freq_index + 1) -
 	       sigma_->get_matsubara_frequency(freq_index));
      }
@@ -109,7 +109,43 @@ Eigen::MatrixXcd DMFTModel::get_dx_greens_function(
      dx_inverse_gf.diagonal() += to_add;
      greens_function = inverse_gf.inverse();
      dx_greens_function = dx_inverse_gf.inverse();
-     output = (dx_inverse_gf - greens_function) / lattice_bs_->get_x_dim();
+     output = inverse_gf * (dx_inverse_gf - greens_function) / lattice_bs_->get_x_dim();
+     return output;
+}
+
+std::complex<double> DMFTModel::get_chern_number(double chemical_potential) {
+     //vector<Eigen::MatrixXcd> k_resolved_occupation_matrices;
+     int index_1 = 1;
+     int index_2 = 2;
+     int index_3 = 3;
+     int k_min(0);
+     int k_max = lattice_bs_->get_lattice_size();
+     int N_max = sigma_->get_n_matsubara_freqs();
+     std::complex<double> output(0.0);
+     int orbital_size = lattice_bs_->get_orbital_size();
+     Eigen::MatrixXcd current_matrix = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
+     Eigen::MatrixXcd temp_matrix = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
+     for (int k_index = k_min; k_index < k_max; k_index++) {
+	  double l_weight = lattice_bs_->get_weight(k_index);
+	  if (abs(l_weight) < 1e-6) {
+	       if (world_rank_ == 0) {
+		    cout << "skipping k point" << endl;
+	       }
+	       continue;
+	  }
+	  for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+	       temp_matrix = get_gf_derivative(index_1, k_index, freq_index, chemical_potential) *
+		    get_gf_derivative(index_2, k_index, freq_index, chemical_potential) *
+		    get_gf_derivative(index_3, k_index, freq_index, chemical_potential);
+	       current_matrix += temp_matrix * l_weight;
+	  }
+     }
+     world_chern_matrix = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
+     MPI_Allreduce(current_matrix.data(),
+		   world_chern_matrix.data(),
+		   current_matrix.size(),
+		   MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+     output = world_chern_matrix.diagonal().sum();
      return output;
 }
 
@@ -131,7 +167,7 @@ Eigen::MatrixXcd DMFTModel::get_dy_greens_function(
      dy_inverse_gf.diagonal() += to_add;
      greens_function = inverse_gf.inverse();
      dy_greens_function = dy_inverse_gf.inverse();
-     output = (dy_inverse_gf - greens_function) / lattice_bs_->get_y_dim();
+     output = inverse_gf * (dy_inverse_gf - greens_function) / lattice_bs_->get_y_dim();
      return output;
 }
 
