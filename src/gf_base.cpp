@@ -157,6 +157,8 @@ void GfBase::get_density_density_correl(int ref_site_index,
 			 std::stringstream density_path;
 			 // ATTENTION here: convention of QMC is F_ij = -T<c_i c^dag_j>,
 			 // but DMFT is looking for  c^dag_i c_j
+			 // No - misleading comment. Just check the way the quantities
+			 // are dumped in hdf5 by QMC - this is fine.
 			 cur_index = line_idx + col_idx * blocks[block_index].size();
 			 if (line_idx == col_idx) {
 			      density_path << "/simulation/results/density_" <<
