@@ -385,6 +385,10 @@ void GfBase::get_target_c3(int ref_site_index) {
 	       }
 	  }
      }
+     // TODO : we need to neglect factor 4 in order to match Fortran
+     // TODO : moreover, the decomposition of the 4 point correlator into
+     // factor3 + factor4 relies on Wick's theorem, which is not applicable
+     // as far as I understand.
      //std::cout << "factor_4" << std::endl << U_matrix.cwiseProduct(factor_4) << std::endl << std::endl;
      //target_c3 += (factor_3 + U_matrix.cwiseProduct(factor_4));
      target_c3 += (factor_3);
