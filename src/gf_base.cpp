@@ -385,13 +385,16 @@ void GfBase::get_target_c3(int ref_site_index) {
 	       }
 	  }
      }
+     factor_4 = U_matrix.cwiseProduct(factor_4);
+     std::cout << "factor 4 " << std::endl << factor_4 << std::endl << std::endl;
+     std::cout << "factor 3 " << std::endl << factor_3 << std::endl << std::endl;
      // TODO : we need to neglect factor 4 in order to match Fortran
      // TODO : moreover, the decomposition of the 4 point correlator into
      // factor3 + factor4 relies on Wick's theorem, which is not applicable
      // as far as I understand.
      //std::cout << "factor_4" << std::endl << U_matrix.cwiseProduct(factor_4) << std::endl << std::endl;
      //target_c3 += (factor_3 + U_matrix.cwiseProduct(factor_4));
-     target_c3 += (factor_3);
+     //target_c3 += (factor_3);
      temp = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
 	  for(int k = 0; k < per_site_orbital_size; ++k) {
