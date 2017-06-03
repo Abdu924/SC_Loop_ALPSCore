@@ -402,8 +402,8 @@ void Bandstructure::check_flavor_dim_consistency(const alps::params& parms,
 						 int dimension) {
      int n_flavors = (parms.exists("N_ORBITALS") ?
 	  static_cast<int>(parms["N_ORBITALS"]) : 2) *
-	  (parms.exists("N_SITES") ?
-	   static_cast<int>(parms["N_SITES"]) : 1);
+	  (parms.exists("model.sites") ?
+	   static_cast<int>(parms["model.sites"]) : 1);
 	if(dimension != n_flavors) {
 		cerr<<"ERROR: Bandstructure: FLAVORS from parameter file "
 			"differs from the number of bands available in DISPFILE = "

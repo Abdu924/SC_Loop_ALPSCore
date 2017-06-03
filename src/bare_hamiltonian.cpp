@@ -10,7 +10,7 @@ BareHamiltonian::BareHamiltonian(const alps::params& parms,
      :world_rank_(world_rank) {
 	double kx, ky, kz, phase_factor, unique_weight;
 	n_flavors = static_cast<size_t>(parms.value_or_default("N_ORBITALS", 2)) *
-		static_cast<size_t>(parms.value_or_default("N_SITES", 1));     
+		static_cast<size_t>(parms.value_or_default("model.sites", 1));     
 	if (world_rank_ == 0) {
 		// Read input file
 		read_hoppings(parms, verbose);

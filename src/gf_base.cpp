@@ -13,8 +13,8 @@ GfBase::GfBase(const alps::params &parms, int world_rank):world_rank_(world_rank
 
 void GfBase::read_params(const alps::params &parms) {
      n_blocks = static_cast<size_t>(parms["N_BLOCKS"]);
-     n_sites = parms.exists("N_SITES") ?
-	  static_cast<size_t>(parms["N_SITES"]) : 1;
+     n_sites = parms.exists("model.sites") ?
+	  static_cast<size_t>(parms["model.sites"]) : 1;
      per_site_orbital_size = parms.exists("N_ORBITALS") ?
 	  static_cast<size_t>(parms["N_ORBITALS"]) : 2;
      // Careful - this is the actual number of Matsubara frequencies.
@@ -22,7 +22,7 @@ void GfBase::read_params(const alps::params &parms) {
      // max_freq = 2N + 1 pi / beta, because n = 0 is also a frequency,
      // so that n_matsubara = N + 1
      n_matsubara = parms["N_MATSUBARA"];
-     beta = static_cast<double>(parms["BETA"]);
+     beta = static_cast<double>(parms["model.beta"]);
      tot_orbital_size = per_site_orbital_size * n_sites;
      matsubara_frequencies_ = Eigen::VectorXcd::Zero(n_matsubara);
      for (size_t freq_index = 0; freq_index < n_matsubara; freq_index++) {
