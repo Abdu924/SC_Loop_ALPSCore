@@ -80,6 +80,8 @@ void define_parameters(alps::params &parameters) {
 		.define<bool>("cthyb.DELTA_IN_HDF5",false,"true if hybridization function file is in hdf5 format")
 		.define<std::string>("DISPFILE", "path for bare dispersion file")
 		.define<std::string>("HOPPINGFILE", "path for hopping description file")
+		//.define<int >("N_QBSEQ", 0, "number of q points for lattice bubble calculation")
+		.define<int >("N_NU_BSEQ", 0, "number of fermionic frequencies for bubble calculation")
 		.define<std::string>("model.hopping_matrix_input_file", "path for local hopping description file")
 		.define<int >("model.sites", "total number of sites")
 		.define<bool >("REAL_DELTA", false, "if true, we force the hybridization function to be real")
