@@ -306,7 +306,7 @@ void HybFunction::compute_local_bubble() {
 	  int orbital_size(lattice_bs_->get_orbital_size());
 	  int new_i(0);
 	  int new_j(0);
-	  cout << N_boson << " " << bubble_dim << " "  << n_sites << << " "
+	  cout << N_boson << " " << bubble_dim << " "  << n_sites << " "
 	       << orbital_size << " " << endl;
 	  for (int boson_index = 0; boson_index < N_boson; boson_index++) {
 	       for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
