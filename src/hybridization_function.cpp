@@ -301,6 +301,8 @@ void HybFunction::compute_local_bubble() {
 	  cout << "***********************************************" << endl;
 	  cout << "** LOCAL BUBBLE CALCULATION                 ***" << endl;
 	  cout << "***********************************************" << endl << endl;
+	  cout << N_boson << " " << bubble_dim << " "  << n_sites << << " "
+	       << orbital_size << " " << endl;
 	  boost::timer::auto_cpu_timer bubble_calc;
 	  int N_max(sigma_->get_n_matsubara_freqs());
 	  int orbital_size(lattice_bs_->get_orbital_size());
@@ -352,6 +354,7 @@ void HybFunction::compute_local_bubble() {
 						       per_site_orbital_size,
 						       per_site_orbital_size)(
 							    hole_index_1, hole_index_2);
+					     cout << "hello" << endl;
 					} // hole_index_1
 				   }  // part_index_2
 			      }  // hole_index_2
