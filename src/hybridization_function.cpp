@@ -298,6 +298,9 @@ std::vector<Eigen::MatrixXcd> HybFunction::get_greens_function(
 void HybFunction::compute_local_bubble() {
      if (world_rank_ == 0)
      {
+	  cout << "***********************************************" << endl;
+	  cout << "** LOCAL BUBBLE CALCULATION                 ***" << endl;
+	  cout << "***********************************************" << endl << endl;
 	  boost::timer::auto_cpu_timer bubble_calc;
 	  int N_max(sigma_->get_n_matsubara_freqs());
 	  int orbital_size(lattice_bs_->get_orbital_size());
