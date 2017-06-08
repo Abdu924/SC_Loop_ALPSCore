@@ -301,13 +301,13 @@ void HybFunction::compute_local_bubble() {
 	  cout << "***********************************************" << endl;
 	  cout << "** LOCAL BUBBLE CALCULATION                 ***" << endl;
 	  cout << "***********************************************" << endl << endl;
-	  cout << N_boson << " " << bubble_dim << " "  << n_sites << << " "
-	       << orbital_size << " " << endl;
 	  boost::timer::auto_cpu_timer bubble_calc;
 	  int N_max(sigma_->get_n_matsubara_freqs());
 	  int orbital_size(lattice_bs_->get_orbital_size());
 	  int new_i(0);
 	  int new_j(0);
+	  cout << N_boson << " " << bubble_dim << " "  << n_sites << << " "
+	       << orbital_size << " " << endl;
 	  for (int boson_index = 0; boson_index < N_boson; boson_index++) {
 	       for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
 		    for(size_t site_index = 0; site_index < n_sites; site_index++) {
