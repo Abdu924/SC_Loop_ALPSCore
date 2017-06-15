@@ -405,9 +405,11 @@ void Bandstructure::check_flavor_dim_consistency(const alps::params& parms,
 	  (parms.exists("model.sites") ?
 	   static_cast<int>(parms["model.sites"]) : 1);
 	if(dimension != n_flavors) {
-		cerr<<"ERROR: Bandstructure: FLAVORS from parameter file "
-			"differs from the number of bands available in DISPFILE = "
-		    << parms["DISPFILE"] << endl;
+		cerr << "ERROR: Bandstructure: FLAVORS from parameter file "
+		     "differs from the number of bands available in DISPFILE = "
+		     << parms["DISPFILE"] << endl;
+		cerr << "n_flavors: " << n_flavors << endl;
+		cerr << "dimension " << dimension << endl; 
 		throw runtime_error("Parameter conflict in DISPFILE !");
 	} else {
 	     orbital_size_ = static_cast<int>(dimension);

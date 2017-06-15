@@ -81,7 +81,7 @@ void define_parameters(alps::params &parameters) {
 		.define<std::string>("DISPFILE", "path for bare dispersion file")
 		.define<std::string>("HOPPINGFILE", "path for hopping description file")
 		.define<int >("N_QBSEQ", 0, "number of q points for lattice bubble calculation")
-		//.define<int >("N_NU_BSEQ", 0, "number of fermionic frequencies for bubble calculation")
+		.define<int >("N_NU_BSEQ", 0, "number of fermionic frequencies for bubble calculation")
 		.define<std::string>("model.hopping_matrix_input_file", "path for local hopping description file")
 		.define<int >("model.sites", "total number of sites")
 		.define<bool >("REAL_DELTA", false, "if true, we force the hybridization function to be real")
@@ -123,8 +123,7 @@ void define_parameters(alps::params &parameters) {
 		.define<int >("cthyb.N_MEAS","number of updates per measurement")
 		.define<int >("FLAVORS","number of spin-orbitals (sometimes called flavors)")
 		.define<int >("N_TAU","number of imaginary time discretization points")
-		.define<int >("cthyb.N_W", 0,
-			      "number of bosonic Matsubara frequencies for the two-particle measurement (0 ... N_W)")
+	     	  .define<int>("measurement.G2.n_bosonic_freq", 1, "Number of bosonic frequencies for measurement")
 		.define<int >("cthyb.N_nn", 0,
 			      "number of points for the measurement of the density density correlator")
 		.define<int >("cthyb.N_w2", 0,
