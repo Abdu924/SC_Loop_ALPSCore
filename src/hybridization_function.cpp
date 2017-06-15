@@ -302,7 +302,6 @@ void HybFunction::compute_local_bubble() {
 	  cout << "** LOCAL BUBBLE CALCULATION                 ***" << endl;
 	  cout << "***********************************************" << endl << endl;
 	  boost::timer::auto_cpu_timer bubble_calc;
-	  int N_max(sigma_->get_n_matsubara_freqs());
 	  int orbital_size(lattice_bs_->get_orbital_size());
 	  int new_i(0);
 	  int new_j(0);
@@ -366,7 +365,6 @@ void HybFunction::compute_local_bubble() {
 
 void HybFunction::compute_lattice_bubble() {
      boost::timer::auto_cpu_timer lattice_bubble_calc;
-     int N_max(sigma_->get_n_matsubara_freqs());
      size_t k_min(0);
      size_t k_max(lattice_bs_->get_lattice_size());
      int orbital_size(lattice_bs_->get_orbital_size());
@@ -689,7 +687,6 @@ void HybFunction::dump_delta_hdf5() {
 
 void HybFunction::dump_bubble_hdf5() {
      if (world_rank_ == 0) {
-	  size_t N_max(sigma_->get_n_matsubara_freqs());
 	  std::string archive_name = bubble_hdf5_root + ".h5";
 	  alps::hdf5::archive bubble_output(archive_name, "a");
 	  std::string h5_group_name("/local_bubble");
