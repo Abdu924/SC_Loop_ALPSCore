@@ -13,8 +13,7 @@ GfBase::GfBase(const alps::params &parms, int world_rank):world_rank_(world_rank
 
 void GfBase::read_params(const alps::params &parms) {
      n_blocks = static_cast<size_t>(parms["N_BLOCKS"]);
-     n_sites = parms.exists("model.sites") ?
-	  static_cast<size_t>(parms["model.sites"]) : 1;
+     n_sites = 1;
      per_site_orbital_size = parms.exists("N_ORBITALS") ?
 	  static_cast<size_t>(parms["N_ORBITALS"]) : 2;
      // Careful - this is the actual number of Matsubara frequencies.

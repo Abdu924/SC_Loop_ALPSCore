@@ -400,20 +400,18 @@ void Bandstructure::init_world_containers(int n_points) {
 
 void Bandstructure::check_flavor_dim_consistency(const alps::params& parms,
 						 int dimension) {
-     int n_flavors = (parms.exists("N_ORBITALS") ?
-	  static_cast<int>(parms["N_ORBITALS"]) : 2) *
-	  (parms.exists("model.sites") ?
-	   static_cast<int>(parms["model.sites"]) : 1);
-	if(dimension != n_flavors) {
-		cerr << "ERROR: Bandstructure: FLAVORS from parameter file "
-		     "differs from the number of bands available in DISPFILE = "
-		     << parms["DISPFILE"] << endl;
-		cerr << "n_flavors: " << n_flavors << endl;
-		cerr << "dimension " << dimension << endl; 
-		throw runtime_error("Parameter conflict in DISPFILE !");
-	} else {
-	     orbital_size_ = static_cast<int>(dimension);
-	}
+     int n_sites = 1;
+     int n_flavors = static_cast<int>(parms["N_ORBITALS"]) * n_sites;
+     if(dimension != n_flavors) {
+	  cerr << "ERROR: Bandstructure: FLAVORS from parameter file "
+	       "differs from the number of bands available in DISPFILE = "
+	       << parms["DISPFILE"] << endl;
+	  cerr << "n_flavors: " << n_flavors << endl;
+	  cerr << "dimension " << dimension << endl; 
+	  throw runtime_error("Parameter conflict in DISPFILE !");
+     } else {
+	  orbital_size_ = static_cast<int>(dimension);
+     }
 }
 
 void Bandstructure::compute_bare_dos(double chemical_potential) {
