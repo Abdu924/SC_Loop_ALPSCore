@@ -447,7 +447,7 @@ void DMFTModel::compute_order_parameter() {
 	       // of strongly correlated electrons"
 	       // by J. Kunes
 	       Eigen::VectorXcd local_order_parameter =
-		    Eigen::VectorXcd::Zero(4);
+		    Eigen::VectorXcd::Zero(5);
 	       // singlet component
 	       local_order_parameter(0) =
 		    0.5 * (ordered_view.cwiseProduct(
@@ -463,7 +463,12 @@ void DMFTModel::compute_order_parameter() {
 		    0.5 * (ordered_view.cwiseProduct(
 				(Eigen::MatrixXcd(2,2)
 				 << 0.0, -cim, cim, 0.0).finished())).sum();
+	       // triplet z-component
 	       local_order_parameter(3) =
+		    0.5 * (ordered_view.cwiseProduct(
+				(Eigen::MatrixXcd(2,2)
+				 << 1.0, 0.0, 0.0, -1.0).finished())).sum();
+	       local_order_parameter(4) =
 		    partial_view(0, 0) - partial_view(1, 1)
 		    -partial_view(2, 2) + partial_view(3, 3);
 	       order_parameters.push_back(local_order_parameter);
@@ -535,4 +540,4 @@ const double DMFTModel::e_max = 50.0;
 const std::string DMFTModel::k_resolved_occupation_dump_name = "c_nk.dmft";
 const std::size_t DMFTModel::output_precision = 13;
 const std::size_t DMFTModel::phi_output_precision = 4;
-const std::size_t DMFTModel::phi_dimension = 4;
+const std::size_t DMFTModel::phi_dimension = 5;
