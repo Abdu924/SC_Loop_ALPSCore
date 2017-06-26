@@ -20,7 +20,7 @@ HybFunction::HybFunction(const alps::params &parms,
      per_site_orbital_size = sigma_->get_per_site_orbital_size();
      tot_orbital_size = n_sites * per_site_orbital_size;
      N_boson = parms["measurement.G2.n_bosonic_freq"];
-     int N_Qmesh = parms.exists("N_QBSEQ") ? static_cast<size_t>(parms["N_QBSEQ"]) : 1;
+     int N_Qmesh = static_cast<size_t>(parms["N_QBSEQ"]);
      size_t N_max = sigma_->get_n_matsubara_freqs();
      bubble_dim = parms.exists("N_NU_BSEQ") ? static_cast<int>(parms["N_NU_BSEQ"]) : N_max - N_boson;
      if (compute_bubble) {
