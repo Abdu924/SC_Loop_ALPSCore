@@ -418,6 +418,9 @@ void DMFTModel::compute_order_parameter() {
      Eigen::MatrixXcd ordered_view =
 	  Eigen::MatrixXcd::Zero(per_site_orbital_size / 2,
 				 per_site_orbital_size / 2);
+     Eigen::MatrixXcd local_moment_view =
+	  Eigen::MatrixXcd::Zero(per_site_orbital_size,
+				 per_site_orbital_size);
      std::complex<double> cim(0.0, 1.0);
      for (int i = 0; i < n_sites; i++) {
 	  for (int j = 0; j < n_sites; j++) {
@@ -439,6 +442,23 @@ void DMFTModel::compute_order_parameter() {
 		    ordered_view(1, 0) = partial_view(3, 2);
 		    // a^dagger_down b_down
 		    ordered_view(1, 1) = partial_view(1, 2);
+		    // reorder
+		    // a^dagger_up a_up
+		    local_moment_view(0, 0) = partial_view(0, 0);
+		    // a^dagger_down a_down
+		    local_moment_view(1, 1) = partial_view(2, 2);
+		    // a^dagger_up a_down
+		    local_moment_view(0, 1) = partial_view(0, 2);
+		    // a^dagger_down a_up
+		    local_moment_view(1, 0) = partial_view(2, 0);
+		    // b^dagger_up b_up		    
+		    local_moment_view(2, 2) = partial_view(3, 3);
+		    // b^dagger_down b_down
+		    local_moment_view(3, 3) = partial_view(1, 1);
+		    // b^dagger_up b_down		    
+		    local_moment_view(2, 3) = partial_view(3, 1);
+		    // b^dagger_down b_up
+		    local_moment_view(3, 3) = partial_view(1, 3);
 	       }
 	       // Multiply by the tau matrices in order to get the
 	       // 4 components of the order parameter
@@ -447,7 +467,7 @@ void DMFTModel::compute_order_parameter() {
 	       // of strongly correlated electrons"
 	       // by J. Kunes
 	       Eigen::VectorXcd local_order_parameter =
-		    Eigen::VectorXcd::Zero(5);
+		    Eigen::VectorXcd::Zero(phi_dimension);
 	       // singlet component
 	       local_order_parameter(0) =
 		    0.5 * (ordered_view.cwiseProduct(
@@ -468,9 +488,38 @@ void DMFTModel::compute_order_parameter() {
 		    0.5 * (ordered_view.cwiseProduct(
 				(Eigen::MatrixXcd(2,2)
 				 << 1.0, 0.0, 0.0, -1.0).finished())).sum();
+	       // S_x
 	       local_order_parameter(4) =
-		    partial_view(0, 0) - partial_view(1, 1)
-		    -partial_view(2, 2) + partial_view(3, 3);
+		    0.5 * (local_moment_view.block(0, 0, per_site_orbital_size / 2, per_site_orbital_size / 2)
+			   .cwiseProduct((Eigen::MatrixXcd(2,2)
+					  << 0.0, 1.0, 1.0, 0.0).finished())).sum() +
+		    0.5 * (local_moment_view.block(per_site_orbital_size / 2,per_site_orbital_size / 2,
+						   per_site_orbital_size / 2, per_site_orbital_size / 2)
+			   .cwiseProduct((Eigen::MatrixXcd(2,2)
+					  << 0.0, 1.0, 1.0, 0.0).finished())).sum();
+	       // S_y
+	       local_order_parameter(5) =
+		    0.5 * (local_moment_view.block(0, 0, per_site_orbital_size / 2, per_site_orbital_size / 2)
+			   .cwiseProduct((Eigen::MatrixXcd(2,2)
+					  << 0.0, -cim, cim, 0.0).finished())).sum() +
+		    0.5 * (local_moment_view.block(per_site_orbital_size / 2,per_site_orbital_size / 2,
+						   per_site_orbital_size / 2, per_site_orbital_size / 2)
+			   .cwiseProduct((Eigen::MatrixXcd(2,2)
+					  << 0.0, -cim, cim, 0.0).finished())).sum();
+               // S_z
+	       local_order_parameter(6) =
+		    0.5 * (local_moment_view.block(0, 0, per_site_orbital_size / 2, per_site_orbital_size / 2)
+			   .cwiseProduct((Eigen::MatrixXcd(2,2)
+					  << 1.0, 0., 0., -1.0).finished())).sum() +
+		    0.5 * (local_moment_view.block(per_site_orbital_size / 2,per_site_orbital_size / 2,
+						   per_site_orbital_size / 2, per_site_orbital_size / 2)
+			   .cwiseProduct((Eigen::MatrixXcd(2,2)
+					  << 1.0, 0., 0., -1.0).finished())).sum();
+	       // S^2
+	       local_order_parameter(7) =
+		    std::pow(local_order_parameter(4), 2) +
+		    std::pow(local_order_parameter(5), 2) +
+		    std::pow(local_order_parameter(6), 2);
 	       order_parameters.push_back(local_order_parameter);
 	  }
      }
@@ -540,4 +589,4 @@ const double DMFTModel::e_max = 50.0;
 const std::string DMFTModel::k_resolved_occupation_dump_name = "c_nk.dmft";
 const std::size_t DMFTModel::output_precision = 13;
 const std::size_t DMFTModel::phi_output_precision = 4;
-const std::size_t DMFTModel::phi_dimension = 5;
+const std::size_t DMFTModel::phi_dimension = 8;
