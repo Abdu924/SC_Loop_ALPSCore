@@ -458,7 +458,7 @@ void DMFTModel::compute_order_parameter() {
 		    // b^dagger_up b_down		    
 		    local_moment_view(2, 3) = partial_view(3, 1);
 		    // b^dagger_down b_up
-		    local_moment_view(3, 3) = partial_view(1, 3);
+		    local_moment_view(3, 2) = partial_view(1, 3);
 	       }
 	       // Multiply by the tau matrices in order to get the
 	       // 4 components of the order parameter
@@ -516,10 +516,10 @@ void DMFTModel::compute_order_parameter() {
 			   .cwiseProduct((Eigen::MatrixXcd(2,2)
 					  << 1.0, 0., 0., -1.0).finished())).sum();
 	       // S^2
-	       local_order_parameter(7) =
+	       local_order_parameter(7) = std::sqrt(
 		    std::pow(local_order_parameter(4), 2) +
 		    std::pow(local_order_parameter(5), 2) +
-		    std::pow(local_order_parameter(6), 2);
+		    std::pow(local_order_parameter(6), 2));
 	       order_parameters.push_back(local_order_parameter);
 	  }
      }
