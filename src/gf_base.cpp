@@ -211,8 +211,7 @@ void GfBase::get_a_dagger_b(int ref_site_index,
 	  cplx_array_type raw_full_gf(
 	       boost::extents[n_tau][per_site_orbital_size][per_site_orbital_size]);	  
 	  h5_archive["/gtau/data"] >> raw_full_gf;
-	  // Build a_dagger_b data
-	  
+	  // Build a_dagger_b data	  
 	  for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
 	       for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
 		    // ATTENTION here: convention of QMC Alps2 is F_ij = -T<c_i c^dag_j>,
@@ -224,8 +223,7 @@ void GfBase::get_a_dagger_b(int ref_site_index,
 				     ref_site_index * per_site_orbital_size,
 				     per_site_orbital_size,
 				     per_site_orbital_size)
-			 (blocks[block_index][line_idx],
-			  blocks[block_index][col_idx]) =
+			 (line_idx, col_idx) =
 			 // ATTENTION: DIFFERENT SIGN CONVENTION FROM FORTRAN
 			 // HERE
 			 // AND NEED TO SYMMETRIZE FOR DATA FROM ALPS3
