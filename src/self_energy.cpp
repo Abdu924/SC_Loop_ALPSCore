@@ -696,15 +696,12 @@ void Selfenergy::get_qmc_single_site_hdf5_data(size_t site_index,
 		size_t cur_index = 0;
 		for (size_t orb1 = 0; orb1 < blocks[block_index].size(); orb1++) {
 			for (size_t orb2 = 0; orb2 < blocks[block_index].size(); orb2++) {
-				cur_index = blocks[block_index][orb2] *  blocks[block_index].size() +
-					blocks[block_index][orb1];
+				cur_index = orb2 *  blocks[block_index].size() + orb1;
 				std::stringstream orbital_path;
 				orbital_path << rootpath << "/" +
 					boost::lexical_cast<std::string>(block_index) +
 					"/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
 				h5_archive >> alps::make_pvp(orbital_path.str(), temp_data);
-				if ((cur_index == 0)) {
-				}
 				for (size_t freq_index = 0; freq_index < n_matsubara; freq_index++) {
 					values_[freq_index].block(site_index * per_site_orbital_size,
 								  site_index * per_site_orbital_size,
