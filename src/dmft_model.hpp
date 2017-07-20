@@ -33,6 +33,8 @@ public:
      double get_kinetic_energy();
      void dump_k_resolved_occupation_matrices();
      void scatter_occ_matrices();
+     void scatter_xcurrent_matrices();
+     void scatter_ycurrent_matrices();
      bool check_density_success(double cur_density);
      void compute_order_parameter();
 
@@ -60,8 +62,13 @@ private:
      double n_tolerance;
      double target_density;
      bool exact_tail;
+     bool compute_spin_current;
      vector<Eigen::MatrixXcd> k_resolved_occupation_matrices;
+     vector<Eigen::MatrixXcd> k_resolved_xcurrent_matrices;
+     vector<Eigen::MatrixXcd> k_resolved_ycurrent_matrices;
      vector<Eigen::MatrixXcd> world_k_resolved_occupation_matrices;
+     vector<Eigen::MatrixXcd> world_k_resolved_xcurrent_matrices;
+     vector<Eigen::MatrixXcd> world_k_resolved_ycurrent_matrices;
      Eigen::MatrixXcd occupation_matrix;
      Eigen::MatrixXcd world_occupation_matrix;
      std::vector<Eigen::VectorXcd> order_parameters;
