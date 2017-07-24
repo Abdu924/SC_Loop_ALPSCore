@@ -30,6 +30,7 @@ public:
      tuple<bool, double, double> get_mu_from_density_bisec(double initial_mu,
 							   double mu_increment);
      void display_occupation_matrix();
+     void display_spin_current();
      double get_kinetic_energy();
      void dump_k_resolved_occupation_matrices();
      void scatter_occ_matrices();
@@ -37,6 +38,7 @@ public:
      void scatter_ycurrent_matrices();
      bool check_density_success(double cur_density);
      void compute_order_parameter();
+     void get_spin_current();
 
      virtual ~DMFTModel() {}
 	
@@ -64,6 +66,7 @@ private:
      bool exact_tail;
      bool compute_spin_current;
      vector<Eigen::MatrixXcd> k_resolved_occupation_matrices;
+     vector<Eigen::MatrixXcd> spin_current_matrix;
      vector<Eigen::MatrixXcd> k_resolved_xcurrent_matrices;
      vector<Eigen::MatrixXcd> k_resolved_ycurrent_matrices;
      vector<Eigen::MatrixXcd> world_k_resolved_occupation_matrices;
@@ -72,6 +75,7 @@ private:
      Eigen::MatrixXcd occupation_matrix;
      Eigen::MatrixXcd world_occupation_matrix;
      std::vector<Eigen::VectorXcd> order_parameters;
+     std::vector<Eigen::VectorXcd> spin_current_components;
      double kinetic_energy;
      static const size_t max_iter_for_bounds;     
      static const size_t max_iter_for_bisec;
@@ -80,6 +84,7 @@ private:
      static const size_t output_precision;
      static const size_t phi_output_precision;
      static const size_t phi_dimension;
+     static const size_t current_dimension;
      static const string k_resolved_occupation_dump_name;     
 };
 

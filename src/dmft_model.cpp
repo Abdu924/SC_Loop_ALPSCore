@@ -5,6 +5,24 @@
 
 using namespace std;
 
+Eigen::MatrixXcd get_pauli_matrix(int i) {
+     std::complex<double> cim(0.0, 1.0);
+     if (i == 0)
+	  return 0.5 * (Eigen::MatrixXcd(2,2)
+			<< 1.0, 0.0, 0.0, 1.0).finished();
+     else if (i == 1)
+	  return 0.5 * (Eigen::MatrixXcd(2,2)
+			<< 1.0, 0.0, 0.0, -1.0).finished();
+     else if (i == 2)
+	  return 0.5 * (Eigen::MatrixXcd(2,2)
+			<< 0.0, -cim, cim, 0.0).finished();
+     else if (i == 3)
+	  return 0.5 * (Eigen::MatrixXcd(2,2)
+			<< 1.0, 0.0, 0.0, -1.0).finished();
+     else
+	  throw runtime_error("invalid Pauli matrix index !");
+}
+
 DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
 		     boost::shared_ptr<Selfenergy> const &sigma,
 		     const alps::params& parms, int world_rank)
@@ -161,7 +179,7 @@ tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_
 }
 
 tuple<bool, double, double, double> DMFTModel::get_mu_from_density(double initial_mu) {
-     boost::timer::auto_cpu_timer mu_calc;
+     boost::timer::cpu_timer mu_calc;
      if (world_rank_ == 0) {
 	  cout << "**********************************************" << endl;
 	  cout << "** CALCULATION OF CHEM. POTENTIAL : NEWTON ***" << endl;
@@ -240,6 +258,11 @@ void DMFTModel::scatter_occ_matrices() {
 }
 
 void DMFTModel::scatter_xcurrent_matrices() {
+     int orbital_size = lattice_bs_->get_orbital_size();
+     spin_current_matrix.resize(2);
+     for (int i = 0; i < 2; i++) {
+	  spin_current_matrix[i] = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
+     }
      int world_size = lattice_bs_->get_world_size();
      int n_points_per_proc = lattice_bs_->get_n_points_per_proc();     
      for (size_t k_index = 0; k_index < n_points_per_proc; k_index++) {
@@ -407,6 +430,7 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
      double partial_kinetic_energy = 0.0;
      kinetic_energy = 0.0;
      reset_occupation_matrices(orbital_size);
+     Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
      // Here we use a diagonal matrix, because the discontinuity at tau =0
      // only exists for Green's functions involving identical orbitals.
      // For the formula related to such discontinuity, check
@@ -469,6 +493,8 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
 	       k_resolved_ycurrent_matrices.back() = l_weight *
 		    exp(std::complex<double>(0.0, y_phase_factor)) *
 		    k_resolved_occupation_matrices.back();
+	       spin_current_matrix[0] += k_resolved_xcurrent_matrices.back();
+	       spin_current_matrix[1] += k_resolved_ycurrent_matrices.back();
 	  }
 	  occupation_matrix += l_weight * k_resolved_occupation_matrices.back();
 	  partial_kinetic_energy += l_weight * real((lattice_bs_->dispersion_[k_index] *
@@ -567,8 +593,7 @@ void DMFTModel::compute_order_parameter() {
 	       local_order_parameter(3) =
 		    0.5 * (ordered_view.cwiseProduct(
 				(Eigen::MatrixXcd(2,2)
-				 << 1.0, 0.0, 0.0, -1.0).finished())).sum();
-	       // S_x
+				 << 1.0, 0.0, 0.0, -1.0).finished())).sum();	       // S_x
 	       local_order_parameter(4) =
 		    0.5 * (local_moment_view.block(0, 0, per_site_orbital_size / 2, per_site_orbital_size / 2)
 			   .cwiseProduct((Eigen::MatrixXcd(2,2)
@@ -605,6 +630,59 @@ void DMFTModel::compute_order_parameter() {
      }
 }
 
+void DMFTModel::get_spin_current() {
+     spin_current_components.clear();
+     int n_sites = sigma_->get_n_sites();
+     int per_site_orbital_size = sigma_->get_per_site_orbital_size();
+     if (per_site_orbital_size != 4) {
+	  throw runtime_error("Only 2-spinful-orbital framework supported "
+			      "in function" + std::string(__FUNCTION__));
+     }
+     Eigen::MatrixXcd aa_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+     Eigen::MatrixXcd bb_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+     Eigen::MatrixXcd ab_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+     Eigen::MatrixXcd ba_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+     Eigen::MatrixXcd summed_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+     Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
+     std::complex<double> cim(0.0, 1.0);
+     for (int direction_index = 0; direction_index < 2; direction_index++) {
+	  spin_current_components.push_back(Eigen::VectorXcd::Zero(current_dimension));
+	  for (int i = 0; i < n_sites; i++) {
+	       for (int j = 0; j < n_sites; j++) {
+		    // Get partial view on the occupation matrix
+		    Eigen::MatrixXcd partial_view = spin_current_matrix[direction_index].block(
+			 i * per_site_orbital_size, j * per_site_orbital_size,
+			 per_site_orbital_size, per_site_orbital_size);
+		    // reorder
+		    aa_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(0, 0);
+		    aa_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(0, 2);
+		    aa_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(2, 0);
+		    aa_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(2, 2);
+		    bb_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(3, 3);
+		    bb_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(3, 1);
+		    bb_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(1, 3);
+		    bb_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(1, 1);
+		    ab_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(0, 3);
+		    ab_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(0, 1);
+		    ab_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(2, 3);
+		    ab_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(2, 1);
+		    ba_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(3, 0);
+		    ba_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(3, 2);
+		    ba_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(1, 0);
+		    ba_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(1, 2);
+		    summed_component.block(i * 2, j * 2, 2, 2) =
+			 V_matrix(0, 0) * aa_component + V_matrix(1, 1) * bb_component +
+			 V_matrix(0, 1) * ab_component + V_matrix(0, 1) * ba_component;
+		    for (int spin_component = 0; spin_component < current_dimension; spin_component++) {
+			 spin_current_components.back()(spin_component) =
+			      summed_component.block(i * 2, j * 2, 2, 2).
+			      cwiseProduct((get_pauli_matrix(spin_component))).sum();			      
+		    }
+	       }
+	  }
+     }
+}
+
 void DMFTModel::display_occupation_matrix() {
      if (world_rank_ == 0) {
 	  cout << endl;
@@ -632,6 +710,33 @@ void DMFTModel::display_occupation_matrix() {
 	       }
 	       cout << endl;
 	  }
+	  cout.precision(old_precision);
+     }
+     cout << endl;
+}
+
+void DMFTModel::display_spin_current() {
+     if (world_rank_ == 0) {
+	  cout << "SPIN CURRENT:" << endl;
+	  cout << "SITE          ";
+	  int n_sites = sigma_->get_n_sites();
+	  for (int i = 0; i < n_sites; i++) {
+	       for (int j = 0; j < n_sites; j++) {
+		    cout << i << " " << j << "         ---        ";
+	       }
+	  }
+	  cout << endl;
+	  // Rreduce output print precision for order parameter
+	  auto old_precision = cout.precision(phi_output_precision);
+	  // for (int coord_index = 0; coord_index < 4; coord_index++) {
+	  //      cout << "S" << coord_index << "   ";
+	  //      for (std::vector<Eigen::VectorXcd>::const_iterator it = spin_current_matrix.begin();
+	  // 	    it != spin_current_matrix.end(); ++it) {
+	  // 	    cout << (*it).cwiseProduct(
+	  // 		 get_pauli_matrix(coord_index)).sum() << "  ";
+	  //      }
+	  //      cout << endl;
+	  // }
 	  cout.precision(old_precision);
      }
      cout << endl;
@@ -670,3 +775,4 @@ const std::string DMFTModel::k_resolved_occupation_dump_name = "c_nk.dmft";
 const std::size_t DMFTModel::output_precision = 13;
 const std::size_t DMFTModel::phi_output_precision = 4;
 const std::size_t DMFTModel::phi_dimension = 8;
+const std::size_t DMFTModel::current_dimension = 4;
