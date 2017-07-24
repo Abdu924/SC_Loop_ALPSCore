@@ -179,7 +179,7 @@ tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_
 }
 
 tuple<bool, double, double, double> DMFTModel::get_mu_from_density(double initial_mu) {
-     boost::timer::cpu_timer mu_calc;
+     boost::timer::auto_cpu_timer mu_calc;
      if (world_rank_ == 0) {
 	  cout << "**********************************************" << endl;
 	  cout << "** CALCULATION OF CHEM. POTENTIAL : NEWTON ***" << endl;
@@ -260,9 +260,9 @@ void DMFTModel::scatter_occ_matrices() {
 void DMFTModel::scatter_xcurrent_matrices() {
      int orbital_size = lattice_bs_->get_orbital_size();
      spin_current_matrix.resize(2);
-     for (int i = 0; i < 2; i++) {
-	  spin_current_matrix[i] = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
-     }
+     // for (int i = 0; i < 2; i++) {
+     // 	  spin_current_matrix[i] = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
+     // }
      int world_size = lattice_bs_->get_world_size();
      int n_points_per_proc = lattice_bs_->get_n_points_per_proc();     
      for (size_t k_index = 0; k_index < n_points_per_proc; k_index++) {
@@ -339,16 +339,16 @@ void DMFTModel::compute_tail_contribution(int k_index, size_t orbital_size,
      // explicit calculation of the partial summation of G(i omega_n)_-Nmax^Nmax
      // Note that the contribution of the naive summation
      // for odd orders in 1 / i omega_n is zero by symmetry.
-     k_resolved_occupation_matrices.back() +=
-	  (-c_1 / 2.0 - c_2 * beta / 4.0 - 2.0 * c_2 * order2_partial_sum / beta) ;
+     k_resolved_occupation_matrices.push_back(
+	  (-c_1 / 2.0 - c_2 * beta / 4.0 - 2.0 * c_2 * order2_partial_sum / beta));
 }
 
 void DMFTModel::compute_analytical_tail(double chemical_potential, int k_index, double beta) {
      tail_manager->set_chemical_potential(chemical_potential);
      tail_manager->set_current_k(lattice_bs_->dispersion_[k_index]);
      //tail_manager->get_analytical_contribution(beta);
-     k_resolved_occupation_matrices.back() +=
-	  tail_manager->get_analytical_contribution(beta) ;
+     k_resolved_occupation_matrices.push_back(
+	  tail_manager->get_analytical_contribution(beta));
 }
 
 double DMFTModel::compute_derivative_tail(size_t orbital_size, double beta) {
@@ -439,18 +439,21 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
 	  orbital_size, 1.0).asDiagonal();
      if (compute_derivative == true) dn_dmu = compute_derivative_tail(orbital_size, beta);     
      Eigen::MatrixXcd greens_function(orbital_size, orbital_size);
-     Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);	
+     Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);
+     spin_current_matrix.clear();
+     spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+     spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
      std::complex<double> mu = std::complex<double>(chemical_potential);
      Eigen::VectorXcd to_add(orbital_size);
      for (int k_index = k_min; k_index < k_max; k_index++) {
 	  double l_weight = lattice_bs_->get_weight(k_index);
-	  k_resolved_occupation_matrices.push_back(
-	       Eigen::VectorXcd::Zero(orbital_size, orbital_size));
-	  k_resolved_xcurrent_matrices.push_back(
-	       Eigen::VectorXcd::Zero(orbital_size, orbital_size));
-	  k_resolved_ycurrent_matrices.push_back(
-	       Eigen::VectorXcd::Zero(orbital_size, orbital_size));
 	  if (abs(l_weight) < 1e-6) {
+	       k_resolved_xcurrent_matrices.push_back(
+		    Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+	       k_resolved_ycurrent_matrices.push_back(
+		    Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+	       k_resolved_occupation_matrices.push_back(
+		    Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
 	       if (world_rank_ == 0) {
 		    cout << "skipping k point" << endl;
 	       }
@@ -485,14 +488,14 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
 	  k_resolved_occupation_matrices.back() += from_zero_plus_to_zero_minus;
 	  if (compute_spin_current == true) {
 	       Eigen::VectorXd cur_k_point = lattice_bs_->get_k_point(k_index);
-	       double x_phase_factor = cur_k_point(0);
-	       double y_phase_factor = cur_k_point(1);
-	       k_resolved_xcurrent_matrices.back() = l_weight *
-		    exp(std::complex<double>(0.0, x_phase_factor)) *
-		    k_resolved_occupation_matrices.back();
-	       k_resolved_ycurrent_matrices.back() = l_weight *
-		    exp(std::complex<double>(0.0, y_phase_factor)) *
-		    k_resolved_occupation_matrices.back();
+	       double x_phase_factor = 2.0 * cur_k_point(0) * M_PI;
+	       double y_phase_factor = 2.0 * cur_k_point(1) * M_PI;;
+	       k_resolved_xcurrent_matrices.push_back(
+		    l_weight * exp(std::complex<double>(0.0, x_phase_factor)) *
+		    k_resolved_occupation_matrices.back());
+	       k_resolved_ycurrent_matrices.push_back(
+		    l_weight * exp(std::complex<double>(0.0, y_phase_factor)) *
+		    k_resolved_occupation_matrices.back());
 	       spin_current_matrix[0] += k_resolved_xcurrent_matrices.back();
 	       spin_current_matrix[1] += k_resolved_ycurrent_matrices.back();
 	  }
@@ -593,7 +596,8 @@ void DMFTModel::compute_order_parameter() {
 	       local_order_parameter(3) =
 		    0.5 * (ordered_view.cwiseProduct(
 				(Eigen::MatrixXcd(2,2)
-				 << 1.0, 0.0, 0.0, -1.0).finished())).sum();	       // S_x
+				 << 1.0, 0.0, 0.0, -1.0).finished())).sum();
+	       // S_x
 	       local_order_parameter(4) =
 		    0.5 * (local_moment_view.block(0, 0, per_site_orbital_size / 2, per_site_orbital_size / 2)
 			   .cwiseProduct((Eigen::MatrixXcd(2,2)
@@ -734,7 +738,7 @@ void DMFTModel::display_spin_current() {
 	       cout << "direction " << direction_index << "   " << endl << endl;
 	       for (int coord_index = 0; coord_index < (*it).size(); coord_index++) {
 		    cout << "S" << coord_index << "   ";
-	  	    cout << (*it)(coord_index) << "  ";
+	  	    cout << (*it)(coord_index) << endl;
 	       }
 	       cout << endl;
 	  }

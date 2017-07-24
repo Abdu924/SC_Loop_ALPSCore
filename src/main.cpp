@@ -307,6 +307,7 @@ int main(int argc, const char* argv[]) {
 		    dmft_model->compute_order_parameter();
 		    dmft_model->display_occupation_matrix();
 		    if (parms["model.compute_spin_current"].as<bool>() == true) {
+			 dmft_model->get_spin_current();
 			 dmft_model->display_spin_current();
 		    }
 		    bare_band->compute_bare_dos(new_chemical_potential);
