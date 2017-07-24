@@ -31,7 +31,7 @@ DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
      double omega_max = abs(sigma_->get_matsubara_frequency(N_max - 1));
      string ref_exact ("exact");
      string tail_style = parms["TAIL_STYLE"];
-     compute_spin_current = true;
+     compute_spin_current = parms["model.compute_spin_current"].as<bool>();
      n_tolerance = 0.1 * pow(e_max / omega_max, 3);
      target_density = static_cast<double>(parms["N_ELECTRONS"]);
      if (ref_exact.compare(tail_style) == 0) {
