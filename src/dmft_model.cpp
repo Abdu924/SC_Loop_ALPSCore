@@ -728,15 +728,16 @@ void DMFTModel::display_spin_current() {
 	  cout << endl;
 	  // Rreduce output print precision for order parameter
 	  auto old_precision = cout.precision(phi_output_precision);
-	  // for (int coord_index = 0; coord_index < 4; coord_index++) {
-	  //      cout << "S" << coord_index << "   ";
-	  //      for (std::vector<Eigen::VectorXcd>::const_iterator it = spin_current_matrix.begin();
-	  // 	    it != spin_current_matrix.end(); ++it) {
-	  // 	    cout << (*it).cwiseProduct(
-	  // 		 get_pauli_matrix(coord_index)).sum() << "  ";
-	  //      }
-	  //      cout << endl;
-	  // }
+	  int direction_index = 0;
+	  for (std::vector<Eigen::VectorXcd>::const_iterator it = spin_current_components.begin();
+	       it != spin_current_components.end(); ++it, ++direction_index) {
+	       cout << "direction " << direction_index << "   " << endl << endl;
+	       for (int coord_index = 0; coord_index < (*it).size(); coord_index++) {
+		    cout << "S" << coord_index << "   ";
+	  	    cout << (*it)(coord_index) << "  ";
+	       }
+	       cout << endl;
+	  }
 	  cout.precision(old_precision);
      }
      cout << endl;
