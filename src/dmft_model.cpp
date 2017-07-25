@@ -738,7 +738,7 @@ void DMFTModel::display_spin_current() {
 	       cout << "direction " << direction_index << "   " << endl << endl;
 	       for (int coord_index = 0; coord_index < (*it).size(); coord_index++) {
 		    cout << "S" << coord_index << "   ";
-	  	    cout << (*it)(coord_index) << endl;
+	  	    cout << (*it)(coord_index) * 1000.0 << endl;
 	       }
 	       cout << endl;
 	  }
