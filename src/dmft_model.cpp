@@ -731,14 +731,14 @@ void DMFTModel::display_spin_current() {
 	  }
 	  cout << endl;
 	  // Rreduce output print precision for order parameter
-	  auto old_precision = cout.precision(phi_output_precision);
+	  auto old_precision = cout.precision(current_output_precision);
 	  int direction_index = 0;
 	  for (std::vector<Eigen::VectorXcd>::const_iterator it = spin_current_components.begin();
 	       it != spin_current_components.end(); ++it, ++direction_index) {
 	       cout << "direction " << direction_index << "   " << endl << endl;
 	       for (int coord_index = 0; coord_index < (*it).size(); coord_index++) {
 		    cout << "S" << coord_index << "   ";
-	  	    cout << (*it)(coord_index) * 1000.0 << endl;
+	  	    cout << (*it)(coord_index) << endl;
 	       }
 	       cout << endl;
 	  }
@@ -779,5 +779,6 @@ const double DMFTModel::e_max = 50.0;
 const std::string DMFTModel::k_resolved_occupation_dump_name = "c_nk.dmft";
 const std::size_t DMFTModel::output_precision = 13;
 const std::size_t DMFTModel::phi_output_precision = 4;
+const std::size_t DMFTModel::current_output_precision = 8;
 const std::size_t DMFTModel::phi_dimension = 8;
 const std::size_t DMFTModel::current_dimension = 4;

@@ -83,10 +83,10 @@ private:
      static const double e_max;
      static const size_t output_precision;
      static const size_t phi_output_precision;
+     static const size_t current_output_precision;
      static const size_t phi_dimension;
      static const size_t current_dimension;
      static const string k_resolved_occupation_dump_name;     
 };
-
   
 #endif //DMFT_MODEL__
