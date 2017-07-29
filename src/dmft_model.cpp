@@ -258,11 +258,6 @@ void DMFTModel::scatter_occ_matrices() {
 }
 
 void DMFTModel::scatter_xcurrent_matrices() {
-     int orbital_size = lattice_bs_->get_orbital_size();
-     spin_current_matrix.resize(2);
-     // for (int i = 0; i < 2; i++) {
-     // 	  spin_current_matrix[i] = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
-     // }
      int world_size = lattice_bs_->get_world_size();
      int n_points_per_proc = lattice_bs_->get_n_points_per_proc();     
      for (size_t k_index = 0; k_index < n_points_per_proc; k_index++) {
@@ -365,6 +360,17 @@ double DMFTModel::compute_derivative_tail(size_t orbital_size, double beta) {
      return dn_dmu;
 }
 
+void DMFTModel::reset_current_matrices(size_t orbital_size)  {
+     // Reset current matrix
+     spin_current_matrix.clear();
+     spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+     spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+     world_spin_current_matrix.clear();
+     world_spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+     world_spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+}
+
+
 void DMFTModel::reset_occupation_matrices(size_t orbital_size)  {
      // Reset occupation matrix
      occupation_matrix = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
@@ -430,6 +436,8 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
      double partial_kinetic_energy = 0.0;
      kinetic_energy = 0.0;
      reset_occupation_matrices(orbital_size);
+     if (compute_spin_current == true)
+	  reset_current_matrices(orbital_size);
      Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
      // Here we use a diagonal matrix, because the discontinuity at tau =0
      // only exists for Green's functions involving identical orbitals.
@@ -440,9 +448,6 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
      if (compute_derivative == true) dn_dmu = compute_derivative_tail(orbital_size, beta);     
      Eigen::MatrixXcd greens_function(orbital_size, orbital_size);
      Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);
-     spin_current_matrix.clear();
-     spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
-     spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
      std::complex<double> mu = std::complex<double>(chemical_potential);
      Eigen::VectorXcd to_add(orbital_size);
      for (int k_index = k_min; k_index < k_max; k_index++) {
@@ -516,6 +521,12 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
 		   world_occupation_matrix.data(),
 		   occupation_matrix.size(),
 		   MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+     for (int i = 0; i < spin_current_matrix.size(); ++i) {
+	  MPI_Allreduce(spin_current_matrix[i].data(),
+			world_spin_current_matrix[i].data(),
+			spin_current_matrix[i].size(),
+			MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+     }
      return tuple<double, double>(world_density, world_dn_dmu);
 }
 
@@ -654,7 +665,7 @@ void DMFTModel::get_spin_current() {
 	  for (int i = 0; i < n_sites; i++) {
 	       for (int j = 0; j < n_sites; j++) {
 		    // Get partial view on the occupation matrix
-		    Eigen::MatrixXcd partial_view = spin_current_matrix[direction_index].block(
+		    Eigen::MatrixXcd partial_view = world_spin_current_matrix[direction_index].block(
 			 i * per_site_orbital_size, j * per_site_orbital_size,
 			 per_site_orbital_size, per_site_orbital_size);
 		    // reorder
@@ -779,6 +790,6 @@ const double DMFTModel::e_max = 50.0;
 const std::string DMFTModel::k_resolved_occupation_dump_name = "c_nk.dmft";
 const std::size_t DMFTModel::output_precision = 13;
 const std::size_t DMFTModel::phi_output_precision = 4;
-const std::size_t DMFTModel::current_output_precision = 8;
+const std::size_t DMFTModel::current_output_precision = 5;
 const std::size_t DMFTModel::phi_dimension = 8;
 const std::size_t DMFTModel::current_dimension = 4;

@@ -52,6 +52,7 @@ private:
      // Dedicated object for computation of higher-order tails
      boost::shared_ptr<TailManager> tail_manager;
      void reset_occupation_matrices(size_t orbital_size);
+     void reset_current_matrices(size_t orbital_size);
      void compute_tail_contribution(int k_index, size_t orbital_size,
 				    double chemical_potential, double beta);
      void compute_analytical_tail(double chemical_potential, int k_index, double beta);
@@ -67,6 +68,7 @@ private:
      bool compute_spin_current;
      vector<Eigen::MatrixXcd> k_resolved_occupation_matrices;
      vector<Eigen::MatrixXcd> spin_current_matrix;
+     vector<Eigen::MatrixXcd> world_spin_current_matrix;
      vector<Eigen::MatrixXcd> k_resolved_xcurrent_matrices;
      vector<Eigen::MatrixXcd> k_resolved_ycurrent_matrices;
      vector<Eigen::MatrixXcd> world_k_resolved_occupation_matrices;
