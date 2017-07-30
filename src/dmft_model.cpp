@@ -659,6 +659,9 @@ void DMFTModel::get_spin_current() {
      Eigen::MatrixXcd ba_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
      Eigen::MatrixXcd summed_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
      Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
+     for (int line_idx = 0; line_idx < per_site_orbital_size; line_idx++) {
+	  V_matrix(line_idx, line_idx) = 2.0 * V_matrix(line_idx, line_idx);
+     }
      std::complex<double> cim(0.0, 1.0);
      for (int direction_index = 0; direction_index < 2; direction_index++) {
 	  spin_current_components.push_back(Eigen::VectorXcd::Zero(current_dimension));
@@ -715,7 +718,7 @@ void DMFTModel::display_occupation_matrix() {
 	       }
 	  }
 	  cout << endl;
-	  // Rreduce output print precision for order parameter
+	  // Reduce output print precision for order parameter
 	  auto old_precision = cout.precision(phi_output_precision);
 	  for (int coord_index = 0; coord_index < phi_dimension; coord_index++) {
 	       cout << "phi_" << coord_index << "   ";
@@ -741,7 +744,6 @@ void DMFTModel::display_spin_current() {
 	       }
 	  }
 	  cout << endl;
-	  // Rreduce output print precision for order parameter
 	  auto old_precision = cout.precision(current_output_precision);
 	  int direction_index = 0;
 	  for (std::vector<Eigen::VectorXcd>::const_iterator it = spin_current_components.begin();
@@ -764,7 +766,7 @@ double DMFTModel::get_kinetic_energy() {
 
 void DMFTModel::dump_k_resolved_occupation_matrices() {
      if (world_rank_ == 0) {
-	  boost::timer::auto_cpu_timer mu_calc;	  
+	  boost::timer::auto_cpu_timer mu_calc;
 	  std::ofstream out(k_resolved_occupation_dump_name);
 	  out << fixed << setprecision(output_precision);	
 	  size_t k_max = lattice_bs_->get_real_n_points();
