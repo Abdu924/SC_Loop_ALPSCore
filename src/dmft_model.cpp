@@ -12,7 +12,7 @@ Eigen::MatrixXcd get_pauli_matrix(int i) {
 			<< 1.0, 0.0, 0.0, 1.0).finished();
      else if (i == 1)
 	  return 0.5 * (Eigen::MatrixXcd(2,2)
-			<< 1.0, 0.0, 0.0, -1.0).finished();
+			<< 0.0, 1.0, 1.0, 0.0).finished();
      else if (i == 2)
 	  return 0.5 * (Eigen::MatrixXcd(2,2)
 			<< 0.0, -cim, cim, 0.0).finished();
@@ -662,7 +662,6 @@ void DMFTModel::get_spin_current() {
      for (int line_idx = 0; line_idx < per_site_orbital_size; line_idx++) {
 	  V_matrix(line_idx, line_idx) = 2.0 * V_matrix(line_idx, line_idx);
      }
-     std::complex<double> cim(0.0, 1.0);
      for (int direction_index = 0; direction_index < 2; direction_index++) {
 	  spin_current_components.push_back(Eigen::VectorXcd::Zero(current_dimension));
 	  for (int i = 0; i < n_sites; i++) {
@@ -690,7 +689,7 @@ void DMFTModel::get_spin_current() {
 		    ba_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(1, 2);
 		    summed_component.block(i * 2, j * 2, 2, 2) =
 			 V_matrix(0, 0) * aa_component + V_matrix(1, 1) * bb_component +
-			 V_matrix(0, 1) * ab_component + V_matrix(0, 1) * ba_component;
+			 V_matrix(0, 3) * ab_component + V_matrix(3, 0) * ba_component;
 		    for (int spin_component = 0; spin_component < current_dimension; spin_component++) {
 			 spin_current_components.back()(spin_component) =
 			      summed_component.block(i * 2, j * 2, 2, 2).
@@ -698,6 +697,31 @@ void DMFTModel::get_spin_current() {
 		    }
 	       }
 	  }
+     }
+     if ((world_rank_ == 0)) {
+	  int k_index = 37;
+	  std::complex<double> cim(0.0, 1.0);
+	  std::cout << "k point : " << 2.0 * M_PI * lattice_bs_->get_k_point(k_index)[1] << std::endl;
+	  std::cout << "k_resolved_xcurrent_matrices " << std::endl;
+	  std::cout << k_resolved_xcurrent_matrices[k_index] * 55 * 55 << std::endl << std::endl;
+	  std::cout << "k_resolved_ycurrent_matrices " << std::endl;
+	  std::cout << k_resolved_ycurrent_matrices[k_index] * 55 * 55 << std::endl << std::endl;
+	  std::cout << 0.5 * cim * 55.0 * 55.0 * (V_matrix(0, 0) * (k_resolved_ycurrent_matrices[k_index](0, 2) -
+							k_resolved_ycurrent_matrices[k_index](2, 0))
+				      + V_matrix(1, 1) * (k_resolved_ycurrent_matrices[k_index](3, 1) -
+							  k_resolved_ycurrent_matrices[k_index](1, 3))
+				      + V_matrix(0, 3) * (k_resolved_ycurrent_matrices[k_index](0, 1) -
+							  k_resolved_ycurrent_matrices[k_index](2, 3))
+				      + V_matrix(3, 0) * (k_resolved_ycurrent_matrices[k_index](3, 2) -
+							  k_resolved_ycurrent_matrices[k_index](1, 0))) << std::endl << std::endl;
+	  std::cout << (V_matrix(0, 0) * (k_resolved_occupation_matrices[k_index](0, 2) -
+					  k_resolved_occupation_matrices[k_index](2, 0))
+			+ V_matrix(1, 1) * (k_resolved_occupation_matrices[k_index](3, 1) -
+					    k_resolved_occupation_matrices[k_index](1, 3))
+			+ V_matrix(0, 3) * (k_resolved_occupation_matrices[k_index](0, 1) -
+					    k_resolved_occupation_matrices[k_index](2, 3))
+			+ V_matrix(3, 0) * (k_resolved_occupation_matrices[k_index](3, 2) -
+					    k_resolved_occupation_matrices[k_index](1, 0))) << std::endl << std::endl;
      }
 }
 
