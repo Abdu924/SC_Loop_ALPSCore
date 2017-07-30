@@ -700,20 +700,16 @@ void DMFTModel::get_spin_current() {
      }
      if ((world_rank_ == 0)) {
 	  int k_index = 37;
+	  double l_weight = lattice_bs_->get_weight(k_index);
 	  std::complex<double> cim(0.0, 1.0);
+	  double y_phase_factor = 2.0 * lattice_bs_->get_k_point(k_index)[1] * M_PI;;
+	  std::complex<double> exp_factor = exp(std::complex<double>(0.0, y_phase_factor));
 	  std::cout << "k point : " << 2.0 * M_PI * lattice_bs_->get_k_point(k_index)[1] << std::endl;
 	  std::cout << "k_resolved_xcurrent_matrices " << std::endl;
 	  std::cout << k_resolved_xcurrent_matrices[k_index] * 55 * 55 << std::endl << std::endl;
 	  std::cout << "k_resolved_ycurrent_matrices " << std::endl;
 	  std::cout << k_resolved_ycurrent_matrices[k_index] * 55 * 55 << std::endl << std::endl;
-	  std::cout << 0.5 * cim * 55.0 * 55.0 * (V_matrix(0, 0) * (k_resolved_ycurrent_matrices[k_index](0, 2) -
-							k_resolved_ycurrent_matrices[k_index](2, 0))
-				      + V_matrix(1, 1) * (k_resolved_ycurrent_matrices[k_index](3, 1) -
-							  k_resolved_ycurrent_matrices[k_index](1, 3))
-				      + V_matrix(0, 3) * (k_resolved_ycurrent_matrices[k_index](0, 1) -
-							  k_resolved_ycurrent_matrices[k_index](2, 3))
-				      + V_matrix(3, 0) * (k_resolved_ycurrent_matrices[k_index](3, 2) -
-							  k_resolved_ycurrent_matrices[k_index](1, 0))) << std::endl << std::endl;
+	  std::cout << "my: " << std::endl;
 	  std::cout << (V_matrix(0, 0) * (k_resolved_occupation_matrices[k_index](0, 2) -
 					  k_resolved_occupation_matrices[k_index](2, 0))
 			+ V_matrix(1, 1) * (k_resolved_occupation_matrices[k_index](3, 1) -
@@ -722,6 +718,25 @@ void DMFTModel::get_spin_current() {
 					    k_resolved_occupation_matrices[k_index](2, 3))
 			+ V_matrix(3, 0) * (k_resolved_occupation_matrices[k_index](3, 2) -
 					    k_resolved_occupation_matrices[k_index](1, 0))) << std::endl << std::endl;
+	  std::cout << "my*sin(y): " << std::endl;
+	  std::cout << exp_factor * (V_matrix(0, 0) * (k_resolved_occupation_matrices[k_index](0, 2) -
+						     k_resolved_occupation_matrices[k_index](2, 0))
+				   + V_matrix(1, 1) * (k_resolved_occupation_matrices[k_index](3, 1) -
+						       k_resolved_occupation_matrices[k_index](1, 3))
+				   + V_matrix(0, 3) * (k_resolved_occupation_matrices[k_index](0, 1) -
+						       k_resolved_occupation_matrices[k_index](2, 3))
+				   + V_matrix(3, 0) * (k_resolved_occupation_matrices[k_index](3, 2) -
+						       k_resolved_occupation_matrices[k_index](1, 0))) << std::endl << std::endl;
+	  std::cout << "auto calc with exp: " << std::endl;
+	  std::cout << (0.5 * cim / l_weight) *
+	       (V_matrix(0, 0) * (k_resolved_ycurrent_matrices[k_index](0, 2) -
+				  k_resolved_ycurrent_matrices[k_index](2, 0))
+		+ V_matrix(1, 1) * (k_resolved_ycurrent_matrices[k_index](3, 1) -
+				    k_resolved_ycurrent_matrices[k_index](1, 3))
+		+ V_matrix(0, 3) * (k_resolved_ycurrent_matrices[k_index](0, 1) -
+				    k_resolved_ycurrent_matrices[k_index](2, 3))
+		+ V_matrix(3, 0) * (k_resolved_ycurrent_matrices[k_index](3, 2) -
+				    k_resolved_ycurrent_matrices[k_index](1, 0))) << std::endl << std::endl;
      }
 }
 
