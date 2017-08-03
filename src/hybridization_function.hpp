@@ -54,6 +54,7 @@ private:
      boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::shared_ptr<Selfenergy> sigma_;
      vector<Eigen::MatrixXcd> hybridization_function;
+     vector<Eigen::MatrixXcd> G0_function;
      vector<Eigen::MatrixXcd> bare_greens_function;
      vector<Eigen::MatrixXcd> no_shift_bare_greens_function;
      vector<Eigen::MatrixXcd> pure_no_shift_bare_greens_function;

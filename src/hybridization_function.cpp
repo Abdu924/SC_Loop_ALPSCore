@@ -159,6 +159,7 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
      size_t N_max = sigma_->get_n_matsubara_freqs();
      // initialize quantities to be computed
      hybridization_function.clear();
+     G0_function.clear();
      bare_greens_function.clear();
      no_shift_bare_greens_function.clear();
      pure_no_shift_bare_greens_function.clear();
@@ -273,6 +274,7 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 	       (tot_orbital_size,
 		sigma_->get_matsubara_frequency(freq_index));
 	  inverse_gf.diagonal() -= mu_tilde.diagonal();
+	  G0_function.push_back(inverse_gf.inverse());
      }
 }
 
