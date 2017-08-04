@@ -323,6 +323,7 @@ int main(int argc, const char* argv[]) {
 		    {
 			 alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
 			 hybridization_function->dump_G0_hdf5(w_h5_archive);
+			 hybridization_function->dump_G0_for_ctint_hdf5(w_h5_archive);
 			 w_h5_archive.close();
 		    }
 		    MPI_Barrier(MPI_COMM_WORLD);

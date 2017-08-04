@@ -42,6 +42,7 @@ public:
      void compute_local_bubble();
      void compute_lattice_bubble();
      void dump_G0_hdf5(alps::hdf5::archive &h5_archive);
+     void dump_G0_for_ctint_hdf5(alps::hdf5::archive &h5_archive);
      virtual ~HybFunction() {}
 
      static const string bare_gf_no_shift_dump_name;
