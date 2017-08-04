@@ -67,6 +67,7 @@ void define_parameters(alps::params &parameters) {
 	  .define<bool>("from_alps3", false, "is the input produced by Alps3?")
 	  .define<long>("SEED", 42, "PRNG seed")
 	  .define<bool>("cthyb.ACCURATE_COVARIANCE", false, "TODO: UNDERSTAND WHAT THIS DOES")
+	  .define<bool>("model.compute_spin_current", false, "Compute the spin current components")
 	  .define<std::string>("cthyb.BASEPATH","", "path in hdf5 file to which results are stored")
 	  .define<double>("model.beta", "inverse temperature")
 	  .define<int >("N_BLOCKS", "number of interacting blocks")
@@ -305,6 +306,10 @@ int main(int argc, const char* argv[]) {
 		    dmft_model->dump_k_resolved_occupation_matrices();
 		    dmft_model->compute_order_parameter();
 		    dmft_model->display_occupation_matrix();
+		    if (parms["model.compute_spin_current"].as<bool>() == true) {
+			 dmft_model->get_spin_current();
+			 dmft_model->display_spin_current();
+		    }
 		    bare_band->compute_bare_dos(new_chemical_potential);
 		    bare_band->dump_bare_dos();
 		    chempot->dump_values();
@@ -318,6 +323,7 @@ int main(int argc, const char* argv[]) {
 		    {
 			 alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
 			 hybridization_function->dump_G0_hdf5(w_h5_archive);
+			 hybridization_function->dump_G0_for_ctint_hdf5(w_h5_archive);
 			 w_h5_archive.close();
 		    }
 		    MPI_Barrier(MPI_COMM_WORLD);

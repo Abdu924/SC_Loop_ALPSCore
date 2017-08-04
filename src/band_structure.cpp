@@ -369,6 +369,8 @@ void Bandstructure::read_hoppings(const alps::params& parms, bool verbose) {
 	       }
 	  }
      } else {
+	  throw std::runtime_error("non sparse not supported anymore in " +
+				   std::string(__FUNCTION__));
 	  for (int i = 0; i < nb_r_points; i++) {
 	       hopping_file >> rx >> ry >> rz;
 	       getline(hopping_file, line);	     

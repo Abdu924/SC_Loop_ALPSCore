@@ -5,6 +5,24 @@
 
 using namespace std;
 
+Eigen::MatrixXcd get_pauli_matrix(int i) {
+     std::complex<double> cim(0.0, 1.0);
+     if (i == 0)
+	  return 0.5 * (Eigen::MatrixXcd(2,2)
+			<< 1.0, 0.0, 0.0, 1.0).finished();
+     else if (i == 1)
+	  return 0.5 * (Eigen::MatrixXcd(2,2)
+			<< 0.0, 1.0, 1.0, 0.0).finished();
+     else if (i == 2)
+	  return 0.5 * (Eigen::MatrixXcd(2,2)
+			<< 0.0, -cim, cim, 0.0).finished();
+     else if (i == 3)
+	  return 0.5 * (Eigen::MatrixXcd(2,2)
+			<< 1.0, 0.0, 0.0, -1.0).finished();
+     else
+	  throw runtime_error("invalid Pauli matrix index !");
+}
+
 DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
 		     boost::shared_ptr<Selfenergy> const &sigma,
 		     const alps::params& parms, int world_rank)
@@ -13,6 +31,7 @@ DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
      double omega_max = abs(sigma_->get_matsubara_frequency(N_max - 1));
      string ref_exact ("exact");
      string tail_style = parms["TAIL_STYLE"];
+     compute_spin_current = parms["model.compute_spin_current"].as<bool>();
      n_tolerance = 0.1 * pow(e_max / omega_max, 3);
      target_density = static_cast<double>(parms["N_ELECTRONS"]);
      if (ref_exact.compare(tail_style) == 0) {
@@ -30,8 +49,14 @@ DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
      int world_size = lattice_bs_->get_world_size();
      int n_points_per_proc = lattice_bs_->get_n_points_per_proc();
      world_k_resolved_occupation_matrices.resize(n_points_per_proc * world_size);
+     world_k_resolved_xcurrent_matrices.resize(n_points_per_proc * world_size);
+     world_k_resolved_ycurrent_matrices.resize(n_points_per_proc * world_size);
      for (int k_index = 0; k_index < n_points_per_proc * world_size; k_index++) {
 	  world_k_resolved_occupation_matrices[k_index].resize(
+	       orbital_size, orbital_size);
+	  world_k_resolved_xcurrent_matrices[k_index].resize(
+	       orbital_size, orbital_size);
+	  world_k_resolved_ycurrent_matrices[k_index].resize(
 	       orbital_size, orbital_size);
      }
      // hf-expansion coefficients
@@ -146,6 +171,10 @@ tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_
      }
      // Success - gather the k-resolved occupation matrices.
      scatter_occ_matrices();
+     if (compute_spin_current == true) {
+	  scatter_xcurrent_matrices();
+	  scatter_ycurrent_matrices();
+     }
      return tuple<bool, double, double>(success, cur_mu, cur_density);
 }
 
@@ -192,7 +221,11 @@ tuple<bool, double, double, double> DMFTModel::get_mu_from_density(double initia
      }
      if (success == true) {
 	  // Success - scatter/gather the k-resolved occupation matrices.
-	  scatter_occ_matrices();     
+	  scatter_occ_matrices();
+	  if (compute_spin_current == true) {
+	       scatter_xcurrent_matrices();
+	       scatter_ycurrent_matrices();
+	  }
      }
      if (world_rank_ == 0) {     
 	  cout << " mu_calc + energy - timing: ";
@@ -220,6 +253,54 @@ void DMFTModel::scatter_occ_matrices() {
 	  if (world_rank_ == 0) {
 	       world_k_resolved_occupation_matrices[k_index] =
 		    k_resolved_occupation_matrices[k_index];
+	  }
+     }
+}
+
+void DMFTModel::scatter_xcurrent_matrices() {
+     int world_size = lattice_bs_->get_world_size();
+     int n_points_per_proc = lattice_bs_->get_n_points_per_proc();     
+     for (size_t k_index = 0; k_index < n_points_per_proc; k_index++) {
+	  if (world_rank_ == 0) {
+	       for (int proc_index = 1; proc_index < world_size; proc_index++) {
+		    MPI_Recv(
+			 world_k_resolved_xcurrent_matrices
+			 [proc_index * n_points_per_proc + k_index].data(),
+			 k_resolved_xcurrent_matrices[k_index].size(),
+			 MPI::DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	       }
+	  } else {
+	       MPI_Send(k_resolved_xcurrent_matrices[k_index].data(),
+			k_resolved_xcurrent_matrices[k_index].size(),
+			MPI::DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
+	  }
+	  if (world_rank_ == 0) {
+	       world_k_resolved_xcurrent_matrices[k_index] =
+		    k_resolved_xcurrent_matrices[k_index];
+	  }
+     }
+}
+
+void DMFTModel::scatter_ycurrent_matrices() {
+     int world_size = lattice_bs_->get_world_size();
+     int n_points_per_proc = lattice_bs_->get_n_points_per_proc();     
+     for (size_t k_index = 0; k_index < n_points_per_proc; k_index++) {
+	  if (world_rank_ == 0) {
+	       for (int proc_index = 1; proc_index < world_size; proc_index++) {
+		    MPI_Recv(
+			 world_k_resolved_ycurrent_matrices
+			 [proc_index * n_points_per_proc + k_index].data(),
+			 k_resolved_ycurrent_matrices[k_index].size(),
+			 MPI::DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	       }
+	  } else {
+	       MPI_Send(k_resolved_ycurrent_matrices[k_index].data(),
+			k_resolved_ycurrent_matrices[k_index].size(),
+			MPI::DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
+	  }
+	  if (world_rank_ == 0) {
+	       world_k_resolved_ycurrent_matrices[k_index] =
+		    k_resolved_ycurrent_matrices[k_index];
 	  }
      }
 }
@@ -279,11 +360,24 @@ double DMFTModel::compute_derivative_tail(size_t orbital_size, double beta) {
      return dn_dmu;
 }
 
+void DMFTModel::reset_current_matrices(size_t orbital_size)  {
+     // Reset current matrix
+     spin_current_matrix.clear();
+     spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+     spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+     world_spin_current_matrix.clear();
+     world_spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+     world_spin_current_matrix.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+}
+
+
 void DMFTModel::reset_occupation_matrices(size_t orbital_size)  {
      // Reset occupation matrix
      occupation_matrix = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
      world_occupation_matrix = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
      k_resolved_occupation_matrices.clear();
+     k_resolved_xcurrent_matrices.clear();
+     k_resolved_ycurrent_matrices.clear();
 }
 
 Eigen::MatrixXcd DMFTModel::get_full_greens_function(double chemical_potential) {
@@ -342,6 +436,9 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
      double partial_kinetic_energy = 0.0;
      kinetic_energy = 0.0;
      reset_occupation_matrices(orbital_size);
+     if (compute_spin_current == true)
+	  reset_current_matrices(orbital_size);
+     Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
      // Here we use a diagonal matrix, because the discontinuity at tau =0
      // only exists for Green's functions involving identical orbitals.
      // For the formula related to such discontinuity, check
@@ -350,14 +447,18 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
 	  orbital_size, 1.0).asDiagonal();
      if (compute_derivative == true) dn_dmu = compute_derivative_tail(orbital_size, beta);     
      Eigen::MatrixXcd greens_function(orbital_size, orbital_size);
-     Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);	
+     Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);
      std::complex<double> mu = std::complex<double>(chemical_potential);
      Eigen::VectorXcd to_add(orbital_size);
      for (int k_index = k_min; k_index < k_max; k_index++) {
 	  double l_weight = lattice_bs_->get_weight(k_index);
 	  if (abs(l_weight) < 1e-6) {
+	       k_resolved_xcurrent_matrices.push_back(
+		    Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+	       k_resolved_ycurrent_matrices.push_back(
+		    Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
 	       k_resolved_occupation_matrices.push_back(
-		    Eigen::VectorXcd::Zero(orbital_size, orbital_size));
+		    Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
 	       if (world_rank_ == 0) {
 		    cout << "skipping k point" << endl;
 	       }
@@ -390,6 +491,19 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
 	       }
 	  }
 	  k_resolved_occupation_matrices.back() += from_zero_plus_to_zero_minus;
+	  if (compute_spin_current == true) {
+	       Eigen::VectorXd cur_k_point = lattice_bs_->get_k_point(k_index);
+	       double x_phase_factor = 2.0 * cur_k_point(0) * M_PI;
+	       double y_phase_factor = 2.0 * cur_k_point(1) * M_PI;;
+	       k_resolved_xcurrent_matrices.push_back(
+		    l_weight * exp(std::complex<double>(0.0, x_phase_factor)) *
+		    k_resolved_occupation_matrices.back());
+	       k_resolved_ycurrent_matrices.push_back(
+		    l_weight * exp(std::complex<double>(0.0, y_phase_factor)) *
+		    k_resolved_occupation_matrices.back());
+	       spin_current_matrix[0] += k_resolved_xcurrent_matrices.back();
+	       spin_current_matrix[1] += k_resolved_ycurrent_matrices.back();
+	  }
 	  occupation_matrix += l_weight * k_resolved_occupation_matrices.back();
 	  partial_kinetic_energy += l_weight * real((lattice_bs_->dispersion_[k_index] *
 						     k_resolved_occupation_matrices.back()).diagonal().sum());
@@ -407,6 +521,12 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
 		   world_occupation_matrix.data(),
 		   occupation_matrix.size(),
 		   MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+     for (int i = 0; i < spin_current_matrix.size(); ++i) {
+	  MPI_Allreduce(spin_current_matrix[i].data(),
+			world_spin_current_matrix[i].data(),
+			spin_current_matrix[i].size(),
+			MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+     }
      return tuple<double, double>(world_density, world_dn_dmu);
 }
 
@@ -525,6 +645,111 @@ void DMFTModel::compute_order_parameter() {
      }
 }
 
+void DMFTModel::get_spin_current() {
+     spin_current_components.clear();
+     int n_sites = sigma_->get_n_sites();
+     int per_site_orbital_size = sigma_->get_per_site_orbital_size();
+     if (per_site_orbital_size != 4) {
+	  throw runtime_error("Only 2-spinful-orbital framework supported "
+			      "in function" + std::string(__FUNCTION__));
+     }
+     Eigen::MatrixXcd aa_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+     Eigen::MatrixXcd bb_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+     Eigen::MatrixXcd ab_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+     Eigen::MatrixXcd ba_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+     Eigen::MatrixXcd summed_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+     Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
+     for (int line_idx = 0; line_idx < per_site_orbital_size; line_idx++) {
+	  V_matrix(line_idx, line_idx) = 2.0 * V_matrix(line_idx, line_idx);
+     }
+     for (int direction_index = 0; direction_index < 2; direction_index++) {
+	  spin_current_components.push_back(Eigen::VectorXcd::Zero(current_dimension));
+	  for (int i = 0; i < n_sites; i++) {
+	       for (int j = 0; j < n_sites; j++) {
+		    // Get partial view on the occupation matrix
+		    Eigen::MatrixXcd partial_view = world_spin_current_matrix[direction_index].block(
+			 i * per_site_orbital_size, j * per_site_orbital_size,
+			 per_site_orbital_size, per_site_orbital_size);
+		    // reorder
+		    aa_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(0, 0);
+		    aa_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(0, 2);
+		    aa_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(2, 0);
+		    aa_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(2, 2);
+		    bb_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(3, 3);
+		    bb_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(3, 1);
+		    bb_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(1, 3);
+		    bb_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(1, 1);
+		    ab_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(0, 3);
+		    ab_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(0, 1);
+		    ab_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(2, 3);
+		    ab_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(2, 1);
+		    ba_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(3, 0);
+		    ba_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(3, 2);
+		    ba_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(1, 0);
+		    ba_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(1, 2);
+		    summed_component.block(i * 2, j * 2, 2, 2) =
+			 V_matrix(0, 0) * aa_component + V_matrix(1, 1) * bb_component +
+			 V_matrix(0, 3) * ab_component + V_matrix(3, 0) * ba_component;
+		    for (int spin_component = 0; spin_component < current_dimension; spin_component++) {
+			 spin_current_components.back()(spin_component) =
+			      summed_component.block(i * 2, j * 2, 2, 2).
+			      cwiseProduct((get_pauli_matrix(spin_component))).sum();			      
+		    }
+	       }
+	  }
+     }
+     //if ((world_rank_ == 0)) {
+     if (false) {
+	  int k_index = 37;
+	  double l_weight = lattice_bs_->get_weight(k_index);
+	  std::complex<double> cim(0.0, 1.0);
+	  double y_phase_factor = 2.0 * lattice_bs_->get_k_point(k_index)[1] * M_PI;;
+	  std::complex<double> exp_factor = exp(std::complex<double>(0.0, y_phase_factor));
+	  std::cout << "k point : " << 2.0 * M_PI * lattice_bs_->get_k_point(k_index)[1] << std::endl;
+	  std::cout << "k_resolved_xcurrent_matrices " << std::endl;
+	  std::cout << k_resolved_xcurrent_matrices[k_index] * 55 * 55 << std::endl << std::endl;
+	  std::cout << "k_resolved_ycurrent_matrices " << std::endl;
+	  std::cout << k_resolved_ycurrent_matrices[k_index] * 55 * 55 << std::endl << std::endl;
+	  std::cout << "my: " << std::endl;
+	  std::cout << (V_matrix(0, 0) * (k_resolved_occupation_matrices[k_index](0, 2) -
+					  k_resolved_occupation_matrices[k_index](2, 0))
+			+ V_matrix(1, 1) * (k_resolved_occupation_matrices[k_index](3, 1) -
+					    k_resolved_occupation_matrices[k_index](1, 3))
+			+ V_matrix(0, 3) * (k_resolved_occupation_matrices[k_index](0, 1) -
+					    k_resolved_occupation_matrices[k_index](2, 3))
+			+ V_matrix(3, 0) * (k_resolved_occupation_matrices[k_index](3, 2) -
+					    k_resolved_occupation_matrices[k_index](1, 0))) << std::endl << std::endl;
+	  std::cout << "my*sin(y) with real part: " << std::endl;
+	  std::cout << exp_factor * std::imag(V_matrix(0, 0) * (k_resolved_occupation_matrices[k_index](0, 2) -
+						     k_resolved_occupation_matrices[k_index](2, 0))
+				   + V_matrix(1, 1) * (k_resolved_occupation_matrices[k_index](3, 1) -
+						       k_resolved_occupation_matrices[k_index](1, 3))
+				   + V_matrix(0, 3) * (k_resolved_occupation_matrices[k_index](0, 1) -
+						       k_resolved_occupation_matrices[k_index](2, 3))
+				   + V_matrix(3, 0) * (k_resolved_occupation_matrices[k_index](3, 2) -
+						       k_resolved_occupation_matrices[k_index](1, 0))) << std::endl << std::endl;
+	  std::cout << "my*sin(y) with all parts: " << std::endl;
+	  std::cout << 0.5 * exp_factor * (V_matrix(0, 0) * (k_resolved_occupation_matrices[k_index](0, 2) -
+						     k_resolved_occupation_matrices[k_index](2, 0))
+				   + V_matrix(1, 1) * (k_resolved_occupation_matrices[k_index](3, 1) -
+						       k_resolved_occupation_matrices[k_index](1, 3))
+				   + V_matrix(0, 3) * (k_resolved_occupation_matrices[k_index](0, 1) -
+						       k_resolved_occupation_matrices[k_index](2, 3))
+				   + V_matrix(3, 0) * (k_resolved_occupation_matrices[k_index](3, 2) -
+						       k_resolved_occupation_matrices[k_index](1, 0))) << std::endl << std::endl;
+	  std::cout << "auto calc with exp: " << std::endl;
+	  std::cout << (0.5 / l_weight) *
+	       (V_matrix(0, 0) * (k_resolved_ycurrent_matrices[k_index](0, 2) -
+				  k_resolved_ycurrent_matrices[k_index](2, 0))
+		+ V_matrix(1, 1) * (k_resolved_ycurrent_matrices[k_index](3, 1) -
+				    k_resolved_ycurrent_matrices[k_index](1, 3))
+		+ V_matrix(0, 3) * (k_resolved_ycurrent_matrices[k_index](0, 1) -
+				    k_resolved_ycurrent_matrices[k_index](2, 3))
+		+ V_matrix(3, 0) * (k_resolved_ycurrent_matrices[k_index](3, 2) -
+				    k_resolved_ycurrent_matrices[k_index](1, 0))) << std::endl << std::endl;
+     }
+}
+
 void DMFTModel::display_occupation_matrix() {
      if (world_rank_ == 0) {
 	  cout << endl;
@@ -542,7 +767,7 @@ void DMFTModel::display_occupation_matrix() {
 	       }
 	  }
 	  cout << endl;
-	  // Rreduce output print precision for order parameter
+	  // Reduce output print precision for order parameter
 	  auto old_precision = cout.precision(phi_output_precision);
 	  for (int coord_index = 0; coord_index < phi_dimension; coord_index++) {
 	       cout << "phi_" << coord_index << "   ";
@@ -557,13 +782,40 @@ void DMFTModel::display_occupation_matrix() {
      cout << endl;
 }
 
+void DMFTModel::display_spin_current() {
+     if (world_rank_ == 0) {
+	  cout << "SPIN CURRENT:" << endl;
+	  cout << "SITE          ";
+	  int n_sites = sigma_->get_n_sites();
+	  for (int i = 0; i < n_sites; i++) {
+	       for (int j = 0; j < n_sites; j++) {
+		    cout << i << " " << j << "         ---        ";
+	       }
+	  }
+	  cout << endl;
+	  auto old_precision = cout.precision(current_output_precision);
+	  int direction_index = 0;
+	  for (std::vector<Eigen::VectorXcd>::const_iterator it = spin_current_components.begin();
+	       it != spin_current_components.end(); ++it, ++direction_index) {
+	       cout << "direction " << direction_index << "   " << endl << endl;
+	       for (int coord_index = 0; coord_index < (*it).size(); coord_index++) {
+		    cout << "S" << coord_index << "   ";
+	  	    cout << (*it)(coord_index) << endl;
+	       }
+	       cout << endl;
+	  }
+	  cout.precision(old_precision);
+     }
+     cout << endl;
+}
+
 double DMFTModel::get_kinetic_energy() {
      return kinetic_energy;
 }
 
 void DMFTModel::dump_k_resolved_occupation_matrices() {
      if (world_rank_ == 0) {
-	  boost::timer::auto_cpu_timer mu_calc;	  
+	  boost::timer::auto_cpu_timer mu_calc;
 	  std::ofstream out(k_resolved_occupation_dump_name);
 	  out << fixed << setprecision(output_precision);	
 	  size_t k_max = lattice_bs_->get_real_n_points();
@@ -589,4 +841,6 @@ const double DMFTModel::e_max = 50.0;
 const std::string DMFTModel::k_resolved_occupation_dump_name = "c_nk.dmft";
 const std::size_t DMFTModel::output_precision = 13;
 const std::size_t DMFTModel::phi_output_precision = 4;
+const std::size_t DMFTModel::current_output_precision = 5;
 const std::size_t DMFTModel::phi_dimension = 8;
+const std::size_t DMFTModel::current_dimension = 4;

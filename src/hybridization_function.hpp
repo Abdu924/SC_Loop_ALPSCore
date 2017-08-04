@@ -42,6 +42,7 @@ public:
      void compute_local_bubble();
      void compute_lattice_bubble();
      void dump_G0_hdf5(alps::hdf5::archive &h5_archive);
+     void dump_G0_for_ctint_hdf5(alps::hdf5::archive &h5_archive);
      virtual ~HybFunction() {}
 
      static const string bare_gf_no_shift_dump_name;
@@ -54,6 +55,7 @@ private:
      boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::shared_ptr<Selfenergy> sigma_;
      vector<Eigen::MatrixXcd> hybridization_function;
+     vector<Eigen::MatrixXcd> G0_function;
      vector<Eigen::MatrixXcd> bare_greens_function;
      vector<Eigen::MatrixXcd> no_shift_bare_greens_function;
      vector<Eigen::MatrixXcd> pure_no_shift_bare_greens_function;
