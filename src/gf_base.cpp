@@ -148,45 +148,40 @@ void GfBase::get_density_density_correl(int ref_site_index,
 	  int n_tau = boost::lexical_cast<int>(parms["N_TAU"]) + 1;
 	  std::string gtau_path("/od_hyb_G_tau/");
 	  double cur_dd_correl;
-	  for(int block_index = 0; block_index < n_blocks; ++block_index) {
-	       int cur_index = 0;
-	       for(int line_idx = 0; line_idx < blocks[block_index].size(); ++line_idx) {
-		    for(int col_idx = 0; col_idx < blocks[block_index].size();
-			++col_idx) {
-			 std::stringstream density_path;
-			 // ATTENTION here: convention of QMC is F_ij = -T<c_i c^dag_j>,
-			 // but DMFT is looking for  c^dag_i c_j
-			 // No - misleading comment. Just check the way the quantities
-			 // are dumped in hdf5 by QMC - this is fine.
-			 cur_index = line_idx + col_idx * blocks[block_index].size();
-			 if (line_idx == col_idx) {
-			      density_path << "/simulation/results/density_" <<
-				   boost::lexical_cast<std::string>(line_idx) + "/mean/value";
+	  //per_site_orbital_size
+	  for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
+	       for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
+		    std::stringstream density_path;
+		    // ATTENTION here: convention of QMC is F_ij = -T<c_i c^dag_j>,
+		    // but DMFT is looking for  c^dag_i c_j
+		    // No - misleading comment. Just check the way the quantities
+		    // are dumped in hdf5 by QMC - this is fine.
+		    if (line_idx == col_idx) {
+			 density_path << "/simulation/results/density_" <<
+			      boost::lexical_cast<std::string>(line_idx) + "/mean/value";
+		    } else {
+			 if (line_idx > col_idx) {
+			      density_path << "/simulation/results/nn_" <<
+				   boost::lexical_cast<std::string>(line_idx) + "_" +
+				   boost::lexical_cast<std::string>(col_idx)
+				   + "/mean/value";
 			 } else {
-			      if (line_idx > col_idx) {
-				   density_path << "/simulation/results/nn_" <<
-					boost::lexical_cast<std::string>(line_idx) + "_" +
-					boost::lexical_cast<std::string>(col_idx)
-					+ "/mean/value";
-			      } else {
-				   density_path << "/simulation/results/nn_" <<
-					boost::lexical_cast<std::string>(col_idx) + "_" +
-					boost::lexical_cast<std::string>(line_idx)
-					+ "/mean/value";
-			      }
+			      density_path << "/simulation/results/nn_" <<
+				   boost::lexical_cast<std::string>(col_idx) + "_" +
+				   boost::lexical_cast<std::string>(line_idx)
+				   + "/mean/value";
 			 }
-			 // VERY CAREFUL HERE
-			 // What comes out of QMC is G_{kl} =  -<T c_k(tau) c^dagger_l(tau')>
-			 // we need c^\dagger_k c_l here, so transpose -
-			 // see above in the construction!!
-			 h5_archive >> alps::make_pvp(density_path.str(), cur_dd_correl);
-			 density_density_correl.block(ref_site_index * per_site_orbital_size,
-						      ref_site_index * per_site_orbital_size,
-						      per_site_orbital_size,
-						      per_site_orbital_size)
-			      (blocks[block_index][line_idx],
-			       blocks[block_index][col_idx]) = cur_dd_correl;
 		    }
+		    // VERY CAREFUL HERE
+		    // What comes out of QMC is G_{kl} =  -<T c_k(tau) c^dagger_l(tau')>
+		    // we need c^\dagger_k c_l here, so transpose -
+		    // see above in the construction!!
+		    h5_archive >> alps::make_pvp(density_path.str(), cur_dd_correl);
+		    density_density_correl.block(ref_site_index * per_site_orbital_size,
+						 ref_site_index * per_site_orbital_size,
+						 per_site_orbital_size,
+						 per_site_orbital_size)
+			 (line_idx, col_idx) = cur_dd_correl;
 	       }
 	  }
      }
@@ -216,27 +211,24 @@ void GfBase::get_a_dagger_b(int ref_site_index,
 	  cplx_array_type raw_full_gf(
 	       boost::extents[n_tau][per_site_orbital_size][per_site_orbital_size]);	  
 	  h5_archive["/gtau/data"] >> raw_full_gf;
-	  // Build a_dagger_b data
-	  for(int block_index = 0; block_index < n_blocks; ++block_index) {
-	       for(int line_idx = 0; line_idx < blocks[block_index].size(); ++line_idx) {
-		    for(int col_idx = 0; col_idx < blocks[block_index].size(); ++col_idx) {
-			 // ATTENTION here: convention of QMC Alps2 is F_ij = -T<c_i c^dag_j>,
-			 // but DMFT is looking for  c^dag_i c_j
-			 // VERY CAREFUL HERE -- With Alps3 we are fine though!!
-			 // What comes out of QMC is G_{kl} =  -<T c_k(tau) c^dagger_l(tau')>
-			 // we need c^\dagger_k c_l here, so transpose -
-			 a_dagger_b.block(ref_site_index * per_site_orbital_size,
-					  ref_site_index * per_site_orbital_size,
-					  per_site_orbital_size,
-					  per_site_orbital_size)
-			      (blocks[block_index][line_idx],
-			       blocks[block_index][col_idx]) =
-			      // ATTENTION: DIFFERENT SIGN CONVENTION FROM FORTRAN
-			      // HERE
-			      // AND NEED TO SYMMETRIZE FOR DATA FROM ALPS3
-			      -0.5 * (raw_full_gf[n_tau - 1][line_idx][col_idx]
-				      + std::conj(raw_full_gf[n_tau - 1][col_idx][line_idx]));
-		    }
+	  // Build a_dagger_b data	  
+	  for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx) {
+	       for(int col_idx = 0; col_idx < per_site_orbital_size; ++col_idx) {
+		    // ATTENTION here: convention of QMC Alps2 is F_ij = -T<c_i c^dag_j>,
+		    // but DMFT is looking for  c^dag_i c_j
+		    // VERY CAREFUL HERE -- With Alps3 we are fine though!!
+		    // What comes out of QMC is G_{kl} =  -<T c_k(tau) c^dagger_l(tau')>
+		    // we need c^\dagger_k c_l here, so transpose -
+		    a_dagger_b.block(ref_site_index * per_site_orbital_size,
+				     ref_site_index * per_site_orbital_size,
+				     per_site_orbital_size,
+				     per_site_orbital_size)
+			 (line_idx, col_idx) =
+			 // ATTENTION: DIFFERENT SIGN CONVENTION FROM FORTRAN
+			 // HERE
+			 // AND NEED TO SYMMETRIZE FOR DATA FROM ALPS3
+			 -0.5 * (raw_full_gf[n_tau - 1][line_idx][col_idx]
+				 + std::conj(raw_full_gf[n_tau - 1][col_idx][line_idx]));
 	       }
 	  }
      } else { // now Alps2 version
