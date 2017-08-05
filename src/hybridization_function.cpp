@@ -274,7 +274,7 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 	       (tot_orbital_size,
 		sigma_->get_matsubara_frequency(freq_index));
 	  inverse_gf.diagonal() -= mu_tilde.diagonal();
-	  G0_function.push_back(inverse_gf.inverse());
+	  G0_function.push_back(-inverse_gf.inverse());
      }
 }
 
