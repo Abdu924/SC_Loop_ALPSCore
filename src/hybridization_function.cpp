@@ -274,7 +274,7 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 	       (tot_orbital_size,
 		sigma_->get_matsubara_frequency(freq_index));
 	  inverse_gf.diagonal() -= mu_tilde.diagonal();
-	  G0_function.push_back(-inverse_gf.inverse());
+	  G0_function.push_back(inverse_gf.inverse());
      }
 }
 
@@ -572,6 +572,19 @@ void HybFunction::dump_delta() {
 				      site_index * per_site_orbital_size,
 				      per_site_orbital_size,
 				      per_site_orbital_size)(orb1, orb1)) << endl;
+	       }
+	  }
+	  out.close();
+	  out.open(shift_sq_dump_name, ofstream::out);
+	  out.precision(output_precision);
+	  out << fixed << setprecision(output_precision);
+	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
+	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+		    out << real(lattice_bs_->get_epsilon_squared_bar().block(
+				     site_index * per_site_orbital_size,
+				     site_index * per_site_orbital_size,
+				     per_site_orbital_size,
+				     per_site_orbital_size)(orb1, orb1)) << endl;
 	       }
 	  }
 	  out.close();
@@ -956,5 +969,6 @@ const string HybFunction::imaginary_time_dump_name_for_matrix = "ec_delta.tau";
 const string HybFunction::imaginary_time_hdf5_root = "c_delta";
 const string HybFunction::bubble_hdf5_root = "c_bubble";
 const string HybFunction::shift_dump_name = "c_shift.tmp";
+const string HybFunction::shift_sq_dump_name = "c_shift_sq.tmp";
 const string HybFunction::matsubara_self_energy_name = "current_sigma";
 const string HybFunction::legendre_self_energy_name = "current_legendre_sigma";
