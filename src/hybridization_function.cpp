@@ -273,8 +273,8 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 	  inverse_gf.diagonal() -= Eigen::VectorXcd::Constant
 	       (tot_orbital_size,
 		sigma_->get_matsubara_frequency(freq_index));
+	  G0_function.push_back(-inverse_gf.inverse());
 	  inverse_gf.diagonal() -= mu_tilde.diagonal();
-	  G0_function.push_back(inverse_gf.inverse());
      }
 }
 
@@ -670,12 +670,30 @@ void HybFunction::dump_G0_for_ctint_hdf5(alps::hdf5::archive &h5_archive) {
 			 for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
 			      temp_g0[orb1 + site_index * per_site_orbital_size]
 				   [orb2 + site_index * per_site_orbital_size][freq_index] =
-				   temp(orb1, orb2);
+				   -temp(orb1, orb2);
 			 }
 		    }
 	       }
 	  }
 	  h5_archive["/G0_CTINT"] = temp_g0;
+	  for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+	       for(size_t site_index = 0; site_index < n_sites; site_index++) {
+		    Eigen::MatrixXcd temp = pure_no_shift_bare_greens_function[freq_index].block(
+			 site_index * per_site_orbital_size,
+			 site_index * per_site_orbital_size,
+			 per_site_orbital_size,
+			 per_site_orbital_size);
+		    for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+			 for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+			      temp_g0[orb1 + site_index * per_site_orbital_size]
+				   [orb2 + site_index * per_site_orbital_size][freq_index] =
+				   temp(orb1, orb2);
+			 }
+		    }
+	       }
+	  }
+	  h5_archive["/G0_lattice_CTINT"] = temp_g0;
+
      }
 }
 
