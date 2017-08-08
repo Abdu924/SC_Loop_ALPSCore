@@ -24,7 +24,8 @@ TailManager::TailManager(const Eigen::Ref<Eigen::MatrixXcd> sigma_0,
      full_size = 2 * flavor_size;
      sigma_skeleton = Eigen::MatrixXcd::Zero(full_size, full_size);
      sigma_skeleton.block(0, 0, flavor_size, flavor_size) = sigma_0;
-     Eigen::MatrixXcd sqrt_sigma_1_bis = sigma_1.sqrt();
+     Eigen::MatrixXcd tmp = sigma_1;
+     Eigen::MatrixXcd sqrt_sigma_1_bis = tmp.sqrt();
      matsubara_frequencies_ = matsubara_frequencies;
      n_max = matsubara_frequencies_.size();
      sigma_skeleton.block(0, flavor_size, flavor_size, flavor_size) = sqrt_sigma_1_bis;
