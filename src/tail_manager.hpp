@@ -1,9 +1,9 @@
 #ifndef TAIL_MANAGER__
 #define TAIL_MANAGER__
 #include <Eigen/Dense>
-#include<vector>
+#include <vector>
 #include <tuple>
-#include<iostream>
+#include <iostream>
 #include <complex>
 #include <cmath>
 #include <alps/params.hpp>
