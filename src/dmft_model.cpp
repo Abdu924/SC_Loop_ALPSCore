@@ -96,9 +96,9 @@ tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_
 	  cout << "current density: " << cur_density << endl;
      }
      if (cur_density > target_density) {
-	  mu_increment = -abs(mu_increment);
+	  mu_increment = std::min(-0.05, -abs(mu_increment));
      } else {
-	  mu_increment = abs(mu_increment);
+	  mu_increment = std::max(0.05, abs(mu_increment));
      }
      success = check_density_success(cur_density);
      MPI_Bcast(&success, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
