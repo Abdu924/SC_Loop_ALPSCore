@@ -144,10 +144,10 @@ tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_
 	       cur_mu = 0.5 * (mu_min + mu_max);
 	       tie(cur_density, cur_derivative) = get_particle_density(cur_mu, false);
 	       if (world_rank_ == 0) {
-		    cout << "Starting bisection " << mu_min ;
+		    cout << "Starting bisection " << mu_min << endl;
 		    cout << "new mu: " << cur_mu << endl;
 		    cout << "new density " << cur_density << endl;
-		    cout << "cur iteration for bisec: " << iteration_idx << endl;
+		    cout << "cur iteration for bisec: " << iteration_idx << endl << endl;
 	       }
 	       if (cur_density > target_density) {
 		    mu_max = cur_mu;
