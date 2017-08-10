@@ -834,7 +834,7 @@ void DMFTModel::dump_k_resolved_occupation_matrices() {
      }
 }
 
-const size_t DMFTModel::max_iter_for_bisec = 10;
+const size_t DMFTModel::max_iter_for_bisec = 20;
 const size_t DMFTModel::max_iter_for_bounds = 10;
 const size_t DMFTModel::max_iter_for_newton = 10;
 const double DMFTModel::e_max = 50.0;
