@@ -1,5 +1,4 @@
-#ifndef DMFT_MODEL__
-#define DMFT_MODEL__
+#pragma once
 #include <Eigen/Dense>
 #include <vector>
 #include <tuple>
@@ -91,5 +90,3 @@ private:
      static const string k_resolved_occupation_dump_name;     
 };
 
-  
-#endif //DMFT_MODEL__
