@@ -19,17 +19,23 @@ using namespace std;
 
 void init(int world_rank, int computation_type,
 	  string &output_file_name, string &backup_file_name) {
+     string error_file_name;
      if (computation_type == 0) {
 	  output_file_name = "c_dmft.out";
+	  error_file_name = "error_dmft.txt";
      } else if (computation_type == 1) {
 	  output_file_name = "c_mix.out";
+	  error_file_name = "error_mix.txt";
      } else if (computation_type == 2) {
 	  output_file_name = "c_dump_hamilt.out";
+	  error_file_name = "error_dump.txt";
      } else if (computation_type == 3) {
 	  output_file_name = "c_debug.out";
+	  error_file_name = "error_debug.txt";
      }
      else if (computation_type == 4) {
 	  output_file_name = "c_bubble.out";
+	  error_file_name = "error_bubble.txt";
      }
      backup_file_name = output_file_name + ".old";
      if (world_rank == 0) {
@@ -41,7 +47,7 @@ void init(int world_rank, int computation_type,
 	       }
 	  }
 	  auto dummy1 = freopen(output_file_name.c_str(), "w", stdout );
-	  auto dummy2 = freopen("error.txt", "w", stderr);
+	  auto dummy2 = freopen(error_file_name.c_str(), "a", stderr);
 	  cout << "Using Boost "
 	       << BOOST_VERSION / 100000     << "."  // major version
 	       << BOOST_VERSION / 100 % 1000 << "."  // minor version
