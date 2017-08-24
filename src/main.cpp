@@ -327,7 +327,9 @@ int main(int argc, const char* argv[]) {
 		    if (parms["MEASURE_chern"] == true) {
 			 std::complex<double> chern =
 			      dmft_model->get_chern_number(new_chemical_potential);
-			 std::cout << "Chern: " << chern << std::endl << std::endl;
+			 if (!world_rank) {
+			      std::cout << "Chern: " << chern << std::endl << std::endl;
+			 }
 		    }
 		    if (world_rank == 0) {
 			 cout << " total " << endl;

@@ -259,7 +259,8 @@ std::complex<double> DMFTModel::get_chern_number(double chemical_potential) {
 	       std::cout << "Chern " << world_chern_matrix.diagonal().sum()
 			 << std::endl;
 	  }
-	  output += parities[cur_idx] * world_chern_matrix.diagonal().sum();
+	  //output += parities[cur_idx] * world_chern_matrix.diagonal().sum();
+	  output += parities[cur_idx] * (world_chern_matrix(0, 0));// + world_chern_matrix(2, 2));
 	  cur_idx += 1;
      } while (std::next_permutation(myints, myints+3));
      return output;
