@@ -73,7 +73,7 @@ void define_parameters(alps::params &parameters) {
 	  .define<bool>("from_alps3", false, "is the input produced by Alps3?")
 	  .define<long>("SEED", 42, "PRNG seed")
 	  .define<bool>("cthyb.ACCURATE_COVARIANCE", false, "TODO: UNDERSTAND WHAT THIS DOES")
-	  .define<bool>("model.compute_spin_current", false, "Compute the spin current components")
+	  .define<bool>("model.compute_spin_current", true, "Compute the spin current components")
 	  .define<std::string>("cthyb.BASEPATH","", "path in hdf5 file to which results are stored")
 	  .define<double>("model.beta", "inverse temperature")
 	  .define<int >("N_BLOCKS", "number of interacting blocks")
