@@ -54,7 +54,7 @@ void Greensfunction::generate_data(alps::hdf5::archive &h5_archive) {
 void Greensfunction::read_t_coeffs(alps::hdf5::archive &h5_archive) {
      boost::multi_array<std::complex<double> , 2> init_full_t_set(boost::extents[1000][200]);
      if (!h5_archive.is_group("t_coeffs")) {
-	  throw runtime_error("Trying to mix but...the t coefficients are not in the hdf5 file ==> Quitting !");
+	  //throw runtime_error("Trying to mix but...the t coefficients are not in the hdf5 file ==> Quitting !");
      }
      h5_archive["t_coeffs"] >>  init_full_t_set;
      full_t_set = Eigen::MatrixXcd::Zero(1000, 200);
