@@ -60,11 +60,11 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 	  }
      }
      // Broadcast the quantities defined on master only by code above.
-     MPI_Bcast(&orbital_size_, 1, MPI::INT, 0, MPI_COMM_WORLD);
-     MPI_Bcast(&nb_r_points, 1, MPI::INT, 0, MPI_COMM_WORLD);
-     MPI_Bcast(&world_size, 1, MPI::INT, 0, MPI_COMM_WORLD);
-     MPI_Bcast(&real_n_points, 1, MPI::INT, 0, MPI_COMM_WORLD);
-     MPI_Bcast(&n_points_per_proc, 1, MPI::INT, 0, MPI_COMM_WORLD);     
+     MPI_Bcast(&orbital_size_, 1, MPI_INT, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&nb_r_points, 1, MPI_INT, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&world_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&real_n_points, 1, MPI_INT, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&n_points_per_proc, 1, MPI_INT, 0, MPI_COMM_WORLD);     
      weights_.resize(n_points_per_proc);
      dispersion_.resize(n_points_per_proc);
      proc_k_lattice_.resize(n_points_per_proc);
@@ -83,8 +83,8 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 	  epsilon_squared_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
      }
      // scatter the weights to each process
-     MPI_Scatter(world_weights_.data(), n_points_per_proc, MPI::DOUBLE,
-		 weights_.data(), n_points_per_proc, MPI::DOUBLE, 0, MPI_COMM_WORLD);
+     MPI_Scatter(world_weights_.data(), n_points_per_proc, MPI_DOUBLE,
+		 weights_.data(), n_points_per_proc, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
      // scatter the dispersion to each process
      for (int k_index = 0; k_index < n_points_per_proc; k_index++) {
@@ -92,12 +92,12 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 	       for (int proc_index = 1; proc_index < world_size; proc_index++) {		    
 		    MPI_Send(world_dispersion_[proc_index * n_points_per_proc + k_index].data(),
 			     world_dispersion_[proc_index * n_points_per_proc + k_index].size(),
-			     MPI::DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD);
+			     MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD);
 	       }
 	  } else {
 	       MPI_Recv(dispersion_[k_index].data(),
 			dispersion_[k_index].size(),
-			MPI::DOUBLE_COMPLEX,
+			MPI_DOUBLE_COMPLEX,
 			0, 0, MPI_COMM_WORLD,
 			MPI_STATUS_IGNORE);
 	  }
@@ -111,12 +111,12 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      	       for (int proc_index = 1; proc_index < world_size; proc_index++) {		    
      		    MPI_Send(world_k_lattice_[proc_index * n_points_per_proc + k_index].data(),
      			     world_k_lattice_[proc_index * n_points_per_proc + k_index].size(),
-     			     MPI::DOUBLE, proc_index, 0, MPI_COMM_WORLD);
+     			     MPI_DOUBLE, proc_index, 0, MPI_COMM_WORLD);
      	       }
      	  } else {
      	       MPI_Recv(proc_k_lattice_[k_index].data(),
      			proc_k_lattice_[k_index].size(),
-     			MPI::DOUBLE,
+     			MPI_DOUBLE,
      			0, 0, MPI_COMM_WORLD,
      			MPI_STATUS_IGNORE);
      	  }
@@ -128,17 +128,17 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      // for dispersion computation
      for (int i = 0; i < nb_r_points; i++) {
 	  MPI_Bcast(hoppings_[i].data(), hoppings_[i].size(),
-		    MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+		    MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
      }
      for (int i = 0; i < nb_r_points; i++) {
 	  MPI_Bcast(r_lattice_[i].data(), r_lattice_[i].size(),
-		    MPI::INT, 0, MPI_COMM_WORLD);
+		    MPI_INT, 0, MPI_COMM_WORLD);
      }
      // Broadcast the averaged quantities to all processes
      MPI_Bcast(epsilon_bar.data(), epsilon_bar.size(),
-	       MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+	       MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
      MPI_Bcast(epsilon_squared_bar.data(), epsilon_squared_bar.size(),
-	       MPI::DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+	       MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 }
 
 void Bandstructure::generate_bseq_lattice(int n_q_mesh, double max_q_mesh) {
@@ -448,7 +448,7 @@ void Bandstructure::compute_bare_dos(double chemical_potential) {
 	  MPI_Allreduce(bare_dos[freq_index].data(),
 			world_bare_dos[freq_index].data(),
 			world_bare_dos[freq_index].size(),
-			MPI::DOUBLE, MPI_SUM, MPI_COMM_WORLD);  
+			MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);  
      }
      if (world_rank_ == 0) {
 	  cout << "***********   DONE      ********" << endl << endl;

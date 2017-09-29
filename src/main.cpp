@@ -284,8 +284,8 @@ int main(int argc, const char* argv[]) {
 			 dn_dmu = chempot->get_dn_dmu();
 		    }
 		    MPI_Bcast(&found_old_mu, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
-		    MPI_Bcast(&old_chemical_potential, 1, MPI::DOUBLE, 0, MPI_COMM_WORLD);
-		    MPI_Bcast(&dn_dmu, 1, MPI::DOUBLE, 0, MPI_COMM_WORLD);
+		    MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		    MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		    boost::timer::auto_cpu_timer mu_calc;
 		    tie(newton_success, new_chemical_potential, density, new_dn_dmu) =
 			 dmft_model->get_mu_from_density(old_chemical_potential);
@@ -442,8 +442,8 @@ int main(int argc, const char* argv[]) {
 	       //      dn_dmu = 0.0197718;
 	       // }
 	       // MPI_Bcast(&found_old_mu, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
-	       // MPI_Bcast(&old_chemical_potential, 1, MPI::DOUBLE, 0, MPI_COMM_WORLD);
-	       // MPI_Bcast(&dn_dmu, 1, MPI::DOUBLE, 0, MPI_COMM_WORLD);
+	       // MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	       // MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	       // double debug_density, debug_deriv;
 	       // tie(debug_density, debug_deriv) =
 	       //      dmft_model->get_particle_density(old_chemical_potential, dn_dmu);

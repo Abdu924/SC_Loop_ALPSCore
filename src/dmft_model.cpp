@@ -243,12 +243,12 @@ void DMFTModel::scatter_occ_matrices() {
 			 world_k_resolved_occupation_matrices
 			 [proc_index * n_points_per_proc + k_index].data(),
 			 k_resolved_occupation_matrices[k_index].size(),
-			 MPI::DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			 MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	       }
 	  } else {
 	       MPI_Send(k_resolved_occupation_matrices[k_index].data(),
 			k_resolved_occupation_matrices[k_index].size(),
-			MPI::DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
+			MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
 	  }
 	  if (world_rank_ == 0) {
 	       world_k_resolved_occupation_matrices[k_index] =
@@ -267,12 +267,12 @@ void DMFTModel::scatter_xcurrent_matrices() {
 			 world_k_resolved_xcurrent_matrices
 			 [proc_index * n_points_per_proc + k_index].data(),
 			 k_resolved_xcurrent_matrices[k_index].size(),
-			 MPI::DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			 MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	       }
 	  } else {
 	       MPI_Send(k_resolved_xcurrent_matrices[k_index].data(),
 			k_resolved_xcurrent_matrices[k_index].size(),
-			MPI::DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
+			MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
 	  }
 	  if (world_rank_ == 0) {
 	       world_k_resolved_xcurrent_matrices[k_index] =
@@ -291,12 +291,12 @@ void DMFTModel::scatter_ycurrent_matrices() {
 			 world_k_resolved_ycurrent_matrices
 			 [proc_index * n_points_per_proc + k_index].data(),
 			 k_resolved_ycurrent_matrices[k_index].size(),
-			 MPI::DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			 MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	       }
 	  } else {
 	       MPI_Send(k_resolved_ycurrent_matrices[k_index].data(),
 			k_resolved_ycurrent_matrices[k_index].size(),
-			MPI::DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
+			MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
 	  }
 	  if (world_rank_ == 0) {
 	       world_k_resolved_ycurrent_matrices[k_index] =
@@ -510,22 +510,22 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
      }
      density = real(occupation_matrix.diagonal().sum());
      MPI_Allreduce(&density, &world_density, 1,
-		   MPI::DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		   MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
      MPI_Allreduce(&partial_kinetic_energy, &kinetic_energy, 1,
-		   MPI::DOUBLE, MPI_SUM, MPI_COMM_WORLD);     
+		   MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);     
      if (compute_derivative) {     
 	  MPI_Allreduce(&dn_dmu, &world_dn_dmu, 1,
-			MPI::DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+			MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
      }
      MPI_Allreduce(occupation_matrix.data(),
 		   world_occupation_matrix.data(),
 		   occupation_matrix.size(),
-		   MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+		   MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
      for (int i = 0; i < spin_current_matrix.size(); ++i) {
 	  MPI_Allreduce(spin_current_matrix[i].data(),
 			world_spin_current_matrix[i].data(),
 			spin_current_matrix[i].size(),
-			MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+			MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
      }
      return tuple<double, double>(world_density, world_dn_dmu);
 }

@@ -213,11 +213,11 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 	  MPI_Allreduce(local_greens_function.data(),
 			world_local_greens_function.data(),
 			local_greens_function.size(),
-			MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+			MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 	  MPI_Allreduce(pure_local_bare_gf.data(),
 			world_pure_local_bare_gf.data(),
 			pure_local_bare_gf.size(),
-			MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+			MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 	  // local_greens_function is inversed, but only after it is projected
 	  // out on each site. xm1 is projected on site as well
 	  inverse_gf = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
@@ -450,7 +450,7 @@ void HybFunction::compute_lattice_bubble() {
 		    MPI_Allreduce(partial_sum[q_index][freq_index].data(),
 				  world_lattice_bubble[boson_index][q_index][freq_index].data(),
 				  partial_sum[q_index][freq_index].size(),
-				  MPI::DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+				  MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 	       }
 	  }
 	  std::cout << "Time for boson freq " << boson_index
