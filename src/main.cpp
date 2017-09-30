@@ -232,7 +232,9 @@ int main(int argc, const char* argv[]) {
 	  double density, derivative;
 	  double old_chemical_potential, new_chemical_potential,
 	       dn_dmu, new_dn_dmu;
-	  bool found_old_mu, newton_success, bisec_success;
+	  int newton_success = 0;
+          int bisec_success = 0;
+          int found_old_mu = 0;
 	  // kind of computation
 	  // 0 --- compute hybridization function
 	  // 1 --- compute tail of new_sigma, mix new_sigma with old_sigma,
@@ -280,23 +282,23 @@ int main(int argc, const char* argv[]) {
 			 // field and value in scf file!! Has to be changed, and old_chemical_potential
 			 // only retrieved from crystal_field.h5
 			 old_chemical_potential = (*chempot)[0];
-			 found_old_mu == true;
+			 found_old_mu = 1;
 			 dn_dmu = chempot->get_dn_dmu();
 		    }
-		    MPI_Bcast(&found_old_mu, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
+		    MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		    MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		    MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		    boost::timer::auto_cpu_timer mu_calc;
 		    tie(newton_success, new_chemical_potential, density, new_dn_dmu) =
 			 dmft_model->get_mu_from_density(old_chemical_potential);
-		    if (newton_success == false) {
+		    if (newton_success == 0) {
 			 tie(bisec_success, new_chemical_potential, density) =
 			      dmft_model->get_mu_from_density_bisec(old_chemical_potential, dn_dmu);
 		    } else {
 			 dn_dmu = new_dn_dmu;
 			 chempot->set_dn_dmu(dn_dmu);
 		    }
-		    if ((newton_success == false) && (bisec_success == false)) {
+		    if ((newton_success == 0) && (bisec_success == 0)) {
 			 if (world_rank == 0) {
 			      cout << "MU was not found. Quitting. " << endl;
 			      throw runtime_error("Unable to find mu !");

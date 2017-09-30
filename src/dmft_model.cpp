@@ -70,8 +70,8 @@ DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
      tail_manager = temp_tail_manager;
 }
 
-tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_mu,
-								 double mu_increment) {
+tuple<int, double, double> DMFTModel::get_mu_from_density_bisec(double initial_mu,
+                                                                double mu_increment) {
      boost::timer::auto_cpu_timer mu_calc;     
      if (world_rank_ == 0) {
 	  cout << "****************************************" << endl;
@@ -85,7 +85,7 @@ tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_
 	  cout << "n_tot tolerance " << n_tolerance << endl;
 	  cout << "target density " << target_density << endl;	  
      }
-     bool success = false;
+     int success = 0;
      double old_density, cur_density, cur_mu, cur_derivative, bracket_mu;
      double mu_min, mu_max;
      size_t iteration_idx(0);
@@ -101,12 +101,12 @@ tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_
 	  mu_increment = std::max(0.05, abs(mu_increment));
      }
      success = check_density_success(cur_density);
-     MPI_Bcast(&success, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&success, 1, MPI_INT, 0, MPI_COMM_WORLD);
      // current value of mu is not satisfactory, we have to bracket.
-     if (success == false) {
+     if (success == 0) {
 	  while (((cur_density - target_density) * (old_density - target_density) > 0.0) &&
 		 (iteration_idx < max_iter_for_bounds) &&
-		 (success == false)) {
+		 (success == 0)) {
 	       cur_mu +=  mu_increment;
 	       old_density = cur_density;
 	       tie(cur_density, cur_derivative) = get_particle_density(cur_mu, false);
@@ -117,12 +117,12 @@ tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_
 		    cout << "cur iteration for bounds: " << iteration_idx << endl;
 	       }
 	       success = check_density_success(cur_density);
-	       MPI_Bcast(&success, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
+	       MPI_Bcast(&success, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	  }
 	  // Exit on bracketing failure
 	  if (world_rank_ == 0) {
 	       if ((iteration_idx >= max_iter_for_bounds) &&
-		   (success == false)) {
+		   (success == 0)) {
 		    cout << "the bounds were not found...FAILURE" << endl;
 		    throw runtime_error("Unable to find bounds for my in bisec !");
 	       }
@@ -139,7 +139,7 @@ tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_
 	  }
 	  iteration_idx = 1;
 	  // if density is not close enough to target, move on to the bisection
-	  while((success == false) &&
+	  while((success == 0) &&
 		(iteration_idx < max_iter_for_bisec)) {
 	       cur_mu = 0.5 * (mu_min + mu_max);
 	       tie(cur_density, cur_derivative) = get_particle_density(cur_mu, false);
@@ -155,12 +155,12 @@ tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_
 		    mu_min = cur_mu;
 	       }
 	       success = check_density_success(cur_density);
-	       MPI_Bcast(&success, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
+	       MPI_Bcast(&success, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	       iteration_idx++;
 	  }
      }
      // Exit on bisection failure.
-     if ((success == false) && (iteration_idx >= max_iter_for_bisec)) {
+     if ((success == 0) && (iteration_idx >= max_iter_for_bisec)) {
 	  cout << "chem. pot.: too many iterations - STOP" << endl;
 	  throw runtime_error("Unable to find bounds for chemical potential in bisec !");
      } else {
@@ -175,10 +175,10 @@ tuple<bool, double, double> DMFTModel::get_mu_from_density_bisec(double initial_
 	  scatter_xcurrent_matrices();
 	  scatter_ycurrent_matrices();
      }
-     return tuple<bool, double, double>(success, cur_mu, cur_density);
+     return tuple<int, double, double>(success, cur_mu, cur_density);
 }
 
-tuple<bool, double, double, double> DMFTModel::get_mu_from_density(double initial_mu) {
+tuple<int, double, double, double> DMFTModel::get_mu_from_density(double initial_mu) {
      boost::timer::auto_cpu_timer mu_calc;
      if (world_rank_ == 0) {
 	  cout << "**********************************************" << endl;
@@ -187,7 +187,7 @@ tuple<bool, double, double, double> DMFTModel::get_mu_from_density(double initia
 	  cout << "n_tot tolerance " << n_tolerance << endl;
 	  cout << "target density " << target_density << endl;
      }
-     bool success = false;
+     bool success = 0;
      double cur_density, cur_derivative, cur_mu, delta_mu;
      size_t iteration_idx(1);
      cur_mu = initial_mu;
@@ -211,15 +211,15 @@ tuple<bool, double, double, double> DMFTModel::get_mu_from_density(double initia
 		    << cur_density << endl;
 	  }
 	  success = check_density_success(cur_density);
-	  MPI_Bcast(&success, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
-	  if (success == true) {
+	  MPI_Bcast(&success, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	  if (success == 1) {
 	       break;
 	  } else {
 	       delta_mu = (target_density - cur_density) / cur_derivative;
 	       cur_mu += delta_mu;
 	  }
      }
-     if (success == true) {
+     if (success == 1) {
 	  // Success - scatter/gather the k-resolved occupation matrices.
 	  scatter_occ_matrices();
 	  if (compute_spin_current == true) {
@@ -230,7 +230,7 @@ tuple<bool, double, double, double> DMFTModel::get_mu_from_density(double initia
      if (world_rank_ == 0) {     
 	  cout << " mu_calc + energy - timing: ";
      }
-     return tuple<bool, double, double, double>(success, cur_mu, cur_density, delta_mu);
+     return tuple<int, double, double, double>(success, cur_mu, cur_density, delta_mu);
 }
 
 void DMFTModel::scatter_occ_matrices() {
@@ -305,12 +305,12 @@ void DMFTModel::scatter_ycurrent_matrices() {
      }
 }
 
-bool DMFTModel::check_density_success(double cur_density) {
-     bool output = false;
+int DMFTModel::check_density_success(double cur_density) {
+     int output = 0;
      if (world_rank_ == 0) {
 	  output =
 	       (abs(target_density - cur_density) < n_tolerance) ?
-	       true : false;
+	       1 : 0;
      }
      return output;
 }

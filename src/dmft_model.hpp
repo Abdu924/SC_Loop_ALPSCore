@@ -26,8 +26,8 @@ public:
 	       const alps::params& parms, int world_rank);
      tuple<double, double> get_particle_density(double chemical_potential,
 						bool compute_derivative);
-     tuple<bool, double, double, double> get_mu_from_density(double initial_mu);
-     tuple<bool, double, double> get_mu_from_density_bisec(double initial_mu,
+     tuple<int, double, double, double> get_mu_from_density(double initial_mu);
+     tuple<int, double, double> get_mu_from_density_bisec(double initial_mu,
 							   double mu_increment);
      void display_occupation_matrix();
      void display_spin_current();
@@ -36,7 +36,7 @@ public:
      void scatter_occ_matrices();
      void scatter_xcurrent_matrices();
      void scatter_ycurrent_matrices();
-     bool check_density_success(double cur_density);
+     int check_density_success(double cur_density);
      void compute_order_parameter();
      void get_spin_current();
 
