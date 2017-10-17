@@ -841,6 +841,6 @@ const double DMFTModel::e_max = 50.0;
 const std::string DMFTModel::k_resolved_occupation_dump_name = "c_nk.dmft";
 const std::size_t DMFTModel::output_precision = 13;
 const std::size_t DMFTModel::phi_output_precision = 4;
-const std::size_t DMFTModel::current_output_precision = 5;
+const std::size_t DMFTModel::current_output_precision = 7;
 const std::size_t DMFTModel::phi_dimension = 8;
 const std::size_t DMFTModel::current_dimension = 4;
