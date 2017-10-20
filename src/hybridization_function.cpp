@@ -374,6 +374,7 @@ void HybFunction::compute_lattice_bubble() {
      int nb_q_points(lattice_bs_->get_nb_points_for_bseq());
      int new_i(0);
      int new_j(0);
+     std::ofstream out("bubble_debug.txt");
      std::vector<std::vector<Eigen::MatrixXcd> > partial_sum;
      lattice_bubble.clear();
      lattice_bubble.resize(N_boson);
@@ -400,10 +401,22 @@ void HybFunction::compute_lattice_bubble() {
 		    continue;
 	       } else {
 		    Eigen::VectorXd k_point = lattice_bs_->get_k_point(k_index);
+                    out << "*** k point ***" << endl <<
+                         k_point[0] << "  " << k_point[1] << "  " << k_point[2] << endl;
 		    gf_k = get_greens_function(k_point, boson_index);
+                    out << gf_k[0] << endl;
 		    for(int q_index = 0; q_index < nb_q_points; q_index++) {
 			 Eigen::VectorXd k_plus_q_point = lattice_bs_->get_k_plus_q_point(k_index, q_index);
+                         out << "***  q point ***" << endl <<
+                              lattice_bs_->get_q_point(q_index)(0) << "  " <<
+                              lattice_bs_->get_q_point(q_index)[1] << "  " <<
+                              lattice_bs_->get_q_point(q_index)[2] << endl;
+                         out << "***  k + q point ***" << endl <<
+                              k_plus_q_point(0) << "  " <<
+                              k_plus_q_point[1] << "  " <<
+                              k_plus_q_point[2] << endl;
 			 gf_kq = get_greens_function(k_plus_q_point, boson_index);
+                         out << gf_kq[0] << endl;
 			 for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
 			      for(size_t site_index = 0; site_index < n_sites;
 				  site_index++) {
@@ -424,6 +437,15 @@ void HybFunction::compute_lattice_bubble() {
 						       //Careful here: greens functions are based
 						       //on the full orbital dimension of the
 						       // system
+                                                       // out << new_i << "  " << new_j << "  " <<
+                                                       //      l_weight << "  " << gf_k[freq_index].block(
+						       //  	 block_index, block_index,
+						       //  	 block_size, block_size)(
+						       //  	      part_index_1, part_index_2) <<
+                                                       //      "  " << gf_kq[freq_index + boson_index].block(
+						       //  	 block_index, block_index,
+						       //  	 block_size, block_size)(
+						       //  	      hole_index_1, hole_index_2) << endl;
 						       partial_sum[q_index][freq_index].block(
 							    block_index, block_index,
 							    block_size, block_size)(new_i, new_j) +=
