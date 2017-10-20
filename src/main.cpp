@@ -281,7 +281,7 @@ int main(int argc, const char* argv[]) {
 			 // HERE Horrible bug fix in order to align crystal
 			 // field and value in scf file!! Has to be changed, and old_chemical_potential
 			 // only retrieved from crystal_field.h5
-			 old_chemical_potential = (*chempot)[0];
+			 old_chemical_potential = ((*chempot)[0] + (*chempot)[2]) / 2.0;
 			 found_old_mu = 1;
 			 dn_dmu = chempot->get_dn_dmu();
 		    }
