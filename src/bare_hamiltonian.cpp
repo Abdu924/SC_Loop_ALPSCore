@@ -9,7 +9,7 @@ BareHamiltonian::BareHamiltonian(const alps::params& parms,
 				 int world_rank, bool verbose)
      :world_rank_(world_rank) {
      double kx, ky, kz, phase_factor, unique_weight;
-     int n_sites = 1;
+     int n_sites = parms["model.space_sites"];
      n_flavors =
 	  static_cast<size_t>(parms.value_or_default("N_ORBITALS", 4)) *
 	  n_sites);

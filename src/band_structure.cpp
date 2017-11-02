@@ -402,7 +402,7 @@ void Bandstructure::init_world_containers(int n_points) {
 
 void Bandstructure::check_flavor_dim_consistency(const alps::params& parms,
 						 int dimension) {
-     int n_sites = 1;
+     int n_sites = parms["model.space_sites"];
      int n_flavors = static_cast<int>(parms["N_ORBITALS"]) * n_sites;
      if(dimension != n_flavors) {
 	  cerr << "ERROR: Bandstructure: FLAVORS from parameter file "

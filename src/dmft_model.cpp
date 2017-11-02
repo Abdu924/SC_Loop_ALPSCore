@@ -550,8 +550,7 @@ void DMFTModel::compute_order_parameter() {
 		    per_site_orbital_size, per_site_orbital_size);
 	       if (per_site_orbital_size != 4) {
 		    throw runtime_error("Only 2-spinful-orbital framework supported "
-					"at the moment in function"
-					+ std::string(__FUNCTION__));
+					"at the moment in function" + std::string(__FUNCTION__));
 	       } else {
 		    // reorder
 		    // a^dagger_up b_up
@@ -663,9 +662,9 @@ void DMFTModel::get_spin_current() {
 	  V_matrix(line_idx, line_idx) = 2.0 * V_matrix(line_idx, line_idx);
      }
      for (int direction_index = 0; direction_index < 2; direction_index++) {
-	  spin_current_components.push_back(Eigen::VectorXcd::Zero(current_dimension));
 	  for (int i = 0; i < n_sites; i++) {
 	       for (int j = 0; j < n_sites; j++) {
+                    spin_current_components.push_back(Eigen::VectorXcd::Zero(current_dimension));
 		    // Get partial view on the occupation matrix
 		    Eigen::MatrixXcd partial_view = world_spin_current_matrix[direction_index].block(
 			 i * per_site_orbital_size, j * per_site_orbital_size,
@@ -697,56 +696,6 @@ void DMFTModel::get_spin_current() {
 		    }
 	       }
 	  }
-     }
-     //if ((world_rank_ == 0)) {
-     if (false) {
-	  int k_index = 37;
-	  double l_weight = lattice_bs_->get_weight(k_index);
-	  std::complex<double> cim(0.0, 1.0);
-	  double y_phase_factor = 2.0 * lattice_bs_->get_k_point(k_index)[1] * M_PI;;
-	  std::complex<double> exp_factor = exp(std::complex<double>(0.0, y_phase_factor));
-	  std::cout << "k point : " << 2.0 * M_PI * lattice_bs_->get_k_point(k_index)[1] << std::endl;
-	  std::cout << "k_resolved_xcurrent_matrices " << std::endl;
-	  std::cout << k_resolved_xcurrent_matrices[k_index] * 55 * 55 << std::endl << std::endl;
-	  std::cout << "k_resolved_ycurrent_matrices " << std::endl;
-	  std::cout << k_resolved_ycurrent_matrices[k_index] * 55 * 55 << std::endl << std::endl;
-	  std::cout << "my: " << std::endl;
-	  std::cout << (V_matrix(0, 0) * (k_resolved_occupation_matrices[k_index](0, 2) -
-					  k_resolved_occupation_matrices[k_index](2, 0))
-			+ V_matrix(1, 1) * (k_resolved_occupation_matrices[k_index](3, 1) -
-					    k_resolved_occupation_matrices[k_index](1, 3))
-			+ V_matrix(0, 3) * (k_resolved_occupation_matrices[k_index](0, 1) -
-					    k_resolved_occupation_matrices[k_index](2, 3))
-			+ V_matrix(3, 0) * (k_resolved_occupation_matrices[k_index](3, 2) -
-					    k_resolved_occupation_matrices[k_index](1, 0))) << std::endl << std::endl;
-	  std::cout << "my*sin(y) with real part: " << std::endl;
-	  std::cout << exp_factor * std::imag(V_matrix(0, 0) * (k_resolved_occupation_matrices[k_index](0, 2) -
-						     k_resolved_occupation_matrices[k_index](2, 0))
-				   + V_matrix(1, 1) * (k_resolved_occupation_matrices[k_index](3, 1) -
-						       k_resolved_occupation_matrices[k_index](1, 3))
-				   + V_matrix(0, 3) * (k_resolved_occupation_matrices[k_index](0, 1) -
-						       k_resolved_occupation_matrices[k_index](2, 3))
-				   + V_matrix(3, 0) * (k_resolved_occupation_matrices[k_index](3, 2) -
-						       k_resolved_occupation_matrices[k_index](1, 0))) << std::endl << std::endl;
-	  std::cout << "my*sin(y) with all parts: " << std::endl;
-	  std::cout << 0.5 * exp_factor * (V_matrix(0, 0) * (k_resolved_occupation_matrices[k_index](0, 2) -
-						     k_resolved_occupation_matrices[k_index](2, 0))
-				   + V_matrix(1, 1) * (k_resolved_occupation_matrices[k_index](3, 1) -
-						       k_resolved_occupation_matrices[k_index](1, 3))
-				   + V_matrix(0, 3) * (k_resolved_occupation_matrices[k_index](0, 1) -
-						       k_resolved_occupation_matrices[k_index](2, 3))
-				   + V_matrix(3, 0) * (k_resolved_occupation_matrices[k_index](3, 2) -
-						       k_resolved_occupation_matrices[k_index](1, 0))) << std::endl << std::endl;
-	  std::cout << "auto calc with exp: " << std::endl;
-	  std::cout << (0.5 / l_weight) *
-	       (V_matrix(0, 0) * (k_resolved_ycurrent_matrices[k_index](0, 2) -
-				  k_resolved_ycurrent_matrices[k_index](2, 0))
-		+ V_matrix(1, 1) * (k_resolved_ycurrent_matrices[k_index](3, 1) -
-				    k_resolved_ycurrent_matrices[k_index](1, 3))
-		+ V_matrix(0, 3) * (k_resolved_ycurrent_matrices[k_index](0, 1) -
-				    k_resolved_ycurrent_matrices[k_index](2, 3))
-		+ V_matrix(3, 0) * (k_resolved_ycurrent_matrices[k_index](3, 2) -
-				    k_resolved_ycurrent_matrices[k_index](1, 0))) << std::endl << std::endl;
      }
 }
 
@@ -794,15 +743,19 @@ void DMFTModel::display_spin_current() {
 	  }
 	  cout << endl;
 	  auto old_precision = cout.precision(current_output_precision);
-	  int direction_index = 0;
-	  for (std::vector<Eigen::VectorXcd>::const_iterator it = spin_current_components.begin();
-	       it != spin_current_components.end(); ++it, ++direction_index) {
+	  for (int direction_index = 0; direction_index < 2; direction_index++) {
 	       cout << "direction " << direction_index << "   " << endl << endl;
-	       for (int coord_index = 0; coord_index < (*it).size(); coord_index++) {
+	       for (int coord_index = 0; coord_index < current_dimension; coord_index++) {
 		    cout << "S" << coord_index << "   ";
-	  	    cout << (*it)(coord_index) << endl;
+                    for (int i = 0; i < n_sites; i++) {
+                         for (int j = 0; j < n_sites; j++) {
+                              cout << spin_current_components[direction_index * n_sites * n_sites + i * n_sites + j][coord_index]
+                                   << "   ";
+                         }
+                    }
+                    std::cout << std::endl;
 	       }
-	       cout << endl;
+               std::cout << std::endl;
 	  }
 	  cout.precision(old_precision);
      }
