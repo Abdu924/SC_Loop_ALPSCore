@@ -91,6 +91,7 @@ void define_parameters(alps::params &parameters) {
 	  .define<double >("MAX_QBSEQ", 0.5, "max value of q coord for lattice bubble calculation")
 	  .define<int >("N_NU_BSEQ", 0, "number of fermionic frequencies for bubble calculation")
 	  .define<std::string>("model.hopping_matrix_input_file", "path for local hopping description file")
+          .define<std::string>("model.b_field", "path for file describing the B field")
           .define<int >("model.space_sites", 1, "Number of real space lattice sites considered")
 	  .define<int >("model.sites", 2, "Number of orbitals (Alps3 convention)")
 	  .define<bool >("REAL_DELTA", false, "if true, we force the hybridization function to be real")

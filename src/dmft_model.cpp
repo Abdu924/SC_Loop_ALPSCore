@@ -434,7 +434,10 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
      double beta = sigma_->get_beta();
      size_t N_max = sigma_->get_n_matsubara_freqs();
      double partial_kinetic_energy = 0.0;
+     double partial_potential_energy = 0.0;
+     double cum_partial_potential_energy = 0.0;
      kinetic_energy = 0.0;
+     potential_energy = 0.0;
      reset_occupation_matrices(orbital_size);
      if (compute_spin_current == true)
 	  reset_current_matrices(orbital_size);
@@ -447,6 +450,8 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
 	  orbital_size, 1.0).asDiagonal();
      if (compute_derivative == true) dn_dmu = compute_derivative_tail(orbital_size, beta);     
      Eigen::MatrixXcd greens_function(orbital_size, orbital_size);
+     Eigen::MatrixXcd pot_energy =
+          Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
      Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);
      std::complex<double> mu = std::complex<double>(chemical_potential);
      Eigen::VectorXcd to_add(orbital_size);
@@ -464,12 +469,18 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
 	       }
 	       continue;
 	  }
+          partial_potential_energy = 0.0;
 	  if (exact_tail == true) {
 	       compute_analytical_tail(chemical_potential, k_index, beta);
 	  } else {
 	       compute_tail_contribution(k_index, orbital_size,
 					 chemical_potential, beta);
 	  }
+          // At this point, the k resolved occupation matrix last eleent
+          // is only the tail part -> we exploit this fact.
+          partial_potential_energy += real(((k_resolved_occupation_matrices.back() +
+                                             from_zero_plus_to_zero_minus) *
+                                            sigma_->get_sigma_0()).diagonal().sum()) / 2.0;          
 	  // Now we can calculate the exact partial sum over
 	  // frequencies of the Green's function,
 	  // by explicit evaluation, trace and summation.
@@ -479,6 +490,8 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
 	       inverse_gf = - lattice_bs_->dispersion_[k_index] - sigma_->values_[freq_index];
 	       inverse_gf.diagonal() += to_add;
 	       greens_function = inverse_gf.inverse();
+               partial_potential_energy +=
+                    real((greens_function * sigma_->values_[freq_index]).diagonal().sum()) / beta;
 	       // the hermitian conjugate is added below
 	       // to account for negative frequencies,
 	       // since our target is the sum over Matsubara freqs.
@@ -507,11 +520,14 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
 	  occupation_matrix += l_weight * k_resolved_occupation_matrices.back();
 	  partial_kinetic_energy += l_weight * real((lattice_bs_->dispersion_[k_index] *
 						     k_resolved_occupation_matrices.back()).diagonal().sum());
+          cum_partial_potential_energy += l_weight * partial_potential_energy;
      }
      density = real(occupation_matrix.diagonal().sum());
      MPI_Allreduce(&density, &world_density, 1,
 		   MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
      MPI_Allreduce(&partial_kinetic_energy, &kinetic_energy, 1,
+		   MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);     
+     MPI_Allreduce(&cum_partial_potential_energy, &potential_energy, 1,
 		   MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);     
      if (compute_derivative) {     
 	  MPI_Allreduce(&dn_dmu, &world_dn_dmu, 1,
@@ -764,6 +780,10 @@ void DMFTModel::display_spin_current() {
 
 double DMFTModel::get_kinetic_energy() {
      return kinetic_energy;
+}
+
+double DMFTModel::get_potential_energy() {
+     return potential_energy;
 }
 
 void DMFTModel::dump_k_resolved_occupation_matrices() {

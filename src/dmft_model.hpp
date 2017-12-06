@@ -32,6 +32,7 @@ public:
      void display_occupation_matrix();
      void display_spin_current();
      double get_kinetic_energy();
+     double get_potential_energy();
      void dump_k_resolved_occupation_matrices();
      void scatter_occ_matrices();
      void scatter_xcurrent_matrices();
@@ -79,6 +80,7 @@ private:
      std::vector<Eigen::VectorXcd> order_parameters;
      std::vector<Eigen::VectorXcd> spin_current_components;
      double kinetic_energy;
+     double potential_energy;
      static const size_t max_iter_for_bounds;     
      static const size_t max_iter_for_bisec;
      static const size_t max_iter_for_newton;     
