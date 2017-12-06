@@ -57,7 +57,6 @@ protected:
 							  Eigen::Ref<Eigen::VectorXd> weights,
 							  double unique_weight);
      void read_hoppings(const alps::params& parms, bool verbose=false);
-     void read_b_field(const alps::params& parms);
      std::vector<Eigen::MatrixXcd> read_dispersion(const alps::params& parms,
 						   Eigen::Ref<Eigen::VectorXd> weights,
 						   bool verbose=false);
@@ -72,7 +71,6 @@ protected:
      std::vector<Eigen::VectorXd> secondary_q_lattice_;
      std::vector<Eigen::VectorXi> r_lattice_;
      std::vector<Eigen::MatrixXcd> hoppings_;
-     Eigen::MatrixXcd b_field_;
      Eigen::VectorXd weights_;
      int orbital_size_;
      std::vector<Eigen::VectorXd> bare_dos;

@@ -82,7 +82,6 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 	  epsilon_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
 	  epsilon_squared_bar = Eigen::MatrixXcd::Zero(orbital_size_,
      orbital_size_);
-          b_field_ = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
      }
      // scatter the weights to each process
      MPI_Scatter(world_weights_.data(), n_points_per_proc, MPI_DOUBLE,
@@ -128,7 +127,6 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      }
      // Broadcast lattice and hoppings to all processes
      // for dispersion computation
-     // b field is added before that, and included in hoppings_
      for (int i = 0; i < nb_r_points; i++) {
 	  MPI_Bcast(hoppings_[i].data(), hoppings_[i].size(),
 		    MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
@@ -391,42 +389,6 @@ void Bandstructure::read_hoppings(const alps::params& parms, bool verbose) {
 	       hoppings_.push_back(m);
 	  }
      }
-     if (parms.exists("model.b_field"))
-          read_b_field(parms);
-     hoppings_[0] = hoppings_[0] + b_field_;
-}
-
-void Bandstructure::read_b_field(const alps::params& parms) {
-     string line, sparsity;
-     int rx, ry, rz;
-     int dimension;
-     double hr, hi;
-     std::string fname = parms["model.b_field"];
-     std::ifstream b_file(fname.c_str());
-     // check input file exists
-     if(!b_file.good()) {
-	  cerr << "ERROR: Bandstructure: problem to read B_FIELD file = "
-	       << parms["model.b_field"] << endl;
-	  throw runtime_error("model.b_field is not good!");
-     }
-     cout << "MAGNETIC FIELD: "
-          << "using field loaded from " << parms["model.b_field"] << std::endl;
-     // Read b field
-     string cur_line, dummy;
-     int line_idx, col_idx;
-     while (getline(b_file, cur_line)) {
-          if (b_file.eof()) {
-               // This was the least bit of info.
-               // Exit the loop.
-               break;
-          }
-          // Feed the new hopping matrix
-          // until we hit EOF or a new point.
-          stringstream cur_input;
-          cur_input << cur_line;
-          cur_input >> line_idx >> col_idx >> hr >> hi;
-          b_field_(line_idx - 1, col_idx - 1) = complex<double>(hr, hi);
-     }
 }
 
 void Bandstructure::init_world_containers(int n_points) {
@@ -435,7 +397,6 @@ void Bandstructure::init_world_containers(int n_points) {
      if (n_points % world_size > 0) {
 	  n_points_per_proc += 1;
      }
-     b_field_ = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
      epsilon_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
      epsilon_squared_bar = Eigen::MatrixXcd::Zero(orbital_size_, orbital_size_);
 }
