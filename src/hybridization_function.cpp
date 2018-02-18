@@ -589,6 +589,23 @@ void HybFunction::dump_delta() {
 	       }
 	  }
 	  out.close();
+	  // dump 1st and 2nd moment of the local bath function
+
+          Eigen::MatrixXcd mom1 = -mu_tilde - sigma_->get_sigma_0();
+          mom1.diagonal() = Eigen::VectorXcd::Zero(n_sites * per_site_orbital_size);
+	  out.open(mom1_dump_name, ofstream::out);
+	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
+	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+                    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+                         out << -real(mu_tilde.block(
+                                           site_index * per_site_orbital_size,
+                                           site_index * per_site_orbital_size,
+                                           per_site_orbital_size,
+                                           per_site_orbital_size)(orb1, orb2)) << endl;
+                    }
+	       }
+	  }
+	  out.close();          
      }
      MPI_Barrier(MPI_COMM_WORLD);
 }
@@ -991,3 +1008,5 @@ const string HybFunction::shift_dump_name = "c_shift.tmp";
 const string HybFunction::shift_sq_dump_name = "c_shift_sq.tmp";
 const string HybFunction::matsubara_self_energy_name = "current_sigma";
 const string HybFunction::legendre_self_energy_name = "current_legendre_sigma";
+const string HybFunction::mom1_dump_name = "c_mom1.tmp";
+const string HybFunction::mom2_dump_name = "c_mom2.tmp";
