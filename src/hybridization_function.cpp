@@ -81,6 +81,7 @@ HybFunction::HybFunction(const alps::params &parms,
      elementary_compute_delta_tau();
      elementary_compute_G_tau();
      dump_delta();
+     dump_Gtau_for_HF();
      dump_delta_hdf5();
      dump_delta_for_matrix();
      cout << "hybridization time: ";
