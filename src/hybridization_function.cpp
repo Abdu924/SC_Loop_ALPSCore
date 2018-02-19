@@ -709,8 +709,8 @@ void HybFunction::dump_Gtau_for_HF() {
           //out.open(imaginary_time_dump_name_for_matrix);
           out << fixed << setprecision(output_precision);
           for(size_t site_index = 0; site_index < n_sites; site_index++) {
-               for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
-                    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+               for (size_t orb1 = 0; orb1 < per_site_orbital_size / 2; orb1++) {
+                    for (size_t orb2 = 0; orb2 < per_site_orbital_size / 2; orb2++) {
                          for (size_t tau_index = 0; tau_index < G_tau.size(); tau_index++) {
                               // CAREFUL! delta_tau has been extended to include tau = beta
                               // it has one more element than should be for a proper definition of
