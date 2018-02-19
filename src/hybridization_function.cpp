@@ -215,7 +215,7 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 		    inverse_gf.diagonal() += mu_plus_iomega;
                     if (freq_index == 0) {
                          Eigen::MatrixXcd temp_comp = lattice_bs_->dispersion_[k_index] + eta_inf;
-                         temp_comp.diagonal() -= mu_plus_iomega;
+                         temp_comp.diagonal() -= mu;
                          bath_moment_1 = temp_comp * l_weight;
                          bath_moment_2 = temp_comp * temp_comp * l_weight;
                     }
