@@ -70,8 +70,10 @@ HybFunction::HybFunction(const alps::params &parms,
      Eigen::MatrixXcd first_order =  lattice_bs_->get_epsilon_squared_bar() -
 	  site_wise_epsilon_bar * site_wise_epsilon_bar;
      hf_coeff.clear();
+     bare_g_hf_coeff.clear();
      // Store the first order coefficient
      hf_coeff.push_back(first_order);
+     bare_g_hf_coeff.push_back(first_order);
      // Then compute the full hybridization function...
      // do *NOT* remove this computation from the constructor -
      //
@@ -79,6 +81,7 @@ HybFunction::HybFunction(const alps::params &parms,
      // And extract the 2nd and 3rd order coefficients from the numerics.
      compute_superior_orders(verbose);
      elementary_compute_delta_tau();
+     compute_bare_g_superior_orders(verbose);
      elementary_compute_G_tau();
      dump_delta();
      dump_Gtau_for_HF();
@@ -118,6 +121,32 @@ void HybFunction::compute_superior_orders(bool verbose) {
      if (verbose) {
 	  display_asymptotics();
      }
+}
+
+void HybFunction::compute_bare_g_superior_orders(bool verbose) {
+     Eigen::MatrixXcd second_order = Eigen::MatrixXcd::Zero(tot_orbital_size,
+							    tot_orbital_size);
+     Eigen::MatrixXcd third_order = Eigen::MatrixXcd::Zero(tot_orbital_size,
+							   tot_orbital_size);
+     Eigen::MatrixXcd temp = Eigen::MatrixXcd::Zero(tot_orbital_size,
+						    tot_orbital_size);     
+     size_t N_max = sigma_->get_n_matsubara_freqs();
+     for (size_t freq_index = N_max - tail_fit_length;
+	  freq_index < N_max; freq_index++) {
+	  second_order += 0.5 *
+	       pow(sigma_->get_matsubara_frequency(freq_index), 2) *
+	       (hybridization_function[freq_index] +
+		hybridization_function[freq_index].transpose().conjugate());
+	  temp = 0.5 * sigma_->get_matsubara_frequency(freq_index) *
+	       (hybridization_function[freq_index] -
+		hybridization_function[freq_index].transpose().conjugate());
+	  temp -= bare_g_hf_coeff[0];
+	  third_order += temp * pow(sigma_->get_matsubara_frequency(freq_index), 2);
+     }
+     second_order /= tail_fit_length;
+     third_order /= tail_fit_length;
+     bare_g_hf_coeff.push_back(second_order);
+     bare_g_hf_coeff.push_back(third_order);
 }
 
 void HybFunction::display_asymptotics() {
@@ -1084,7 +1113,6 @@ void HybFunction::elementary_compute_delta_tau() {
      delta_tau.push_back(-hf_coeff[0] - delta_tau[0]);
 }
 
-
 void HybFunction::elementary_compute_G_tau() {
      double beta = sigma_->get_beta();
      size_t N_max = sigma_->get_n_matsubara_freqs();
@@ -1115,7 +1143,7 @@ void HybFunction::elementary_compute_G_tau() {
 			 site_index * per_site_orbital_size,
 			 per_site_orbital_size,
 			 per_site_orbital_size) +=
-			 hf_coeff[i].block(
+			 bare_g_hf_coeff[i].block(
 			      site_index * per_site_orbital_size,
 			      site_index * per_site_orbital_size,
 			      per_site_orbital_size,
@@ -1135,7 +1163,7 @@ void HybFunction::elementary_compute_G_tau() {
 			 site_index * per_site_orbital_size,
 			 site_index * per_site_orbital_size,
 			 per_site_orbital_size,
-			 per_site_orbital_size) += hf_coeff[i].block(
+			 per_site_orbital_size) += bare_g_hf_coeff[i].block(
 			      site_index * per_site_orbital_size,
 			      site_index * per_site_orbital_size,
 			      per_site_orbital_size,
@@ -1145,7 +1173,7 @@ void HybFunction::elementary_compute_G_tau() {
 			 site_index * per_site_orbital_size,
 			 site_index * per_site_orbital_size,
 			 per_site_orbital_size,
-			 per_site_orbital_size) += hf_coeff[i].block(
+			 per_site_orbital_size) += bare_g_hf_coeff[i].block(
 			      site_index * per_site_orbital_size,
 			      site_index * per_site_orbital_size,
 			      per_site_orbital_size,
@@ -1208,7 +1236,7 @@ void HybFunction::elementary_compute_G_tau() {
      // For the power 1 contribution, we get F_1(tau = 0-) = -F_1(tau = 0+),
      // Hence F(0-) - F(0+) = 2 F(0-) = 2*1/2*c_1 = c_1
      // Then, F(beta-) = -F(0-) = -(c_1 + F(0+))
-     G_tau.push_back(-hf_coeff[0] - G_tau[0]);
+     G_tau.push_back(-bare_g_hf_coeff[0] - G_tau[0]);
 }
 
 const size_t HybFunction::output_precision = 16;

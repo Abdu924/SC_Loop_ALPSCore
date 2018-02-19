@@ -79,6 +79,7 @@ private:
      vector<Eigen::MatrixXcd> delta_tau;
      vector<Eigen::MatrixXcd> G_tau;
      vector<Eigen::MatrixXcd> hf_coeff;
+     vector<Eigen::MatrixXcd> bare_g_hf_coeff;
      size_t n_sites;
      size_t per_site_orbital_size;
      size_t tot_orbital_size;
@@ -92,6 +93,7 @@ private:
      void elementary_compute_delta_tau();
      void elementary_compute_G_tau();
      void compute_superior_orders(bool verbose=false);
+     void compute_bare_g_superior_orders(bool verbose=false);
      std::vector<Eigen::MatrixXcd> get_greens_function(
 	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);
 	  
