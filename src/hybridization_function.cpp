@@ -299,9 +299,10 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
                    bath_moment_2.size(),
                    MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
      Eigen::MatrixXcd temp_qty = world_bath_moment_1;
-     world_bath_moment_2 = -world_bath_moment_1 * world_bath_moment_1 +
-          sigma_->get_sigma_1() + world_bath_moment_2 - sigma_->get_sigma_1();
      world_bath_moment_1 = world_bath_moment_1 - sigma_->get_sigma_0();
+     world_bath_moment_2 = -temp_qty * temp_qty +
+          world_bath_moment_1 * world_bath_moment_1 + world_bath_moment_2;
+     world_bath_moment_2 = world_bath_moment_2 - world_bath_moment_1 * world_bath_moment_1;
      world_bath_moment_1.diagonal() = Eigen::VectorXcd::Zero(n_sites * per_site_orbital_size);
      world_bath_moment_2 = world_bath_moment_2 + world_bath_moment_1 * world_bath_moment_1;
 }
@@ -621,11 +622,16 @@ void HybFunction::dump_delta() {
 	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
 	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
                     for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
-                         out << -real(world_bath_moment_1.block(
-                                           site_index * per_site_orbital_size,
-                                           site_index * per_site_orbital_size,
-                                           per_site_orbital_size,
-                                           per_site_orbital_size)(orb1, orb2)) << endl;
+                         out << real(world_bath_moment_1.block(
+                                          site_index * per_site_orbital_size,
+                                          site_index * per_site_orbital_size,
+                                          per_site_orbital_size,
+                                          per_site_orbital_size)(orb1, orb2)) <<
+                              "   " << imag(world_bath_moment_1.block(
+                                                 site_index * per_site_orbital_size,
+                                                 site_index * per_site_orbital_size,
+                                                 per_site_orbital_size,
+                                                 per_site_orbital_size)(orb1, orb2))<< endl;
                     }
 	       }
 	  }
@@ -634,11 +640,16 @@ void HybFunction::dump_delta() {
 	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
 	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
                     for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
-                         out << -real(world_bath_moment_2.block(
-                                           site_index * per_site_orbital_size,
-                                           site_index * per_site_orbital_size,
-                                           per_site_orbital_size,
-                                           per_site_orbital_size)(orb1, orb2)) << endl;
+                         out << real(world_bath_moment_2.block(
+                                          site_index * per_site_orbital_size,
+                                          site_index * per_site_orbital_size,
+                                          per_site_orbital_size,
+                                          per_site_orbital_size)(orb1, orb2)) <<
+                              "   " << imag(world_bath_moment_2.block(
+                                                 site_index * per_site_orbital_size,
+                                                 site_index * per_site_orbital_size,
+                                                 per_site_orbital_size,
+                                                 per_site_orbital_size)(orb1, orb2)) << endl;
                     }
 	       }
 	  }
