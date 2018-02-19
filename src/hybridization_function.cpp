@@ -135,11 +135,11 @@ void HybFunction::compute_bare_g_superior_orders(bool verbose) {
 	  freq_index < N_max; freq_index++) {
 	  second_order += 0.5 *
 	       pow(sigma_->get_matsubara_frequency(freq_index), 2) *
-	       (hybridization_function[freq_index] +
-		hybridization_function[freq_index].transpose().conjugate());
+	       (bare_greens_function[freq_index] +
+		bare_greens_function[freq_index].transpose().conjugate());
 	  temp = 0.5 * sigma_->get_matsubara_frequency(freq_index) *
-	       (hybridization_function[freq_index] -
-		hybridization_function[freq_index].transpose().conjugate());
+	       (bare_greens_function[freq_index] -
+		bare_greens_function[freq_index].transpose().conjugate());
 	  temp -= bare_g_hf_coeff[0];
 	  third_order += temp * pow(sigma_->get_matsubara_frequency(freq_index), 2);
      }
