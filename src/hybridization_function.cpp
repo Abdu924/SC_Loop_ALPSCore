@@ -620,8 +620,8 @@ void HybFunction::dump_delta() {
 	  // dump 1st and 2nd moments of the local bath function
 	  out.open(mom1_dump_name, ofstream::out);
 	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
-	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
-                    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+	       for (size_t orb1 = 0; orb1 < per_site_orbital_size / 2; orb1++) {
+                    for (size_t orb2 = 0; orb2 < per_site_orbital_size / 2; orb2++) {
                          out << real(world_bath_moment_1.block(
                                           site_index * per_site_orbital_size,
                                           site_index * per_site_orbital_size,
@@ -638,8 +638,8 @@ void HybFunction::dump_delta() {
 	  out.close();
           out.open(mom2_dump_name, ofstream::out);
 	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
-	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
-                    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+	       for (size_t orb1 = 0; orb1 < per_site_orbital_size / 2; orb1++) {
+                    for (size_t orb2 = 0; orb2 < per_site_orbital_size / 2; orb2++) {
                          out << real(world_bath_moment_2.block(
                                           site_index * per_site_orbital_size,
                                           site_index * per_site_orbital_size,
