@@ -73,7 +73,6 @@ HybFunction::HybFunction(const alps::params &parms,
      bare_g_hf_coeff.clear();
      // Store the first order coefficient
      hf_coeff.push_back(first_order);
-     bare_g_hf_coeff.push_back(first_order);
      // Then compute the full hybridization function...
      // do *NOT* remove this computation from the constructor -
      //
@@ -124,29 +123,10 @@ void HybFunction::compute_superior_orders(bool verbose) {
 }
 
 void HybFunction::compute_bare_g_superior_orders(bool verbose) {
-     Eigen::MatrixXcd second_order = Eigen::MatrixXcd::Zero(tot_orbital_size,
-							    tot_orbital_size);
-     Eigen::MatrixXcd third_order = Eigen::MatrixXcd::Zero(tot_orbital_size,
-							   tot_orbital_size);
-     Eigen::MatrixXcd temp = Eigen::MatrixXcd::Zero(tot_orbital_size,
-						    tot_orbital_size);     
-     size_t N_max = sigma_->get_n_matsubara_freqs();
-     for (size_t freq_index = N_max - tail_fit_length;
-	  freq_index < N_max; freq_index++) {
-	  second_order += 0.5 *
-	       pow(sigma_->get_matsubara_frequency(freq_index), 2) *
-	       (bare_greens_function[freq_index] +
-		bare_greens_function[freq_index].transpose().conjugate());
-	  temp = 0.5 * sigma_->get_matsubara_frequency(freq_index) *
-	       (bare_greens_function[freq_index] -
-		bare_greens_function[freq_index].transpose().conjugate());
-	  temp -= bare_g_hf_coeff[0];
-	  third_order += temp * pow(sigma_->get_matsubara_frequency(freq_index), 2);
-     }
-     second_order /= tail_fit_length;
-     third_order /= tail_fit_length;
-     bare_g_hf_coeff.push_back(second_order);
-     bare_g_hf_coeff.push_back(third_order);
+     Eigen::MatrixXcd bare_first_order = Eigen::VectorXcd::Constant(tot_orbital_size, 1.0).asDiagonal();
+     bare_g_hf_coeff.push_back(bare_first_order);     
+     bare_g_hf_coeff.push_back(world_bath_moment_1);
+     bare_g_hf_coeff.push_back(world_bath_moment_2);
 }
 
 void HybFunction::display_asymptotics() {
@@ -1229,15 +1209,6 @@ void HybFunction::elementary_compute_G_tau() {
 			 per_site_orbital_size);
 	  }
      }
-
-     // Add the value for tau = beta.
-     // Careful, we are dealing with the hybridization function, not a standard Green's function.
-     // Using the A.5 - A.8 decomposition from Ferber as an infinite sum, and noticing that all
-     // powers of n are continuous at tau = 0, except power 1
-     // For the power 1 contribution, we get F_1(tau = 0-) = -F_1(tau = 0+),
-     // Hence F(0-) - F(0+) = 2 F(0-) = 2*1/2*c_1 = c_1
-     // Then, F(beta-) = -F(0-) = -(c_1 + F(0+))
-     G_tau.push_back(-bare_g_hf_coeff[0] - G_tau[0]);
 }
 
 const size_t HybFunction::output_precision = 16;
