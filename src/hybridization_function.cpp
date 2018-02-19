@@ -561,11 +561,12 @@ void HybFunction::dump_delta() {
 						site_index * per_site_orbital_size,
 						per_site_orbital_size,
 						per_site_orbital_size)(orb1, orb2))
-				  << -imag(delta_tau[tau_index].block(
-						site_index * per_site_orbital_size,
-						site_index * per_site_orbital_size,
-						per_site_orbital_size,
-						per_site_orbital_size)(orb1, orb2)) << endl;
+				  << "   " <<
+                                   -imag(delta_tau[tau_index].block(
+                                              site_index * per_site_orbital_size,
+                                              site_index * per_site_orbital_size,
+                                              per_site_orbital_size,
+                                              per_site_orbital_size)(orb1, orb2)) << endl;
 			 }
 			 out << endl;
 		    }
