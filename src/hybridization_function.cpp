@@ -719,12 +719,12 @@ void HybFunction::dump_Gtau_for_HF() {
                               // and ALps3 QMC for hybridization function, hence the sign difference
                               // below
                               out << beta * static_cast<double>(tau_index) / (G_tau.size() - 1)  <<  "  "  
-                                  << real(G_tau[tau_index].block(
+                                  << -real(G_tau[tau_index].block(
                                                site_index * per_site_orbital_size,
                                                site_index * per_site_orbital_size,
                                                per_site_orbital_size,
                                                per_site_orbital_size)(orb1, orb2)) << "  "
-                                  << imag(G_tau[tau_index].block(
+                                  << -imag(G_tau[tau_index].block(
                                                site_index * per_site_orbital_size,
                                                site_index * per_site_orbital_size,
                                                per_site_orbital_size,
