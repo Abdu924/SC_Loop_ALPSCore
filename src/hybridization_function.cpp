@@ -79,6 +79,7 @@ HybFunction::HybFunction(const alps::params &parms,
      // And extract the 2nd and 3rd order coefficients from the numerics.
      compute_superior_orders(verbose);
      elementary_compute_delta_tau();
+     elementary_compute_G_tau();
      dump_delta();
      dump_delta_hdf5();
      dump_delta_for_matrix();
@@ -698,6 +699,45 @@ void HybFunction::dump_delta_for_matrix() {
 	MPI_Barrier(MPI_COMM_WORLD);
 }
 
+void HybFunction::dump_Gtau_for_HF() {
+     double beta = sigma_->get_beta();
+     if (world_rank_ == 0) {
+          ofstream out(imaginary_time_dump_name_for_hf, ofstream::out);
+          out.precision(output_precision);
+          out << fixed << setprecision(output_precision);
+          //out.open(imaginary_time_dump_name_for_matrix);
+          out << fixed << setprecision(output_precision);
+          for(size_t site_index = 0; site_index < n_sites; site_index++) {
+               for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+                    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+                         for (size_t tau_index = 0; tau_index < G_tau.size(); tau_index++) {
+                              // CAREFUL! delta_tau has been extended to include tau = beta
+                              // it has one more element than should be for a proper definition of
+                              // tau_value:
+                              // Also note: sign convention is different between our QMC,
+                              // and ALps3 QMC for hybridization function, hence the sign difference
+                              // below
+                              out << beta * static_cast<double>(tau_index) / (G_tau.size() - 1)  <<  "  "  
+                                  << real(G_tau[tau_index].block(
+                                               site_index * per_site_orbital_size,
+                                               site_index * per_site_orbital_size,
+                                               per_site_orbital_size,
+                                               per_site_orbital_size)(orb1, orb2)) << "  "
+                                  << imag(G_tau[tau_index].block(
+                                               site_index * per_site_orbital_size,
+                                               site_index * per_site_orbital_size,
+                                               per_site_orbital_size,
+                                               per_site_orbital_size)(orb1, orb2)) << endl;
+                         }
+                    }
+               }
+          }
+          out.close();
+          // dump bare GF in Matsubara frequencies
+     }
+     MPI_Barrier(MPI_COMM_WORLD);
+}
+
 void HybFunction::dump_G0_hdf5(alps::hdf5::archive &h5_archive) {
      if (world_rank_ == 0) {
 	  size_t N_max = sigma_->get_n_matsubara_freqs();
@@ -1043,6 +1083,133 @@ void HybFunction::elementary_compute_delta_tau() {
      delta_tau.push_back(-hf_coeff[0] - delta_tau[0]);
 }
 
+
+void HybFunction::elementary_compute_G_tau() {
+     double beta = sigma_->get_beta();
+     size_t N_max = sigma_->get_n_matsubara_freqs();
+     // We hold of tau-index vector of
+     // Eigen matrices in the orbital dimension for the sum
+     // of analytical HF contributions
+     vector<Eigen::MatrixXcd> hf_analytical_contribs;
+     vector<Eigen::MatrixXcd> tail_adjustments;
+     vector<Eigen::MatrixXcd> neg_tail_adjustments;
+     vector<double> analytical_values;
+     vector<double> tau_values;
+     // Initialize the output Eigen object, and pre-compute the analytical
+     // expression of the FT of the HF expansion of Delta(i omega_n)
+     analytical_values.resize(max_expansion_order);
+     for (size_t tau_index = 0; tau_index < n_tau; tau_index++) {
+	  double tau_value = beta * static_cast<double>(tau_index) / n_tau;
+	  tau_values.push_back(tau_value);
+	  G_tau.push_back(Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size));
+	  analytical_values[0] = -0.5;
+	  analytical_values[1] = (2.0 * tau_value  - beta) / 4.0;
+	  analytical_values[2] = tau_value * (beta - tau_value) / 4.0;
+
+	  hf_analytical_contribs.push_back(Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size));
+	  for (size_t i = 0; i < max_expansion_order; i++) { 
+	       for (size_t site_index = 0; site_index < n_sites; site_index++) {
+		    hf_analytical_contribs[tau_index].block(
+			 site_index * per_site_orbital_size,
+			 site_index * per_site_orbital_size,
+			 per_site_orbital_size,
+			 per_site_orbital_size) +=
+			 hf_coeff[i].block(
+			      site_index * per_site_orbital_size,
+			      site_index * per_site_orbital_size,
+			      per_site_orbital_size,
+			      per_site_orbital_size) * analytical_values[i];
+	       }
+	  }
+     }
+
+     // precompute the hf contribution to the finite sum over
+     // matsubara frequencies.
+     for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+	  tail_adjustments.push_back(Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size));
+	  neg_tail_adjustments.push_back(Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size));
+	  for(size_t site_index = 0; site_index < n_sites; site_index++) {	  
+	       for (size_t i = 0; i < max_expansion_order; i++) {
+		    tail_adjustments[freq_index].block(
+			 site_index * per_site_orbital_size,
+			 site_index * per_site_orbital_size,
+			 per_site_orbital_size,
+			 per_site_orbital_size) += hf_coeff[i].block(
+			      site_index * per_site_orbital_size,
+			      site_index * per_site_orbital_size,
+			      per_site_orbital_size,
+			      per_site_orbital_size) /
+			 pow(sigma_->get_matsubara_frequency(freq_index), i+1);
+		    neg_tail_adjustments[freq_index].block(
+			 site_index * per_site_orbital_size,
+			 site_index * per_site_orbital_size,
+			 per_site_orbital_size,
+			 per_site_orbital_size) += hf_coeff[i].block(
+			      site_index * per_site_orbital_size,
+			      site_index * per_site_orbital_size,
+			      per_site_orbital_size,
+			      per_site_orbital_size) /
+			 pow(-sigma_->get_matsubara_frequency(freq_index), i+1);
+	       }
+	  }
+     }
+
+     for (size_t tau_index = 0; tau_index < n_tau; tau_index++) {
+	  for (size_t site_index = 0; site_index < n_sites; site_index++) {
+	       for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+		    double phase = tau_values[tau_index] *
+			 imag(sigma_->get_matsubara_frequency(freq_index));
+		    complex<double> phase_factor = exp(-complex<double>(0.0, 1.0) * phase);
+		    G_tau[tau_index].block(
+			 site_index * per_site_orbital_size,
+			 site_index * per_site_orbital_size,
+			 per_site_orbital_size,
+			 per_site_orbital_size) +=
+			 (((bare_greens_function[freq_index].block(
+				 site_index * per_site_orbital_size,
+				 site_index * per_site_orbital_size,
+				 per_site_orbital_size,
+				 per_site_orbital_size) -
+			    tail_adjustments[freq_index].block(
+				 site_index * per_site_orbital_size,
+				 site_index * per_site_orbital_size,
+				 per_site_orbital_size,
+				 per_site_orbital_size)) * phase_factor
+			   +
+			   (bare_greens_function[freq_index].block(
+				site_index * per_site_orbital_size,
+				site_index * per_site_orbital_size,
+				per_site_orbital_size,
+				per_site_orbital_size).transpose().conjugate() -
+			    neg_tail_adjustments[freq_index].block(
+				 site_index * per_site_orbital_size,
+				 site_index * per_site_orbital_size,
+				 per_site_orbital_size,
+				 per_site_orbital_size)) / phase_factor) / beta);
+	       }
+	       G_tau[tau_index].block(
+		    site_index * per_site_orbital_size,
+		    site_index * per_site_orbital_size,
+		    per_site_orbital_size,
+		    per_site_orbital_size) +=
+		    hf_analytical_contribs[tau_index].block(
+			 site_index * per_site_orbital_size,
+			 site_index * per_site_orbital_size,
+			 per_site_orbital_size,
+			 per_site_orbital_size);
+	  }
+     }
+
+     // Add the value for tau = beta.
+     // Careful, we are dealing with the hybridization function, not a standard Green's function.
+     // Using the A.5 - A.8 decomposition from Ferber as an infinite sum, and noticing that all
+     // powers of n are continuous at tau = 0, except power 1
+     // For the power 1 contribution, we get F_1(tau = 0-) = -F_1(tau = 0+),
+     // Hence F(0-) - F(0+) = 2 F(0-) = 2*1/2*c_1 = c_1
+     // Then, F(beta-) = -F(0-) = -(c_1 + F(0+))
+     G_tau.push_back(-hf_coeff[0] - G_tau[0]);
+}
+
 const size_t HybFunction::output_precision = 16;
 const size_t HybFunction::tail_fit_length = 10;
 const size_t HybFunction::max_expansion_order = 3;
@@ -1051,6 +1218,7 @@ const string HybFunction::matsubara_bare_gf_dump_name = "c_gw";
 const string HybFunction::bare_gf_no_shift_dump_name = "c_bare_gf";
 const string HybFunction::imaginary_time_dump_name = "c_delta.tau";
 const string HybFunction::imaginary_time_dump_name_for_matrix = "ec_delta.tau";
+const string HybFunction::imaginary_time_dump_name_for_hf = "c_gtau";
 const string HybFunction::imaginary_time_hdf5_root = "c_delta";
 const string HybFunction::bubble_hdf5_root = "c_bubble";
 const string HybFunction::shift_dump_name = "c_shift.tmp";

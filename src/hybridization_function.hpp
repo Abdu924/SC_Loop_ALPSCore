@@ -36,6 +36,7 @@ public:
      void compute_hybridization_function(complex<double> mu);
      void display_asymptotics();
      void dump_delta();
+     void dump_Gtau_for_HF();
      void dump_delta_for_matrix();
      void dump_delta_hdf5();
      void dump_bubble_hdf5();
@@ -51,6 +52,7 @@ public:
      static const string legendre_self_energy_name;
      static const string mom1_dump_name;
      static const string mom2_dump_name;
+     static const string imaginary_time_dump_name_for_hf;
      
 private:
      bool compute_bubble;
@@ -75,6 +77,7 @@ private:
      // of the Hybridization function, in power of 1 / (i omega_n)^k,
      // starting with k = 1.
      vector<Eigen::MatrixXcd> delta_tau;
+     vector<Eigen::MatrixXcd> G_tau;
      vector<Eigen::MatrixXcd> hf_coeff;
      size_t n_sites;
      size_t per_site_orbital_size;
@@ -87,6 +90,7 @@ private:
      
      //void compute_delta_tau();
      void elementary_compute_delta_tau();
+     void elementary_compute_G_tau();
      void compute_superior_orders(bool verbose=false);
      std::vector<Eigen::MatrixXcd> get_greens_function(
 	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);
