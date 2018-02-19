@@ -50,6 +50,8 @@ HybFunction::HybFunction(const alps::params &parms,
 	       }
 	  }
      }
+     world_bath_moment_1 = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
+     world_bath_moment_2 = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      // Compute the site-level-averaged contribution of
      // <epsilon>^2 --> project out the sitewise off-diagonal blocks.
      Eigen::MatrixXcd site_wise_epsilon_bar =
@@ -172,6 +174,8 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
           Eigen::MatrixXcd  world_pure_local_bare_gf =
 	       Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
+     Eigen::MatrixXcd bath_moment_1(tot_orbital_size, tot_orbital_size);
+     Eigen::MatrixXcd bath_moment_2(tot_orbital_size, tot_orbital_size);
      Eigen::MatrixXcd pure_inverse_bare_gf(tot_orbital_size, tot_orbital_size);
      if (compute_bubble) {
 	  world_local_gf.clear();
@@ -180,12 +184,15 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 						tot_orbital_size, tot_orbital_size));
 	  }
      }
+     world_bath_moment_1 = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
+     world_bath_moment_2 = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      // mu_tilde is the opposite of xm1 in the original Fortran code.
      mu_tilde = -lattice_bs_->get_epsilon_bar();
      mu_tilde.diagonal() += Eigen::VectorXcd::Constant(tot_orbital_size, mu);
      // TODO
      // It is probably very sub optimal to have a MPI_Allreduce inside
      // a frequency loop....
+     Eigen::MatrixXcd eta_inf = sigma_->get_sigma_0();
      for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
 	  pure_local_bare_gf = Eigen::MatrixXcd::Zero(tot_orbital_size,
 						      tot_orbital_size);	  
@@ -206,6 +213,12 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 		    inverse_gf = -lattice_bs_->dispersion_[k_index] - self_E;
 		    pure_inverse_bare_gf.diagonal() += mu_plus_iomega;
 		    inverse_gf.diagonal() += mu_plus_iomega;
+                    if (freq_index == 0) {
+                         Eigen::MatrixXcd temp_comp = lattice_bs_->dispersion_[k_index] + eta_inf;
+                         temp_comp.diagonal() -= mu_plus_iomega;
+                         bath_moment_1 = temp_comp * l_weight;
+                         bath_moment_2 = temp_comp * temp_comp * l_weight;
+                    }
 		    pure_local_bare_gf += pure_inverse_bare_gf.inverse() * l_weight;
 		    local_greens_function += inverse_gf.inverse() * l_weight;
 	       }
@@ -277,6 +290,20 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 	  inverse_gf.diagonal() -= mu_tilde.diagonal();
 	  G0_function.push_back(-inverse_gf.inverse());
      }
+     MPI_Allreduce(bath_moment_1.data(),
+                   world_bath_moment_1.data(),
+                   bath_moment_1.size(),
+                   MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+     MPI_Allreduce(bath_moment_2.data(),
+                   world_bath_moment_2.data(),
+                   bath_moment_2.size(),
+                   MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+     Eigen::MatrixXcd temp_qty = world_bath_moment_1;
+     world_bath_moment_2 = -world_bath_moment_1 * world_bath_moment_1 +
+          sigma_->get_sigma_1() + world_bath_moment_2 - sigma_->get_sigma_1();
+     world_bath_moment_1 = world_bath_moment_1 - sigma_->get_sigma_0();
+     world_bath_moment_1.diagonal() = Eigen::VectorXcd::Zero(n_sites * per_site_orbital_size);
+     world_bath_moment_2 = world_bath_moment_2 + world_bath_moment_1 * world_bath_moment_1;
 }
 
 std::vector<Eigen::MatrixXcd> HybFunction::get_greens_function(
@@ -589,7 +616,7 @@ void HybFunction::dump_delta() {
 	       }
 	  }
 	  out.close();
-	  // dump 1st and 2nd moment of the local bath function
+	  // dump 1st and 2nd moments of the local bath function
 
           Eigen::MatrixXcd mom1 = -mu_tilde - sigma_->get_sigma_0();
           mom1.diagonal() = Eigen::VectorXcd::Zero(n_sites * per_site_orbital_size);
@@ -605,7 +632,7 @@ void HybFunction::dump_delta() {
                     }
 	       }
 	  }
-	  out.close();          
+	  out.close();
      }
      MPI_Barrier(MPI_COMM_WORLD);
 }

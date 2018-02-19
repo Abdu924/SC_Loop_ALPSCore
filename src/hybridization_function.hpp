@@ -56,6 +56,8 @@ private:
      bool compute_bubble;
      boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::shared_ptr<Selfenergy> sigma_;
+     Eigen::MatrixXcd world_bath_moment_1;
+     Eigen::MatrixXcd world_bath_moment_2;
      vector<Eigen::MatrixXcd> hybridization_function;
      vector<Eigen::MatrixXcd> G0_function;
      vector<Eigen::MatrixXcd> bare_greens_function;

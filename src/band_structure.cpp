@@ -293,7 +293,7 @@ int Bandstructure::read_nb_k_points(const alps::params& parms, bool verbose) {
 	       << "using dispersion loaded from " << parms["DISPFILE"] << std::endl
 	       << dimension << " orbitals, "
 	       << n_points << " k points" << endl;
-     }     
+     }
      return n_points;
 }
 
