@@ -616,6 +616,19 @@ void HybFunction::dump_delta() {
 	       }
 	  }
 	  out.close();
+          out.open(hf_shift_dump_name, ofstream::out);
+	  out.precision(output_precision);
+	  out << fixed << setprecision(output_precision);
+	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
+	       for (size_t orb1 = 0; orb1 < per_site_orbital_size / 2; orb1++) {
+		    out << -real(mu_tilde.block(
+				      site_index * per_site_orbital_size,
+				      site_index * per_site_orbital_size,
+				      per_site_orbital_size,
+				      per_site_orbital_size)(orb1, orb1)) << endl;
+	       }
+	  }
+	  out.close();
 	  out.open(shift_sq_dump_name, ofstream::out);
 	  out.precision(output_precision);
 	  out << fixed << setprecision(output_precision);
@@ -1219,12 +1232,13 @@ const string HybFunction::matsubara_bare_gf_dump_name = "c_gw";
 const string HybFunction::bare_gf_no_shift_dump_name = "c_bare_gf";
 const string HybFunction::imaginary_time_dump_name = "c_delta.tau";
 const string HybFunction::imaginary_time_dump_name_for_matrix = "ec_delta.tau";
-const string HybFunction::imaginary_time_dump_name_for_hf = "c_gtau";
+const string HybFunction::imaginary_time_dump_name_for_hf = "gtau";
 const string HybFunction::imaginary_time_hdf5_root = "c_delta";
 const string HybFunction::bubble_hdf5_root = "c_bubble";
 const string HybFunction::shift_dump_name = "c_shift.tmp";
+const string HybFunction::hf_shift_dump_name = "shift.tmp";
 const string HybFunction::shift_sq_dump_name = "c_shift_sq.tmp";
 const string HybFunction::matsubara_self_energy_name = "current_sigma";
 const string HybFunction::legendre_self_energy_name = "current_legendre_sigma";
-const string HybFunction::mom1_dump_name = "c_mom1.tmp";
-const string HybFunction::mom2_dump_name = "c_mom2.tmp";
+const string HybFunction::mom1_dump_name = "mom1.tmp";
+const string HybFunction::mom2_dump_name = "mom2.tmp";

@@ -106,6 +106,7 @@ private:
      static const string imaginary_time_hdf5_root;
      static const string bubble_hdf5_root;
      static const string shift_dump_name;
+     static const string hf_shift_dump_name;
      static const string shift_sq_dump_name;
 };
   
