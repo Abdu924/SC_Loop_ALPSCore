@@ -704,7 +704,7 @@ void DMFTModel::get_spin_current() {
 		    ba_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(1, 2);
 		    summed_component.block(i * 2, j * 2, 2, 2) =
 			 V_matrix(0, 0) * aa_component + V_matrix(1, 1) * bb_component +
-			 V_matrix(0, 3) * ab_component + V_matrix(3, 0) * ba_component;
+			 0.0 * V_matrix(0, 3) * ab_component + 0.0 * V_matrix(3, 0) * ba_component;
 		    for (int spin_component = 0; spin_component < current_dimension; spin_component++) {
 			 spin_current_components.back()(spin_component) =
 			      summed_component.block(i * 2, j * 2, 2, 2).
