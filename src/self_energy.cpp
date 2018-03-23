@@ -124,7 +124,7 @@ void Selfenergy::read_symmetry_definition(std::string symmetry_file) {
 	       ". Abandoning" << endl;
 	  throw runtime_error("symmetry file " + symmetry_file + " absent!");	  
      }
-     alps::hdf5::archive sym_archive(symmetry_file, alps::hdf5::archive::READ);
+     alps::hdf5::archive sym_archive(symmetry_file, "r");
      for (int site_index = 0; site_index < n_sites; site_index++) {
 	  std::vector<double> temp_data;
 	  temp_data.resize(per_site_orbital_size * per_site_orbital_size);
@@ -132,8 +132,7 @@ void Selfenergy::read_symmetry_definition(std::string symmetry_file) {
 	  symmetry_path << "site_" + 
 	       boost::lexical_cast<std::string>(site_index) + "/" +
 	       "symmetry_matrix";
-	  sym_archive >> alps::make_pvp(symmetry_path.str(),
-					temp_data);
+	  sym_archive[symmetry_path.str()] >> temp_data;
 	  int cur_index = 0;
 	  for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
 	       for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++, cur_index++) {
@@ -448,8 +447,8 @@ std::vector<double> Selfenergy::get_u_elements(const alps::params &parms) {
 	  if (parms.exists("UMATRIX_IN_HDF5") &&
 	      boost::lexical_cast<bool>(parms["UMATRIX_IN_HDF5"])) {
 	       //attempt to read from h5 archive
-	       alps::hdf5::archive u_archive(ufilename, alps::hdf5::archive::READ);
-	       u_archive >> alps::make_pvp("/Umatrix", u_elements);
+	       alps::hdf5::archive u_archive(ufilename, "r");
+	       u_archive["/Umatrix"] >> u_elements;
 	  } else {
 	       std::cerr << "U matrix is not defined properly in hdf5 input file in function "
 		    + std::string(__FUNCTION__);
@@ -701,7 +700,7 @@ void Selfenergy::get_qmc_single_site_hdf5_data(size_t site_index,
 				orbital_path << rootpath << "/" +
 					boost::lexical_cast<std::string>(block_index) +
 					"/" + boost::lexical_cast<std::string>(cur_index) + "/mean/value";
-				h5_archive >> alps::make_pvp(orbital_path.str(), temp_data);
+				h5_archive[orbital_path.str()] >> temp_data;
 				for (size_t freq_index = 0; freq_index < n_matsubara; freq_index++) {
 					values_[freq_index].block(site_index * per_site_orbital_size,
 								  site_index * per_site_orbital_size,
@@ -734,8 +733,7 @@ void Selfenergy::get_single_site_hdf5_data(size_t site_index,
 	       orbital_pair_path << rootpath << "/" +
 		    boost::lexical_cast<std::string>(orb1) + "/" +
 		    boost::lexical_cast<std::string>(orb2) + "/values/value";
-	       h5_archive >> alps::make_pvp(orbital_pair_path.str(),
-	       			    temp_data);
+	       h5_archive[orbital_pair_path.str()] >> temp_data;
 	       for (size_t freq_index = 0; freq_index < n_matsubara; freq_index++) {
 		    values_[freq_index].block(site_index * per_site_orbital_size,
 					      site_index * per_site_orbital_size,
@@ -764,8 +762,7 @@ Eigen::MatrixXcd Selfenergy::get_single_site_hdf5_asymptotics(size_t site_index,
 		    boost::lexical_cast<std::string>(orb2) +
 		    "/tail_" + boost::lexical_cast<std::string>(asymptotic_order) +
 		    "/value";
-	       h5_archive >> alps::make_pvp(orbital_pair_path.str(),
-	       			    temp_data);
+	       h5_archive[orbital_pair_path.str()] >> temp_data;
 	       output(orb1, orb2) =
 	       temp_data[0];
 	  }
@@ -931,8 +928,7 @@ void Selfenergy::hdf5_dump(alps::hdf5::archive h5_archive, string h5_group_name)
 							per_site_orbital_size,
 							per_site_orbital_size)(line_idx, col_idx);
 		    }
-		    h5_archive << alps::make_pvp(orbital_path.str(),
-		    				 temp_data);
+		    h5_archive[orbital_path.str()] << temp_data;
 	       }
 	  }
      }
@@ -969,8 +965,7 @@ void Selfenergy::hdf5_dump_tail(alps::hdf5::archive h5_archive, string h5_group_
 			 throw std::runtime_error("Tail order is not correct in " +
 						  std::string(__FUNCTION__));
 		    }
-		    h5_archive << alps::make_pvp(orbital_path.str(),
-		    				 temp_data);
+		    h5_archive[orbital_path.str()] << temp_data;
 	       }
 	  }
      }

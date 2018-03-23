@@ -257,7 +257,7 @@ int main(int argc, const char* argv[]) {
 	       new Chemicalpotential(parms, from_alps3, world_rank));
 	  // Compute hybridization function
 	  if ((computation_type == 0) || (computation_type == 4)) {
-	       alps::hdf5::archive h5_archive(input_file, alps::hdf5::archive::READ);
+	       alps::hdf5::archive h5_archive(input_file, "r");
 	       bool compute_bubble(computation_type == 4 ? true : false);
 	       boost::shared_ptr<Bandstructure> bare_band(
 		    new Bandstructure(parms, world_rank, true));
@@ -333,7 +333,7 @@ int main(int argc, const char* argv[]) {
 					 compute_bubble, verbose));
 		    if (world_rank == 0)
 		    {
-			 alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
+			 alps::hdf5::archive w_h5_archive(input_file, "w");
 			 hybridization_function->dump_G0_hdf5(w_h5_archive);
 			 hybridization_function->dump_G0_for_ctint_hdf5(w_h5_archive);
 			 w_h5_archive.close();
@@ -350,7 +350,7 @@ int main(int argc, const char* argv[]) {
 	       }
 	  } else if (computation_type == 1) {
 	       // perform "mix" action
-	       alps::hdf5::archive h5_archive(input_file, alps::hdf5::archive::READ);
+	       alps::hdf5::archive h5_archive(input_file, "r");
 	       bool verbose = false;
 	       std::cout << "do mix" << std::endl;
 	       boost::shared_ptr<Bandstructure> bare_band(
@@ -387,7 +387,7 @@ int main(int argc, const char* argv[]) {
 		    }
 		    h5_archive.close();
 		    // save old sigma
-		    alps::hdf5::archive w_h5_archive(input_file, alps::hdf5::archive::WRITE);
+		    alps::hdf5::archive w_h5_archive(input_file, "w");
 		    std::string copy_h5_group_name("/old_sigma");
 		    if (!(old_self_energy->get_is_nil_sigma())) {
 			 old_self_energy->hdf5_dump(w_h5_archive, copy_h5_group_name);

@@ -34,7 +34,7 @@ include_directories(
 
 # Manage MPI Compilation
 #find_package(MPI)
-find_package(Boost REQUIRED system thread timer chrono)
+find_package(Boost REQUIRED system thread timer chrono filesystem)
 
 add_executable(${PROJECT_NAME} main.cpp band_structure.cpp self_energy.cpp
   dmft_model.cpp hybridization_function.cpp tail_manager.cpp greens_function.cpp gf_base.cpp)

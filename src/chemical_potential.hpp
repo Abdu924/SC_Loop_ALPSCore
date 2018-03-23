@@ -1,9 +1,9 @@
-#ifndef CHEM_POT_HPP
-#define CHEM_POT_HPP
+#pragma once
 
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <alps/hdf5.hpp>
 #include <alps/params.hpp>
 #include <boost/filesystem.hpp>
 #include "band_structure.hpp"
@@ -37,9 +37,9 @@ public:
 	       if(parms.exists("MU_IN_HDF5") &&
 		  (static_cast<bool>(parms["MU_IN_HDF5"]))) {
 		    //attempt to read from h5 archive
-		    alps::hdf5::archive ar(mufilename_, alps::hdf5::archive::READ);
-		    ar >> alps::make_pvp("/MUvector", val_);
-		    ar >> alps::make_pvp("/dndmu", dn_dmu_);
+		    alps::hdf5::archive ar(mufilename_, "r");
+                    ar["/MUvector"] >> val_;
+		    ar["/dndmu"] >> dn_dmu_;
 	       } else {
 		    // read from text file
 		    std::ifstream mu_file(mufilename_.c_str());
@@ -82,8 +82,8 @@ public:
      void dump_values() {
 	  if(world_rank_ == 0) {
 	       // save hdf5 file for sc_loop
-	       alps::hdf5::archive ar(mufilename_, alps::hdf5::archive::WRITE);
-	       ar << alps::make_pvp("/MUvector", val_);
+	       alps::hdf5::archive ar(mufilename_, "w");
+	       ar["/MUvector"] << val_;
 	       ar << alps::make_pvp("/dndmu", dn_dmu_);
 	       ar.close();
 	       if (is_alps3) {
@@ -128,5 +128,3 @@ private:
      std::string mufilename_;
      std::string alps3_mufilename_;
 };
-
-#endif

@@ -36,7 +36,7 @@ void GfBase::read_params(const alps::params &parms) {
      if (n_blocks < per_site_orbital_size) {
 	  std::string base_name = "BLOCK_";
 	  std::string blocks_file_name = parms["BLOCKS"];
-	  alps::hdf5::archive ar(blocks_file_name, alps::hdf5::archive::READ);
+	  alps::hdf5::archive ar(blocks_file_name, "r");
 	  blocks.resize(n_blocks, std::vector<size_t>());
 	  for(std::size_t i=0; i < blocks.size(); ++i) {
 	       std::string block_name;
@@ -71,7 +71,7 @@ void GfBase::get_interaction_matrix(int ref_site_index, const alps::params &parm
 	  if (parms.exists("UMATRIX_IN_HDF5") &&
 	      boost::lexical_cast<bool>(parms["UMATRIX_IN_HDF5"])) {
 	       //attempt to read from h5 archive
-	       alps::hdf5::archive u_archive(ufilename, alps::hdf5::archive::READ);
+	       alps::hdf5::archive u_archive(ufilename, "r");
 	       u_archive >> alps::make_pvp("/Umatrix", u_elements);
 	  } else {
 	       std::cerr << "U matrix is not defined properly in hdf5 input file in function "
