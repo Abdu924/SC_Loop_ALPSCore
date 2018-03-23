@@ -672,9 +672,6 @@ void DMFTModel::get_spin_current() {
      Eigen::MatrixXcd ab_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
      Eigen::MatrixXcd ba_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
      Eigen::MatrixXcd summed_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
-     for (int line_idx = 0; line_idx < per_site_orbital_size; line_idx++) {
-	  V_matrix(line_idx, line_idx) = 2.0 * V_matrix(line_idx, line_idx);
-     }
      for (int direction_index = 0; direction_index < 2; direction_index++) {
           Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
           Eigen::MatrixXcd V_minus_matrix = lattice_bs_->get_V_matrix();
@@ -685,6 +682,11 @@ void DMFTModel::get_spin_current() {
                V_matrix = lattice_bs_->get_V_matrix(3);
                V_minus_matrix = lattice_bs_->get_V_matrix(4);               
           }
+          for (int line_idx = 0; line_idx < per_site_orbital_size; line_idx++) {
+               V_matrix(line_idx, line_idx) = 2.0 * V_matrix(line_idx, line_idx);
+               V_minus_matrix(line_idx, line_idx) = 2.0 * V_matrix(line_idx, line_idx);
+          }
+
 	  for (int i = 0; i < n_sites; i++) {
 	       for (int j = 0; j < n_sites; j++) {
                     aa_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
