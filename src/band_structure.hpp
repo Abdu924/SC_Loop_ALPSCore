@@ -24,7 +24,7 @@ public:
      double get_weight_sum(int k_min, int k_max);
      double get_weight(int k_index);
      Eigen::MatrixXcd get_local_hoppings();
-     Eigen::MatrixXcd get_V_matrix();
+     Eigen::MatrixXcd get_V_matrix(int direction_index=1);
      Eigen::MatrixXcd get_epsilon_bar();
      Eigen::MatrixXcd get_epsilon_squared_bar();
      void compute_bare_dos(double chemical_potential);

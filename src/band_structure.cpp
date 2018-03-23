@@ -224,9 +224,12 @@ Eigen::MatrixXcd Bandstructure::get_local_hoppings() {
      return m;
 }
 
-Eigen::MatrixXcd Bandstructure::get_V_matrix() {
-     // Calculate FT of hoppings -> dispersion
-     Eigen::MatrixXcd m = hoppings_[1];
+Eigen::MatrixXcd Bandstructure::get_V_matrix(int direction_index) {
+     // direction_index: 1 is +x
+     // 2 is -x
+     // 3 is +y
+     // 4 is -y
+     Eigen::MatrixXcd m = hoppings_[direction_index];
      for (int line_idx = 0; line_idx < orbital_size_; line_idx++) {
 	  m(line_idx, line_idx) = 0.5 * m(line_idx, line_idx);
      }

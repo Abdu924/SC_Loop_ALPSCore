@@ -441,7 +441,6 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
      reset_occupation_matrices(orbital_size);
      if (compute_spin_current == true)
 	  reset_current_matrices(orbital_size);
-     Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
      // Here we use a diagonal matrix, because the discontinuity at tau =0
      // only exists for Green's functions involving identical orbitals.
      // For the formula related to such discontinuity, check
@@ -673,13 +672,27 @@ void DMFTModel::get_spin_current() {
      Eigen::MatrixXcd ab_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
      Eigen::MatrixXcd ba_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
      Eigen::MatrixXcd summed_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
-     Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
-     for (int line_idx = 0; line_idx < per_site_orbital_size; line_idx++) {
-	  V_matrix(line_idx, line_idx) = 2.0 * V_matrix(line_idx, line_idx);
-     }
      for (int direction_index = 0; direction_index < 2; direction_index++) {
+          Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
+          Eigen::MatrixXcd V_minus_matrix = lattice_bs_->get_V_matrix();
+          if (direction_index == 0) {
+               V_matrix = lattice_bs_->get_V_matrix(1);
+               V_minus_matrix = lattice_bs_->get_V_matrix(2);
+          } else {
+               V_matrix = lattice_bs_->get_V_matrix(3);
+               V_minus_matrix = lattice_bs_->get_V_matrix(4);               
+          }
+          for (int line_idx = 0; line_idx < per_site_orbital_size; line_idx++) {
+               V_matrix(line_idx, line_idx) = 2.0 * V_matrix(line_idx, line_idx);
+               V_minus_matrix(line_idx, line_idx) = 2.0 * V_matrix(line_idx, line_idx);
+          }
+
 	  for (int i = 0; i < n_sites; i++) {
 	       for (int j = 0; j < n_sites; j++) {
+                    aa_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+                    bb_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+                    ab_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+                    ba_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
                     spin_current_components.push_back(Eigen::VectorXcd::Zero(current_dimension));
 		    // Get partial view on the occupation matrix
 		    Eigen::MatrixXcd partial_view = world_spin_current_matrix[direction_index].block(
@@ -702,13 +715,13 @@ void DMFTModel::get_spin_current() {
 		    ba_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(3, 2);
 		    ba_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(1, 0);
 		    ba_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(1, 2);
-		    summed_component.block(i * 2, j * 2, 2, 2) =
-			 V_matrix(0, 0) * aa_component + V_matrix(1, 1) * bb_component +
-			 V_matrix(0, 3) * ab_component + V_matrix(3, 0) * ba_component;
+                    summed_component.block(i * 2, j * 2, 2, 2) =
+                         V_matrix(0, 0) * aa_component + V_matrix(1, 1) * bb_component +
+                         V_matrix(0, 3) * ab_component + V_minus_matrix(3, 0) * ba_component;
 		    for (int spin_component = 0; spin_component < current_dimension; spin_component++) {
 			 spin_current_components.back()(spin_component) =
 			      summed_component.block(i * 2, j * 2, 2, 2).
-			      cwiseProduct((get_pauli_matrix(spin_component))).sum();			      
+			      cwiseProduct((get_pauli_matrix(spin_component))).sum();
 		    }
 	       }
 	  }
@@ -765,7 +778,8 @@ void DMFTModel::display_spin_current() {
 		    cout << "S" << coord_index << "   ";
                     for (int i = 0; i < n_sites; i++) {
                          for (int j = 0; j < n_sites; j++) {
-                              cout << spin_current_components[direction_index * n_sites * n_sites + i * n_sites + j][coord_index]
+                              cout << 2.0 *
+                                   spin_current_components[direction_index * n_sites * n_sites + i * n_sites + j][coord_index]
                                    << "   ";
                          }
                     }
