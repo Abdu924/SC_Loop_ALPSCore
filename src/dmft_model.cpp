@@ -714,7 +714,7 @@ void DMFTModel::get_spin_current() {
 		    for (int spin_component = 0; spin_component < current_dimension; spin_component++) {
 			 spin_current_components.back()(spin_component) =
 			      summed_component.block(i * 2, j * 2, 2, 2).
-			      cwiseProduct((get_pauli_matrix(spin_component))).sum();			      
+			      cwiseProduct((get_pauli_matrix(spin_component))).sum();
 		    }
 	       }
 	  }
