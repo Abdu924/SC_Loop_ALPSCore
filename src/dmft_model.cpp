@@ -686,22 +686,22 @@ void DMFTModel::get_spin_current() {
 			 i * per_site_orbital_size, j * per_site_orbital_size,
 			 per_site_orbital_size, per_site_orbital_size);
 		    // reorder
-		    aa_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(0, 0);
-		    aa_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(0, 2);
-		    aa_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(2, 0);
-		    aa_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(2, 2);
-		    bb_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(3, 3);
-		    bb_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(3, 1);
-		    bb_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(1, 3);
-		    bb_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(1, 1);
-		    // ab_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(0, 3);
-		    // ab_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(0, 1);
-		    // ab_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(2, 3);
-		    // ab_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(2, 1);
-		    // ba_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(3, 0);
-		    // ba_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(3, 2);
-		    // ba_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(1, 0);
-		    // ba_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(1, 2);
+		    // aa_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(0, 0);
+		    // aa_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(0, 2);
+		    // aa_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(2, 0);
+		    // aa_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(2, 2);
+		    // bb_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(3, 3);
+		    // bb_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(3, 1);
+		    // bb_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(1, 3);
+		    // bb_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(1, 1);
+		    ab_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(0, 3);
+		    ab_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(0, 1);
+		    ab_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(2, 3);
+		    ab_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(2, 1);
+		    ba_component.block(i * 2, j * 2, 2, 2)(0, 0) = partial_view(3, 0);
+		    ba_component.block(i * 2, j * 2, 2, 2)(0, 1) = partial_view(3, 2);
+		    ba_component.block(i * 2, j * 2, 2, 2)(1, 0) = partial_view(1, 0);
+		    ba_component.block(i * 2, j * 2, 2, 2)(1, 1) = partial_view(1, 2);
 		    summed_component.block(i * 2, j * 2, 2, 2) =
 			 V_matrix(0, 0) * aa_component + V_matrix(1, 1) * bb_component +
 			 V_matrix(0, 3) * ab_component + V_matrix(3, 0) * ba_component;
