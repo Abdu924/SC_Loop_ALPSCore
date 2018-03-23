@@ -680,6 +680,10 @@ void DMFTModel::get_spin_current() {
      for (int direction_index = 0; direction_index < 2; direction_index++) {
 	  for (int i = 0; i < n_sites; i++) {
 	       for (int j = 0; j < n_sites; j++) {
+                    aa_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+                    bb_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+                    ab_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
+                    ba_component = Eigen::MatrixXcd::Zero(n_sites * 2, n_sites * 2);
                     spin_current_components.push_back(Eigen::VectorXcd::Zero(current_dimension));
 		    // Get partial view on the occupation matrix
 		    Eigen::MatrixXcd partial_view = world_spin_current_matrix[direction_index].block(
