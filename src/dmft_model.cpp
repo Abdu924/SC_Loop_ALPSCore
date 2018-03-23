@@ -718,12 +718,6 @@ void DMFTModel::get_spin_current() {
                     summed_component.block(i * 2, j * 2, 2, 2) =
                          V_matrix(0, 0) * aa_component + V_matrix(1, 1) * bb_component +
                          V_matrix(0, 3) * ab_component + V_minus_matrix(3, 0) * ba_component;
-                    if (world_rank_ == 0) {
-                         std::cout << "V_matrix(0, 0)" << V_matrix(0, 0) << std::endl;
-                         std::cout << "V_matrix(1, 1)" << V_matrix(1, 1)  << std::endl;
-                         std::cout << "V_matrix(3, 0)" << V_matrix(3, 0) << std::endl;
-                         std::cout << "V_matrix(0, 3)" << V_matrix(0, 3) << std::endl;
-                    }
 		    for (int spin_component = 0; spin_component < current_dimension; spin_component++) {
 			 spin_current_components.back()(spin_component) =
 			      summed_component.block(i * 2, j * 2, 2, 2).
@@ -784,7 +778,8 @@ void DMFTModel::display_spin_current() {
 		    cout << "S" << coord_index << "   ";
                     for (int i = 0; i < n_sites; i++) {
                          for (int j = 0; j < n_sites; j++) {
-                              cout << spin_current_components[direction_index * n_sites * n_sites + i * n_sites + j][coord_index]
+                              cout << 2.0 *
+                                   spin_current_components[direction_index * n_sites * n_sites + i * n_sites + j][coord_index]
                                    << "   ";
                          }
                     }
