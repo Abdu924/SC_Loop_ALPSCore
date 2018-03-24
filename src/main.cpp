@@ -13,6 +13,8 @@
 #include <boost/timer/timer.hpp>
 #include <mpi.h>
 #include "chemical_potential.hpp"
+#include <alps/params.hpp>
+#include <alps/params/convenience_params.hpp>
 #include <alps/mc/mcbase.hpp>
 
 using namespace std;
