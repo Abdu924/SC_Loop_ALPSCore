@@ -67,9 +67,8 @@ void GfBase::get_interaction_matrix(int ref_site_index, const alps::params &parm
      std::vector<double> u_elements;
      u_elements.resize(per_site_orbital_size * per_site_orbital_size);
      if (parms.exists("U_MATRIX")) {
-	  std::string ufilename = boost::lexical_cast<std::string>(parms["U_MATRIX"]);
-	  if (parms.exists("UMATRIX_IN_HDF5") &&
-	      boost::lexical_cast<bool>(parms["UMATRIX_IN_HDF5"])) {
+	  std::string ufilename = parms["U_MATRIX"].template as<std::string>();
+	  if (parms.exists("UMATRIX_IN_HDF5") && parms["UMATRIX_IN_HDF5"].template as<bool>()) {
 	       //attempt to read from h5 archive
 	       alps::hdf5::archive u_archive(ufilename, "r");
 	       u_archive >> alps::make_pvp("/Umatrix", u_elements);
@@ -106,13 +105,13 @@ void GfBase::get_density_density_correl(int ref_site_index,
 	  std::string density_density_result_name = "DENSITY_DENSITY_CORRELATION_FUNCTIONS";
 	  // density density data
 	  typedef boost::multi_array<double, 3> array_type;
-	  int n_tau_for_density = boost::lexical_cast<int>(parms["measurement.nn_corr.n_tau"]);
+	  int n_tau_for_density = parms["measurement.nn_corr.n_tau"];
 	  int n_orbital_pairs_for_density = per_site_orbital_size * (per_site_orbital_size + 1) / 2;
 	  array_type density_data(
 	       boost::extents[n_orbital_pairs_for_density][n_tau_for_density][2]);
 	  h5_archive[density_density_result_name] >> density_data;
 	  // Build density density data
-	  std::string fname = boost::lexical_cast<std::string>(parms["measurement.nn_corr.def"]);
+	  std::string fname = parms["measurement.nn_corr.def"].template as<std::string>();
 	  std::ifstream infile(fname.c_str());
 	  if(!infile.good()) {
 	       cout << "Could not find file " << fname <<
@@ -145,7 +144,8 @@ void GfBase::get_density_density_correl(int ref_site_index,
 	  }
      } else {
 	  // TODO use uniform N_TAU
-	  int n_tau = boost::lexical_cast<int>(parms["N_TAU"]) + 1;
+	  int n_tau = parms["N_TAU"];
+          n_tau++;
 	  std::string gtau_path("/od_hyb_G_tau/");
 	  double cur_dd_correl;
 	  //per_site_orbital_size
@@ -206,7 +206,8 @@ void GfBase::get_a_dagger_b(int ref_site_index,
      // since it is symmetric for density-density interactions.
      // TODO : get rid of u_pd in Alps3
      if (parms["from_alps3"].as<bool>()) {
-	  int n_tau = boost::lexical_cast<int>(parms["measurement.G1.n_tau"]) + 1;
+	  int n_tau = parms["measurement.G1.n_tau"];
+          n_tau++;
 	  typedef boost::multi_array<complex<double> , 3> cplx_array_type;
 	  cplx_array_type raw_full_gf(
 	       boost::extents[n_tau][per_site_orbital_size][per_site_orbital_size]);	  
@@ -232,7 +233,8 @@ void GfBase::get_a_dagger_b(int ref_site_index,
 	       }
 	  }
      } else { // now Alps2 version
-	  int n_tau = boost::lexical_cast<int>(parms["N_TAU"]) + 1;
+	  int n_tau = parms["N_TAU"];
+          n_tau++;
 	  std::string gtau_path("/od_hyb_G_tau/");
 	  std::vector<std::complex<double> > temp_data;
 	  temp_data.resize(n_tau);
@@ -274,10 +276,15 @@ void GfBase::get_a_dagger_b(int ref_site_index,
 void GfBase::feed_tail_params(int ref_site_index,
 			      const alps::params &parms,
 			      alps::hdf5::archive &h5_archive) {
+     std::cout << "0" << std::endl;
      get_interaction_matrix(ref_site_index, parms);
+     std::cout << "1" << std::endl;
      get_density_density_correl(ref_site_index, parms, h5_archive);
+     std::cout << "2" << std::endl;
      get_a_dagger_b(ref_site_index, parms, h5_archive);
+     std::cout << "3" << std::endl;
      get_target_c2(ref_site_index);
+     std::cout << "4" << std::endl;
      get_target_c3(ref_site_index);
 }
 

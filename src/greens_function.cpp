@@ -25,7 +25,9 @@ Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
 			       int sampling_type, alps::hdf5::archive &h5_archive)
      :GfBase(parms, world_rank, chempot, lattice_bs), sampling_type(sampling_type) {
      basic_init(parms);
+     std::cout << "hop" << std::endl;
      feed_tail_params(ref_site_index, parms, h5_archive);
+     std::cout << "hop" << std::endl;     
      read_bare_gf();
      read_t_coeffs(h5_archive);
      generate_data(h5_archive);
@@ -77,9 +79,9 @@ void Greensfunction::read_t_coeffs(alps::hdf5::archive &h5_archive) {
 
 void Greensfunction::basic_init(const alps::params &parms) {
      ref_site_index = 0;
-     n_matsubara_for_alps2 = static_cast<int>(parms["N_MATSUBARA"]);
-     n_legendre = static_cast<int>(parms["cthyb.N_LEGENDRE"]);
-     l_max = static_cast<int>(parms["mixing.L_MAX"]);
+     n_matsubara_for_alps2 = parms["N_MATSUBARA"];
+     n_legendre = parms["cthyb.N_LEGENDRE"];
+     l_max = parms["mixing.L_MAX"];
      fix_c1 = parms["mixing.FIX_C1"].as<bool>();
      fix_c2 = parms["mixing.FIX_C2"].as<bool>();
      init_gf_container();

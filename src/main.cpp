@@ -383,9 +383,11 @@ int main(int argc, const char* argv[]) {
 			 legendre_greens_function.reset(
 			      new Greensfunction(parms, world_rank, chempot,
 						 bare_band, sampling_type, h5_archive));
+                         std::cout << "legendre_gf OK" << std::endl;
 			 legendre_qmc_self_energy.reset(
 			      new Selfenergy(parms, world_rank, chempot, bare_band,
 					     ref_site_index, h5_archive, legendre_greens_function));
+                         std::cout << "DONE" << std::endl;
 		    }
 		    h5_archive.close();
 		    // save old sigma
