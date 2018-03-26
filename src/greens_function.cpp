@@ -25,9 +25,7 @@ Greensfunction::Greensfunction(const alps::params &parms, int world_rank,
 			       int sampling_type, alps::hdf5::archive &h5_archive)
      :GfBase(parms, world_rank, chempot, lattice_bs), sampling_type(sampling_type) {
      basic_init(parms);
-     std::cout << "hop" << std::endl;
-     feed_tail_params(ref_site_index, parms, h5_archive);
-     std::cout << "hop" << std::endl;     
+     feed_tail_params(ref_site_index, parms, h5_archive);  
      read_bare_gf();
      read_t_coeffs(h5_archive);
      generate_data(h5_archive);

@@ -276,15 +276,10 @@ void GfBase::get_a_dagger_b(int ref_site_index,
 void GfBase::feed_tail_params(int ref_site_index,
 			      const alps::params &parms,
 			      alps::hdf5::archive &h5_archive) {
-     std::cout << "0" << std::endl;
      get_interaction_matrix(ref_site_index, parms);
-     std::cout << "1" << std::endl;
      get_density_density_correl(ref_site_index, parms, h5_archive);
-     std::cout << "2" << std::endl;
      get_a_dagger_b(ref_site_index, parms, h5_archive);
-     std::cout << "3" << std::endl;
      get_target_c2(ref_site_index);
-     std::cout << "4" << std::endl;
      get_target_c3(ref_site_index);
 }
 
