@@ -67,8 +67,8 @@ void GfBase::get_interaction_matrix(int ref_site_index, const alps::params &parm
      std::vector<double> u_elements;
      u_elements.resize(per_site_orbital_size * per_site_orbital_size);
      if (parms.exists("U_MATRIX")) {
-	  std::string ufilename = parms["U_MATRIX"].template as<std::string>();
-	  if (parms.exists("UMATRIX_IN_HDF5") && parms["UMATRIX_IN_HDF5"].template as<bool>()) {
+	  std::string ufilename = parms["U_MATRIX"].as<std::string>();
+	  if (parms.exists("UMATRIX_IN_HDF5") && parms["UMATRIX_IN_HDF5"].as<bool>()) {
 	       //attempt to read from h5 archive
 	       alps::hdf5::archive u_archive(ufilename, "r");
 	       u_archive >> alps::make_pvp("/Umatrix", u_elements);
@@ -111,7 +111,7 @@ void GfBase::get_density_density_correl(int ref_site_index,
 	       boost::extents[n_orbital_pairs_for_density][n_tau_for_density][2]);
 	  h5_archive[density_density_result_name] >> density_data;
 	  // Build density density data
-	  std::string fname = parms["measurement.nn_corr.def"].template as<std::string>();
+	  std::string fname = parms["measurement.nn_corr.def"].as<std::string>();
 	  std::ifstream infile(fname.c_str());
 	  if(!infile.good()) {
 	       cout << "Could not find file " << fname <<
