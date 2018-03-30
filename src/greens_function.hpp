@@ -25,6 +25,9 @@ public:
      Eigen::MatrixXcd get_dyson_result(int freq_index, bool is_negative);
      void dump_single_site_full_gf_matsubara(alps::hdf5::archive &h5_archive,
 					     int site_index=0);
+     void dump_single_site_full_gf_legendre(alps::hdf5::archive &h5_archive,
+                                             int site_index=0);
+
      //void generate_t_coeffs(alps::hdf5::archive &h5_archive);
      
      virtual ~Greensfunction() {}

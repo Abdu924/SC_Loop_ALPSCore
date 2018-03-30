@@ -224,6 +224,26 @@ void Greensfunction::dump_single_site_full_gf_matsubara(alps::hdf5::archive &h5_
      h5_archive["/legendre_gf/data"] = raw_full_gf;
 }
 
+void Greensfunction::dump_single_site_full_gf_legendre(alps::hdf5::archive &h5_archive, int site_index) {
+     cplx_array_type raw_full_gf(boost::extents
+				 [per_site_orbital_size][per_site_orbital_size][n_legendre]);
+     //typedef cplx_array_type::index_range range;
+     // cplx_array_type::array_view<3>::type myview =
+     //      raw_full_gf[ boost::indices[range(freq_index)][range()][range()] ];
+     for (int freq_index = 0; freq_index < n_legendre; freq_index++) {
+	  for (int flavor = 0; flavor < per_site_orbital_size; ++flavor) {
+	       for (int flavor2 = 0; flavor2 < per_site_orbital_size; ++flavor2) {
+		    raw_full_gf[flavor][flavor2][freq_index]
+			 = gl_values_[freq_index].block(site_index * per_site_orbital_size,
+                                                        site_index * per_site_orbital_size,
+                                                        per_site_orbital_size,
+                                                        per_site_orbital_size)(flavor, flavor2);
+	       }
+	  }
+     }
+     h5_archive["/legendre_gf_fixed/data"] = raw_full_gf;
+}
+
 void Greensfunction::read_single_site_raw_legendre(alps::hdf5::archive &h5_archive, int site_index) {
      cplx_array_type raw_legendre_data(
 	  boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);

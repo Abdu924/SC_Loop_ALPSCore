@@ -417,6 +417,7 @@ int main(int argc, const char* argv[]) {
 		    }
 		    if (parms["cthyb.MEASURE_legendre"]) {
 			 legendre_greens_function->dump_single_site_full_gf_matsubara(w_h5_archive, ref_site_index);
+                         legendre_greens_function->dump_single_site_full_gf_legendre(w_h5_archive, ref_site_index);
 			 legendre_qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
 			 std::string new_h5_group_name("/current_legendre_sigma");
 			 legendre_qmc_self_energy->hdf5_dump(w_h5_archive, new_h5_group_name);
