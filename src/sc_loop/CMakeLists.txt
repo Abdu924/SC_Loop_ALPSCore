@@ -17,11 +17,7 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
 INCLUDE_DIRECTORIES ("$ENV{EIGEN3_INCLUDE_DIR}")
 
-find_package(ALPSCore REQUIRED)
-message(STATUS "Found ALPSCore")
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_DISABLE_ASSERTS -DNDEBUG -std=gnu++11")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_DISABLE_ASSERTS -DNDEBUG")
 
 message("CMAKE_CXX_FLAGS: " ${CMAKE_CXX_FLAGS})
 message("Current system: " ${CMAKE_HOST_SYSTEM})
@@ -31,10 +27,6 @@ include_directories(
   SYSTEM
   ${MPI_CXX_INCLUDE_PATH}
   $ENV{EIGEN3_INCLUDE_DIR})
-
-# Manage MPI Compilation
-#find_package(MPI)
-find_package(Boost REQUIRED system thread timer chrono filesystem)
 
 add_executable(${PROJECT_NAME} main.cpp hybridization_function.cpp)
 
