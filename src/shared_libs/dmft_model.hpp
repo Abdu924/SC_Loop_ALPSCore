@@ -7,7 +7,7 @@
 #include <complex>
 #include <cmath>
 #include <alps/params.hpp>
-#include "band_structure.hpp"
+#include "../shared_libs/band_structure.hpp"
 #include "self_energy.hpp"
 #include "tail_manager.hpp"
 #include <tuple>

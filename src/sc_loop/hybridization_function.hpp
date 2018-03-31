@@ -1,16 +1,16 @@
-#ifndef HYBRIDIZATION_FUNCTION__
-#define HYBRIDIZATION_FUNCTION__
+#pragma once
+
 #include <Eigen/Dense>
-#include<vector>
+#include <vector>
 #include <tuple>
-#include<iostream>
+#include <iostream>
 #include <complex>
 #include <cmath>
 #include <alps/params.hpp>
 #include <alps/hdf5/archive.hpp>
 #include <alps/hdf5/complex.hpp>
-#include "band_structure.hpp"
-#include "self_energy.hpp"
+#include "../shared_libs/band_structure.hpp"
+#include "../shared_libs/self_energy.hpp"
 
 using namespace std;
 
@@ -46,7 +46,6 @@ public:
      void dump_G0_for_ctint_hdf5(alps::hdf5::archive &h5_archive);
      virtual ~HybFunction() {}
 
-     static const string bare_gf_no_shift_dump_name;
      static const string matsubara_bare_gf_dump_name;
      static const string matsubara_self_energy_name;
      static const string legendre_self_energy_name;
@@ -109,5 +108,3 @@ private:
      static const string hf_shift_dump_name;
      static const string shift_sq_dump_name;
 };
-  
-#endif //HYBRIDIZATION_FUNCTION__

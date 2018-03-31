@@ -471,3 +471,5 @@ void GfBase::get_new_target_c3(int ref_site_index) {
      target_c3 = target_c2 * target_c2 + temp;
      std::cout << "FAKE TARGET C3" << std::endl << target_c3 << std::endl << std::endl;
 }
+
+const string GfBase::bare_gf_no_shift_dump_name = "c_bare_gf";

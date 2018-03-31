@@ -47,6 +47,8 @@ public:
      Eigen::MatrixXcd get_measured_c2();
      Eigen::MatrixXcd get_measured_c3();
 
+     static const string bare_gf_no_shift_dump_name;
+
 protected:
      int world_rank_;
      Eigen::MatrixXcd interaction_matrix;

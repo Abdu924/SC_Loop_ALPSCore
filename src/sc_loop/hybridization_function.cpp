@@ -578,7 +578,7 @@ void HybFunction::dump_delta() {
 	  }
 	  out.close();
 	  // dump non shifted bare GF in Matsubara frequencies
-	  out.open(bare_gf_no_shift_dump_name, ofstream::out);
+	  out.open(GfBase::bare_gf_no_shift_dump_name, ofstream::out);
 	  out.precision(output_precision);
 	  out << fixed << setprecision(output_precision);
 	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
@@ -1229,7 +1229,6 @@ const size_t HybFunction::tail_fit_length = 10;
 const size_t HybFunction::max_expansion_order = 3;
 const string HybFunction::matsubara_frequency_dump_name = "c_delta.w";
 const string HybFunction::matsubara_bare_gf_dump_name = "c_gw";
-const string HybFunction::bare_gf_no_shift_dump_name = "c_bare_gf";
 const string HybFunction::imaginary_time_dump_name = "c_delta.tau";
 const string HybFunction::imaginary_time_dump_name_for_matrix = "ec_delta.tau";
 const string HybFunction::imaginary_time_dump_name_for_hf = "gtau";

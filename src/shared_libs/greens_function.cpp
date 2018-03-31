@@ -1,6 +1,5 @@
 //#include <boost/math/special_functions/bessel.hpp>
 #include "greens_function.hpp"
-#include "hybridization_function.hpp"
 
 using namespace std;
 typedef boost::multi_array<complex<double> , 3> cplx_array_type;
@@ -86,10 +85,10 @@ void Greensfunction::basic_init(const alps::params &parms) {
 }
 
 void Greensfunction::read_bare_gf() {
-     std::ifstream infile(HybFunction::bare_gf_no_shift_dump_name.c_str());
+     std::ifstream infile(GfBase::bare_gf_no_shift_dump_name.c_str());
      //std::ifstream infile(HybFunction::matsubara_bare_gf_dump_name.c_str());     
      if(!infile.good()) {
-	  std::cerr << "Could not find file " << HybFunction::bare_gf_no_shift_dump_name << endl;
+	  std::cerr << "Could not find file " << GfBase::bare_gf_no_shift_dump_name << endl;
 	  throw std::runtime_error("pb reading bare GF in txt format");
      } else {
 	  for (size_t site_index = 0; site_index < n_sites; site_index++) {
