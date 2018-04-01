@@ -43,7 +43,6 @@ HybFunction::HybFunction(const alps::params &parms,
      hf_coeff.push_back(first_order);
      // Then compute the full hybridization function...
      // do *NOT* remove this computation from the constructor -
-     //
      compute_hybridization_function(chemical_potential);
      // And extract the 2nd and 3rd order coefficients from the numerics.
      compute_superior_orders(verbose);
@@ -315,8 +314,7 @@ void HybFunction::dump_delta() {
 	  ofstream out(matsubara_frequency_dump_name);
 	  out.precision(output_precision);
 	  out << fixed << setprecision(output_precision);
-	  
-	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
+          for(size_t site_index = 0; site_index < n_sites; site_index++) {
 	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
 		    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
 			 for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
@@ -491,7 +489,6 @@ void HybFunction::dump_delta() {
 	       }
 	  }
 	  out.close();
-
      }
      MPI_Barrier(MPI_COMM_WORLD);
 }
@@ -636,7 +633,6 @@ void HybFunction::dump_G0_for_ctint_hdf5(alps::hdf5::archive &h5_archive) {
 	       }
 	  }
 	  h5_archive["/G0_lattice_CTINT"] = temp_g0;
-
      }
 }
  
@@ -661,7 +657,6 @@ void HybFunction::elementary_compute_delta_tau() {
 	  analytical_values[0] = -0.5;
 	  analytical_values[1] = (2.0 * tau_value  - beta) / 4.0;
 	  analytical_values[2] = tau_value * (beta - tau_value) / 4.0;
-
 	  hf_analytical_contribs.push_back(Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size));
 	  for (size_t i = 0; i < max_expansion_order; i++) { 
 	       for (size_t site_index = 0; site_index < n_sites; site_index++) {
@@ -678,7 +673,6 @@ void HybFunction::elementary_compute_delta_tau() {
 	       }
 	  }
      }
-
      // precompute the hf contribution to the finite sum over
      // matsubara frequencies.
      for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
@@ -709,7 +703,6 @@ void HybFunction::elementary_compute_delta_tau() {
 	       }
 	  }
      }
-
      for (size_t tau_index = 0; tau_index < n_tau; tau_index++) {
 	  for (size_t site_index = 0; site_index < n_sites; site_index++) {
 	       for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
@@ -755,7 +748,6 @@ void HybFunction::elementary_compute_delta_tau() {
 			 per_site_orbital_size);
 	  }
      }
-
      // Add the value for tau = beta.
      // Careful, we are dealing with the hybridization function, not a standard Green's function.
      // Using the A.5 - A.8 decomposition from Ferber as an infinite sum, and noticing that all
@@ -787,7 +779,6 @@ void HybFunction::elementary_compute_G_tau() {
 	  analytical_values[0] = -0.5;
 	  analytical_values[1] = (2.0 * tau_value  - beta) / 4.0;
 	  analytical_values[2] = tau_value * (beta - tau_value) / 4.0;
-
 	  hf_analytical_contribs.push_back(Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size));
 	  for (size_t i = 0; i < max_expansion_order; i++) { 
 	       for (size_t site_index = 0; site_index < n_sites; site_index++) {
@@ -804,7 +795,6 @@ void HybFunction::elementary_compute_G_tau() {
 	       }
 	  }
      }
-
      // precompute the hf contribution to the finite sum over
      // matsubara frequencies.
      for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
@@ -835,7 +825,6 @@ void HybFunction::elementary_compute_G_tau() {
 	       }
 	  }
      }
-
      for (size_t tau_index = 0; tau_index < n_tau; tau_index++) {
 	  for (size_t site_index = 0; site_index < n_sites; site_index++) {
 	       for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
