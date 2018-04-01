@@ -12,6 +12,7 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
       world_rank_(world_rank) {
      int N_max = sigma_->get_n_matsubara_freqs();
      int N_Qmesh = parms["bseq.N_QBSEQ"];
+     nb_q_points = lattice_bs_->get_nb_points_for_bseq();
      N_boson = parms["measurement.G2.n_bosonic_freq"];
      bubble_dim = parms.exists("bseq.N_NU_BSEQ") ? parms["bseq.N_NU_BSEQ"] : N_max - N_boson;
      n_sites = sigma_->get_n_sites();
@@ -24,13 +25,8 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
 
      std::cout << "Computing bubbles for " << bubble_dim << " fermionic frequencies, "
                << std::endl << " q mesh based on " << N_Qmesh << " points, i.e. "
-               << lattice_bs->get_nb_points_for_bseq() << " q points, and " 
+               << nb_q_points << " q points, and " 
                << N_boson << " bosonic frequencies" << std::endl;     
-     world_local_gf.clear();
-     for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
-          world_local_gf.push_back(Eigen::MatrixXcd::Zero(
-                                        tot_orbital_size, tot_orbital_size));
-     }
      // n_matsubara is parms[N_MATSUBARA]
      // FIXME check if this is consistent with N_max... 
      int n_matsubara = parms["N_MATSUBARA"];
@@ -41,6 +37,43 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                     [per_site_orbital_size][per_site_orbital_size]
                     [per_site_orbital_size][per_site_orbital_size]);
      std::fill(local_values_.origin(), local_values_.origin() + local_values_.num_elements(), 0.0);
+     lattice_values_.resize(boost::extents[N_boson][nb_q_points][bubble_dim]
+                    [per_site_orbital_size][per_site_orbital_size]
+                    [per_site_orbital_size][per_site_orbital_size]);
+     std::fill(lattice_values_.origin(), lattice_values_.origin() + lattice_values_.num_elements(), 0.0);
+     // The Eigen matrix objects are useful for the MPI gather operation
+     // The boost multi array are used for hdf5 interface...
+     world_lattice_bubble.clear();
+     world_lattice_bubble.resize(N_boson);
+     for (size_t boson_freq = 0; boson_freq < N_boson; boson_freq++) {
+          world_lattice_bubble[boson_freq].resize(nb_q_points);
+          for (size_t q_index = 0; q_index < nb_q_points; q_index++) {
+               for (size_t freq_index = 0; freq_index < bubble_dim; freq_index++) {
+                    world_lattice_bubble[boson_freq][q_index].push_back(
+                         Eigen::MatrixXcd::Zero(n_sites * per_site_orbital_size * per_site_orbital_size,
+                                                n_sites * per_site_orbital_size * per_site_orbital_size));
+               }
+          }
+     }
+}
+
+std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(
+     Eigen::Ref<Eigen::VectorXd> k_point, int boson_index) {
+     size_t N_max = sigma_->get_n_matsubara_freqs();
+     std::vector<Eigen::MatrixXcd> output;
+     output.clear();
+     output.resize(N_max);
+     Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
+     for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+	  Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
+	       (tot_orbital_size, chemical_potential +
+		sigma_->get_matsubara_frequency(freq_index));
+	  Eigen::MatrixXcd self_E = sigma_->values_[freq_index];
+	  inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
+	  inverse_gf.diagonal() += mu_plus_iomega;
+	  output[freq_index] = inverse_gf.inverse();
+     }
+     return output;
 }
 
 void Bubble::dump_bubble_hdf5() {
@@ -149,6 +182,98 @@ void Bubble::compute_local_bubble() {
 	  std::cout << "local bubble time : " << std::endl;
      } // world_rank_
      MPI_Barrier(MPI_COMM_WORLD);
+}
+
+void Bubble::compute_lattice_bubble() {
+     boost::timer::auto_cpu_timer lattice_bubble_calc;
+     size_t k_min(0);
+     size_t k_max(lattice_bs_->get_lattice_size());
+     int orbital_size(per_site_orbital_size);
+     int new_i(0);
+     int new_j(0);
+     std::vector<std::vector<Eigen::MatrixXcd> > partial_sum;
+     
+     lattice_bubble.clear();
+     lattice_bubble.resize(N_boson);
+     std::vector<Eigen::MatrixXcd> gf_kq, gf_k;
+     int block_size = per_site_orbital_size * per_site_orbital_size;
+     for (int boson_index = 0; boson_index < N_boson; boson_index++) {
+	  boost::timer::auto_cpu_timer boson_calc; 
+	  partial_sum.clear();
+	  partial_sum.resize(nb_q_points);
+	  for(int q_index = 0; q_index < nb_q_points; q_index++) {
+	       for(int freq_index = 0; freq_index < bubble_dim; freq_index++) {
+		    partial_sum[q_index].push_back(
+			 Eigen::MatrixXcd::Zero(n_sites * per_site_orbital_size * per_site_orbital_size,
+						n_sites * per_site_orbital_size * per_site_orbital_size));
+	       }
+	  }
+	  lattice_bubble[boson_index].resize(nb_q_points);
+	  for (int k_index = k_min; k_index < k_max; k_index++) {
+	       double l_weight = lattice_bs_->get_weight(k_index);
+	       if (abs(l_weight) < 1e-6) {
+		    if (world_rank_ == 0) {
+			 cout << "skipping k point in lattice bubble" << endl;
+		    }
+		    continue;
+	       } else {
+		    Eigen::VectorXd k_point = lattice_bs_->get_k_point(k_index);
+		    gf_k = get_greens_function(k_point, boson_index);
+		    for(int q_index = 0; q_index < nb_q_points; q_index++) {
+			 Eigen::VectorXd k_plus_q_point = lattice_bs_->get_k_plus_q_point(k_index, q_index);
+			 gf_kq = get_greens_function(k_plus_q_point, boson_index);
+			 for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
+			      for(size_t site_index = 0; site_index < n_sites;
+				  site_index++) {
+				   // block start for full system greens function
+				   int block_index = site_index * per_site_orbital_size * per_site_orbital_size;
+				   for (int part_index_1 = 0; part_index_1 < orbital_size;
+					part_index_1++) {
+					for (int hole_index_2 = 0; hole_index_2 < orbital_size;
+					     hole_index_2++) {
+					     for (int part_index_2 = 0; part_index_2 < orbital_size;
+						  part_index_2++) {
+						  for (int hole_index_1 = 0; hole_index_1 < orbital_size;
+						       hole_index_1++) {
+						       new_i = part_index_1 *
+							    orbital_size + hole_index_2;
+						       new_j = part_index_2 *
+							    orbital_size + hole_index_1;
+						       //Careful here: greens functions are based
+						       //on the full orbital dimension of the
+						       // system
+						       partial_sum[q_index][freq_index].block(
+							    block_index, block_index,
+							    block_size, block_size)(new_i, new_j) +=
+							    l_weight *
+							    gf_k[freq_index].block(
+								 block_index, block_index,
+								 block_size, block_size)(
+								      part_index_1, part_index_2) *
+							    gf_kq[freq_index + boson_index].block(
+								 block_index, block_index,
+								 block_size, block_size)(
+								      hole_index_1, hole_index_2);
+						  } // hole_index_1
+					     }  // part_index_2
+					}  // hole_index_2
+				   }  // part_index_1
+			      }  // site_index
+			 } // freq
+		    } // q_index
+	       } // if weight
+	  } // k_index
+	  for (int q_index = 0; q_index < nb_q_points; q_index++) {
+	       for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {	       
+		    MPI_Allreduce(partial_sum[q_index][freq_index].data(),
+				  world_lattice_bubble[boson_index][q_index][freq_index].data(),
+				  partial_sum[q_index][freq_index].size(),
+				  MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+	       }
+	  }
+	  std::cout << "Time for boson freq " << boson_index
+		    << ": " << std::endl;
+     } // boson
 }
 
 const std::string Bubble::bubble_hdf5_root = "c_bubble";

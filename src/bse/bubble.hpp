@@ -27,16 +27,18 @@ public:
                  int world_rank);
      void dump_bubble_hdf5();
      void compute_local_bubble();
+     void compute_lattice_bubble();
      virtual ~Bubble() {}
 
      boost::multi_array<std::complex<double>, 6> local_values_;
+     boost::multi_array<std::complex<double>, 7> lattice_values_;
      
 private:
      int world_rank_;
      boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::shared_ptr<Selfenergy> sigma_;
      std::complex<double> chemical_potential;
-     int n_orbitals;
+     int nb_q_points;
      int N_l_G4;
      int N_boson;
      int bubble_dim;
@@ -44,8 +46,11 @@ private:
      int tot_orbital_size;
      int per_site_orbital_size;
      boost::multi_array<complex<double> , 3> raw_full_gf;
-     vector<Eigen::MatrixXcd> world_local_gf;
-     vector<vector<Eigen::MatrixXcd> > world_local_bubble;
+     vector<vector<vector<Eigen::MatrixXcd> > > lattice_bubble;
+     vector<vector<vector<Eigen::MatrixXcd> > > world_lattice_bubble;
 
+     std::vector<Eigen::MatrixXcd> get_greens_function(
+	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);
+     
      static const std::string bubble_hdf5_root;
 };

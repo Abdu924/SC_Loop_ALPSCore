@@ -41,7 +41,6 @@ public:
      int check_density_success(double cur_density);
      void compute_order_parameter();
      void get_spin_current();
-     void compute_lattice_bubble();
      void set_chemical_potential(std::complex<double> new_chemical_potential) {
           chemical_potential = new_chemical_potential;
      };
@@ -55,11 +54,6 @@ private:
      Eigen::MatrixXcd c_1;
      Eigen::MatrixXcd c_2;
      vector<Eigen::MatrixXcd> world_local_gf;
-     vector<vector<Eigen::MatrixXcd> > world_local_bubble;
-     // dims for lattice bubble:  boson, q_index, nu_index,
-     // array of orbital indexed matrices
-     vector<vector<vector<Eigen::MatrixXcd> > > lattice_bubble;
-     vector<vector<vector<Eigen::MatrixXcd> > > world_lattice_bubble;
 
      // Dedicated object for computation of higher-order tails
      boost::shared_ptr<TailManager> tail_manager;
@@ -80,7 +74,6 @@ private:
      size_t per_site_orbital_size;
      size_t tot_orbital_size;
      std::size_t N_boson;
-     std::size_t bubble_dim;
      double n_tolerance;
      double target_density;
      bool exact_tail;

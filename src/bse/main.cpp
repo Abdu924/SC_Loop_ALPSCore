@@ -129,6 +129,7 @@ int main(int argc, const char* argv[]) {
                                     chemical_potential, world_rank));
 
                local_bubble->compute_local_bubble();
+               local_bubble->compute_lattice_bubble();
                local_bubble->dump_bubble_hdf5();
                h5_archive.close();
 	  }
