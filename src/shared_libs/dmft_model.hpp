@@ -1,5 +1,5 @@
-#ifndef DMFT_MODEL__
-#define DMFT_MODEL__
+#pragma once
+
 #include <Eigen/Dense>
 #include <vector>
 #include <tuple>
@@ -7,7 +7,7 @@
 #include <complex>
 #include <cmath>
 #include <alps/params.hpp>
-#include "../shared_libs/band_structure.hpp"
+#include "band_structure.hpp"
 #include "self_energy.hpp"
 #include "tail_manager.hpp"
 #include <tuple>
@@ -117,4 +117,3 @@ private:
      static const std::string bubble_hdf5_root;
 };
   
-#endif //DMFT_MODEL__
