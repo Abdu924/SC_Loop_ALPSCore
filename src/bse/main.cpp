@@ -99,181 +99,97 @@ int main(int argc, const char* argv[]) {
 	       new Chemicalpotential(parms, from_alps3, world_rank));
 	  // Compute hybridization function
 	  if ((computation_type == 0) || (computation_type == 4)) {
-	       alps::hdf5::archive h5_archive(input_file, "r");
-	       bool compute_bubble(computation_type == 4 ? true : false);
-	       boost::shared_ptr<Bandstructure> bare_band(
-		    new Bandstructure(parms, world_rank, true));
-	       string h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
-		    HybFunction::legendre_self_energy_name : HybFunction::matsubara_self_energy_name;
-	       if (world_rank == 0) {
-		    if (parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>()) {
-			 std::cout << "Using LEGENDRE for SC LOOP " << std::endl << std::endl;
-		    } else {
-			 std::cout << "Using Matsubara for SC LOOP " << std::endl << std::endl;
-		    }
-	       }
-	       boost::shared_ptr<Selfenergy> self_energy(
-		    new Selfenergy(parms, world_rank, h5_archive, h5_group_name, true));
-	       h5_archive.close();
-	       {
-		    boost::timer::auto_cpu_timer all_loop;
-		    boost::shared_ptr<DMFTModel> dmft_model(
-			 new DMFTModel(bare_band, self_energy, parms, world_rank));
-		    // Restrict reading to process 0, then broadcast.
-		    if (world_rank == 0) {
-			 // HERE Horrible bug fix in order to align crystal
-			 // field and value in scf file!! Has to be changed, and old_chemical_potential
-			 // only retrieved from crystal_field.h5
-			 old_chemical_potential = ((*chempot)[0] + (*chempot)[2]) / 2.0;
-			 found_old_mu = 1;
-			 dn_dmu = chempot->get_dn_dmu();
-		    }
-		    MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
-		    MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		    MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		    boost::timer::auto_cpu_timer mu_calc;
-		    tie(newton_success, new_chemical_potential, density, new_dn_dmu) =
-			 dmft_model->get_mu_from_density(old_chemical_potential);
-		    if (newton_success == 0) {
-			 tie(bisec_success, new_chemical_potential, density) =
-			      dmft_model->get_mu_from_density_bisec(old_chemical_potential, dn_dmu);
-		    } else {
-			 dn_dmu = new_dn_dmu;
-			 chempot->set_dn_dmu(dn_dmu);
-		    }
-		    if ((newton_success == 0) && (bisec_success == 0)) {
-			 if (world_rank == 0) {
-			      cout << "MU was not found. Quitting. " << endl;
-			      throw runtime_error("Unable to find mu !");
-			 }
-		    }
-		    if (world_rank == 0) {
-			 cout << ":MU " << new_chemical_potential << "    "
-			      << abs(dn_dmu) << endl;
-			 cout << ":NTOTAL " << density << endl;
-			 cout << "<E_kin> =  " << dmft_model->get_kinetic_energy() << endl;
-                         cout << "<U> =  " << dmft_model->get_potential_energy() << endl;
-                         cout << "E_tot =  " << dmft_model->get_potential_energy() +
-                              dmft_model->get_kinetic_energy() << endl;
-		    }
-		    chempot->apply_shift(-old_chemical_potential + new_chemical_potential);
-		    dmft_model->dump_k_resolved_occupation_matrices();
-		    dmft_model->compute_order_parameter();
-		    dmft_model->display_occupation_matrix();
-		    if (parms["model.compute_spin_current"].as<bool>() == true) {
-			 dmft_model->get_spin_current();
-			 dmft_model->display_spin_current();
-		    }
-		    bare_band->compute_bare_dos(new_chemical_potential);
-		    bare_band->dump_bare_dos();
-		    chempot->dump_values();
-		    bool verbose(false);
-		    MPI_Barrier(MPI_COMM_WORLD);
-		    boost::shared_ptr<HybFunction> hybridization_function(
-			 new HybFunction(parms, bare_band, self_energy,
-					 new_chemical_potential, world_rank,
-					 compute_bubble, verbose));
-		    if (world_rank == 0)
-		    {
-			 alps::hdf5::archive w_h5_archive(input_file, "w");
-			 hybridization_function->dump_G0_hdf5(w_h5_archive);
-			 hybridization_function->dump_G0_for_ctint_hdf5(w_h5_archive);
-			 w_h5_archive.close();
-		    }
-		    MPI_Barrier(MPI_COMM_WORLD);
-		    if (compute_bubble) {
-			 hybridization_function->compute_local_bubble();
-			 hybridization_function->compute_lattice_bubble();
-			 hybridization_function->dump_bubble_hdf5();
-		    }
-		    if (world_rank == 0) {
-			 cout << " total " << endl;
-		    }
-	       }
-	  } else if (computation_type == 1) {
-	       // perform "mix" action
-	       alps::hdf5::archive h5_archive(input_file, "r");
-	       bool verbose = false;
-	       std::cout << "do mix" << std::endl;
-	       boost::shared_ptr<Bandstructure> bare_band(
-		    new Bandstructure(parms, world_rank, true));
-	       if (world_rank == 0) {
-		    // Read the current sigma, and calculate the
-		    // sigma gotten from QMC + tails
-		    int ref_site_index = 0;
-		    string old_h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
-			 HybFunction::legendre_self_energy_name : HybFunction::matsubara_self_energy_name;
-		    boost::shared_ptr<Selfenergy>
-			 old_self_energy(new Selfenergy(parms, world_rank, h5_archive,
-							old_h5_group_name, verbose));
-		    boost::shared_ptr<Selfenergy> qmc_self_energy;
-		    boost::shared_ptr<Selfenergy> legendre_qmc_self_energy;
-		    boost::shared_ptr<Greensfunction> legendre_greens_function;
-		    if ((parms["cthyb.MEASURE_freq"]) && (!from_alps3)) {
-			 std::cout << "generate Matsubara Sigma" << std::endl;
-			 // S_omega or S_l_omega
-			 int input_type = 0;
-			 qmc_self_energy.reset(new Selfenergy(parms, world_rank, chempot,
-							      bare_band, ref_site_index,
-							      h5_archive, input_type, verbose));
-		    }
-		    if (parms["cthyb.MEASURE_legendre"]) {
-			 int sampling_type = from_alps3 ? 0 : 1;
-			 std::cout << "generate Leg GF" << std::endl;
-			 legendre_greens_function.reset(
-			      new Greensfunction(parms, world_rank, chempot,
-						 bare_band, sampling_type, h5_archive));
-			 legendre_qmc_self_energy.reset(
-			      new Selfenergy(parms, world_rank, chempot, bare_band,
-					     ref_site_index, h5_archive, legendre_greens_function));
-		    }
-		    h5_archive.close();
-		    // save old sigma
-		    alps::hdf5::archive w_h5_archive(input_file, "w");
-		    std::string copy_h5_group_name("/old_sigma");
-		    if (!(old_self_energy->get_is_nil_sigma())) {
-			 old_self_energy->hdf5_dump(w_h5_archive, copy_h5_group_name);
-			 for (int tail_order = 0; tail_order < 2; tail_order++) {
-			      old_self_energy->hdf5_dump_tail(w_h5_archive, copy_h5_group_name,
-							      ref_site_index, tail_order);
-			 }
-		    }
-		    double alpha(parms["mixing.ALPHA"]);
-		    if (old_self_energy->get_is_nil_sigma()) {
-			 alpha = 1.0;
-			 cout << "Old self-energy not found => Forcing alpha tp 1.0" << endl;
-		    }
-		    cout << "Using alpha = " << alpha << " for mixing " << endl;
-		    // apply mix with parameter alpha
-		    if ((parms["cthyb.MEASURE_freq"]) && (!from_alps3)) {
-			 qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
-			 // Dump the new current sigma
-			 std::string new_h5_group_name("/current_sigma");
-			 qmc_self_energy->hdf5_dump(w_h5_archive, new_h5_group_name);
-			 for (int tail_order = 0; tail_order < 2; tail_order++) {
-			      qmc_self_energy->hdf5_dump_tail(w_h5_archive, new_h5_group_name,
-							      ref_site_index, tail_order);
-			 }
-		    }
-		    if (parms["cthyb.MEASURE_legendre"]) {
-			 legendre_greens_function->dump_single_site_full_gf_matsubara(w_h5_archive, ref_site_index);
-                         legendre_greens_function->dump_single_site_full_gf_legendre(w_h5_archive, ref_site_index);
-			 legendre_qmc_self_energy->apply_linear_combination(old_self_energy, alpha);
-			 std::string new_h5_group_name("/current_legendre_sigma");
-			 legendre_qmc_self_energy->hdf5_dump(w_h5_archive, new_h5_group_name);
-			 for (int tail_order = 0; tail_order < 2; tail_order++) {
-			      legendre_qmc_self_energy->hdf5_dump_tail(w_h5_archive, new_h5_group_name,
-								       ref_site_index, tail_order);
-			 }
-		    }
-		    w_h5_archive.close();
-	       }
-	  } else if (computation_type == 2) {
-	       // dump hamiltonian
-	       boost::shared_ptr<Bandstructure> bare_band(
-		    new Bandstructure(parms, world_rank, true));
-	       bare_band->dump_hamilt(parms);
-	  } else if (computation_type == 3) {
+	  //      alps::hdf5::archive h5_archive(input_file, "r");
+	  //      bool compute_bubble(computation_type == 4 ? true : false);
+	  //      boost::shared_ptr<Bandstructure> bare_band(
+	  //           new Bandstructure(parms, world_rank, true));
+	  //      string h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
+	  //           HybFunction::legendre_self_energy_name : HybFunction::matsubara_self_energy_name;
+	  //      if (world_rank == 0) {
+	  //           if (parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>()) {
+	  //       	 std::cout << "Using LEGENDRE for SC LOOP " << std::endl << std::endl;
+	  //           } else {
+	  //       	 std::cout << "Using Matsubara for SC LOOP " << std::endl << std::endl;
+	  //           }
+	  //      }
+	  //      boost::shared_ptr<Selfenergy> self_energy(
+	  //           new Selfenergy(parms, world_rank, h5_archive, h5_group_name, true));
+	  //      h5_archive.close();
+	  //      {
+	  //           boost::timer::auto_cpu_timer all_loop;
+	  //           boost::shared_ptr<DMFTModel> dmft_model(
+	  //       	 new DMFTModel(bare_band, self_energy, parms, world_rank));
+	  //           // Restrict reading to process 0, then broadcast.
+	  //           if (world_rank == 0) {
+	  //       	 // HERE Horrible bug fix in order to align crystal
+	  //       	 // field and value in scf file!! Has to be changed, and old_chemical_potential
+	  //       	 // only retrieved from crystal_field.h5
+	  //       	 old_chemical_potential = ((*chempot)[0] + (*chempot)[2]) / 2.0;
+	  //       	 found_old_mu = 1;
+	  //       	 dn_dmu = chempot->get_dn_dmu();
+	  //           }
+	  //           MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	  //           MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	  //           MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	  //           boost::timer::auto_cpu_timer mu_calc;
+	  //           tie(newton_success, new_chemical_potential, density, new_dn_dmu) =
+	  //       	 dmft_model->get_mu_from_density(old_chemical_potential);
+	  //           if (newton_success == 0) {
+	  //       	 tie(bisec_success, new_chemical_potential, density) =
+	  //       	      dmft_model->get_mu_from_density_bisec(old_chemical_potential, dn_dmu);
+	  //           } else {
+	  //       	 dn_dmu = new_dn_dmu;
+	  //       	 chempot->set_dn_dmu(dn_dmu);
+	  //           }
+	  //           if ((newton_success == 0) && (bisec_success == 0)) {
+	  //       	 if (world_rank == 0) {
+	  //       	      cout << "MU was not found. Quitting. " << endl;
+	  //       	      throw runtime_error("Unable to find mu !");
+	  //       	 }
+	  //           }
+	  //           if (world_rank == 0) {
+	  //       	 cout << ":MU " << new_chemical_potential << "    "
+	  //       	      << abs(dn_dmu) << endl;
+	  //       	 cout << ":NTOTAL " << density << endl;
+	  //       	 cout << "<E_kin> =  " << dmft_model->get_kinetic_energy() << endl;
+          //                cout << "<U> =  " << dmft_model->get_potential_energy() << endl;
+          //                cout << "E_tot =  " << dmft_model->get_potential_energy() +
+          //                     dmft_model->get_kinetic_energy() << endl;
+	  //           }
+	  //           chempot->apply_shift(-old_chemical_potential + new_chemical_potential);
+	  //           dmft_model->dump_k_resolved_occupation_matrices();
+	  //           dmft_model->compute_order_parameter();
+	  //           dmft_model->display_occupation_matrix();
+	  //           if (parms["model.compute_spin_current"].as<bool>() == true) {
+	  //       	 dmft_model->get_spin_current();
+	  //       	 dmft_model->display_spin_current();
+	  //           }
+	  //           bare_band->compute_bare_dos(new_chemical_potential);
+	  //           bare_band->dump_bare_dos();
+	  //           chempot->dump_values();
+	  //           bool verbose(false);
+	  //           MPI_Barrier(MPI_COMM_WORLD);
+	  //           boost::shared_ptr<HybFunction> hybridization_function(
+	  //       	 new HybFunction(parms, bare_band, self_energy,
+	  //       			 new_chemical_potential, world_rank,
+	  //       			 compute_bubble, verbose));
+	  //           if (world_rank == 0)
+	  //           {
+	  //       	 alps::hdf5::archive w_h5_archive(input_file, "w");
+	  //       	 hybridization_function->dump_G0_hdf5(w_h5_archive);
+	  //       	 hybridization_function->dump_G0_for_ctint_hdf5(w_h5_archive);
+	  //       	 w_h5_archive.close();
+	  //           }
+	  //           MPI_Barrier(MPI_COMM_WORLD);
+	  //           if (compute_bubble) {
+	  //       	 hybridization_function->compute_local_bubble();
+	  //       	 hybridization_function->compute_lattice_bubble();
+	  //       	 hybridization_function->dump_bubble_hdf5();
+	  //           }
+	  //           if (world_rank == 0) {
+	  //       	 cout << " total " << endl;
+	  //           }
+	  //      }
 	  }
 	  MPI_Finalize();
 	  return 0;

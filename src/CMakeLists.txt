@@ -8,4 +8,4 @@ find_package(Boost REQUIRED system thread timer chrono filesystem)
 
 add_subdirectory(shared_libs)
 add_subdirectory(sc_loop)
-#add_subdirectory(projectB)
+add_subdirectory(bse)
