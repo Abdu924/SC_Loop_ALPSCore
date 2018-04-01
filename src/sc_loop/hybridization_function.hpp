@@ -39,9 +39,6 @@ public:
      void dump_Gtau_for_HF();
      void dump_delta_for_matrix();
      void dump_delta_hdf5();
-     void dump_bubble_hdf5();
-     void compute_local_bubble();
-     void compute_lattice_bubble();
      void dump_G0_hdf5(alps::hdf5::archive &h5_archive);
      void dump_G0_for_ctint_hdf5(alps::hdf5::archive &h5_archive);
      virtual ~HybFunction() {}
@@ -62,12 +59,6 @@ private:
      vector<Eigen::MatrixXcd> bare_greens_function;
      vector<Eigen::MatrixXcd> no_shift_bare_greens_function;
      vector<Eigen::MatrixXcd> pure_no_shift_bare_greens_function;
-     vector<Eigen::MatrixXcd> world_local_gf;
-     vector<vector<Eigen::MatrixXcd> > world_local_bubble;
-     // dims for lattice bubble:  boson, q_index, nu_index,
-     // array of orbital indexed matrices
-     vector<vector<vector<Eigen::MatrixXcd> > > lattice_bubble;
-     vector<vector<vector<Eigen::MatrixXcd> > > world_lattice_bubble;
      Eigen::MatrixXcd mu_tilde;
      std::complex<double> chemical_potential;
      // The coefficients of the high-frequency expansion
@@ -81,8 +72,6 @@ private:
      size_t per_site_orbital_size;
      size_t tot_orbital_size;
      size_t n_tau;
-     size_t N_boson;
-     size_t bubble_dim;
      int world_rank_;
      bool enforce_real;
      
@@ -91,8 +80,6 @@ private:
      void elementary_compute_G_tau();
      void compute_superior_orders(bool verbose=false);
      void compute_bare_g_superior_orders(bool verbose=false);
-     std::vector<Eigen::MatrixXcd> get_greens_function(
-	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);
 	  
      static const size_t tail_fit_length;
      static const size_t output_precision;
@@ -101,7 +88,6 @@ private:
      static const string imaginary_time_dump_name;
      static const string imaginary_time_dump_name_for_matrix;     
      static const string imaginary_time_hdf5_root;
-     static const string bubble_hdf5_root;
      static const string shift_dump_name;
      static const string hf_shift_dump_name;
      static const string shift_sq_dump_name;

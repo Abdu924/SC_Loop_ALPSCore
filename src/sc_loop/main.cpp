@@ -35,10 +35,6 @@ void init(int world_rank, int computation_type,
 	  output_file_name = "c_debug.out";
 	  error_file_name = "error_debug.txt";
      }
-     else if (computation_type == 4) {
-	  output_file_name = "c_bubble.out";
-	  error_file_name = "error_bubble.txt";
-     }
      backup_file_name = output_file_name + ".old";
      if (world_rank == 0) {
 	  if (boost::filesystem::exists(output_file_name)) {
@@ -81,8 +77,6 @@ tuple<string, int, bool> handle_command_line(alps::params par) {
 	       cout << "Dumping Hamiltonian" << "\n";
 	  } else if (par["action"].as<int>() == 3) {
 	       cout << "Debug mode" << "\n";
-	  } else if (par["action"].as<int>() == 4) {
-	       cout << "Computing bubble" << "\n";
 	  } else {
 	       std::cout << "The requested action was not recognized" << std::endl;
 	       par["help"] = true;
@@ -150,7 +144,7 @@ int main(int argc, const char* argv[]) {
 	  // Compute hybridization function
 	  if ((computation_type == 0) || (computation_type == 4)) {
 	       alps::hdf5::archive h5_archive(input_file, "r");
-	       bool compute_bubble(computation_type == 4 ? true : false);
+	       bool compute_bubble(false);
 	       boost::shared_ptr<Bandstructure> bare_band(
 		    new Bandstructure(parms, world_rank, true));
 	       string h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
@@ -167,8 +161,6 @@ int main(int argc, const char* argv[]) {
 	       h5_archive.close();
 	       {
 		    boost::timer::auto_cpu_timer all_loop;
-		    boost::shared_ptr<DMFTModel> dmft_model(
-			 new DMFTModel(bare_band, self_energy, parms, world_rank));
 		    // Restrict reading to process 0, then broadcast.
 		    if (world_rank == 0) {
 			 // HERE Horrible bug fix in order to align crystal
@@ -181,6 +173,8 @@ int main(int argc, const char* argv[]) {
 		    MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		    MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		    MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+                    boost::shared_ptr<DMFTModel> dmft_model(
+			 new DMFTModel(bare_band, self_energy, parms, old_chemical_potential, world_rank));
 		    boost::timer::auto_cpu_timer mu_calc;
 		    tie(newton_success, new_chemical_potential, density, new_dn_dmu) =
 			 dmft_model->get_mu_from_density(old_chemical_potential);
@@ -197,6 +191,7 @@ int main(int argc, const char* argv[]) {
 			      throw runtime_error("Unable to find mu !");
 			 }
 		    }
+                    dmft_model->set_chemical_potential(new_chemical_potential);
 		    if (world_rank == 0) {
 			 cout << ":MU " << new_chemical_potential << "    "
 			      << abs(dn_dmu) << endl;
@@ -231,11 +226,6 @@ int main(int argc, const char* argv[]) {
 			 w_h5_archive.close();
 		    }
 		    MPI_Barrier(MPI_COMM_WORLD);
-		    if (compute_bubble) {
-			 hybridization_function->compute_local_bubble();
-			 hybridization_function->compute_lattice_bubble();
-			 hybridization_function->dump_bubble_hdf5();
-		    }
 		    if (world_rank == 0) {
 			 cout << " total " << endl;
 		    }
@@ -324,29 +314,6 @@ int main(int argc, const char* argv[]) {
 		    new Bandstructure(parms, world_rank, true));
 	       bare_band->dump_hamilt(parms);
 	  } else if (computation_type == 3) {
-	       // Perform debug action
-	       // bool compute_bubble = false;
-	       // boost::shared_ptr<Bandstructure> bare_band(
-	       //      new Bandstructure(parms, world_rank, true));
-	       // string h5_group_name("/current_sigma");
-	       // boost::shared_ptr<Selfenergy> self_energy(
-	       //      new Selfenergy(parms, world_rank, h5_archive, h5_group_name, false));
-	       // boost::shared_ptr<DMFTModel> dmft_model(
-	       //      new DMFTModel(bare_band, self_energy,
-	       // 		     parms, world_rank));
-	       // // Restrict reading to process 0, then broadcast.
-	       // if (world_rank == 0) {
-	       //      found_old_mu = true;
-	       //      old_chemical_potential = 1.3790653;
-	       //      dn_dmu = 0.0197718;
-	       // }
-	       // MPI_Bcast(&found_old_mu, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
-	       // MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	       // MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	       // double debug_density, debug_deriv;
-	       // tie(debug_density, debug_deriv) =
-	       //      dmft_model->get_particle_density(old_chemical_potential, dn_dmu);
-	       // cout << "debug_density " << debug_density << endl;
 	  }
 	  MPI_Finalize();
 	  return 0;

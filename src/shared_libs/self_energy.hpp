@@ -10,6 +10,8 @@ class Selfenergy: public GfBase {
       */
 public:
      Selfenergy(const alps::params &parms, int world_rank,
+                bool verbose=false);
+     Selfenergy(const alps::params &parms, int world_rank,
 		alps::hdf5::archive h5_archive,
 		string h5_group_name, bool verbose=false);
      Selfenergy(const alps::params &parms, int world_rank,

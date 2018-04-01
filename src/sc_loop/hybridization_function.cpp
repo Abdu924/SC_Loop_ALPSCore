@@ -19,37 +19,6 @@ HybFunction::HybFunction(const alps::params &parms,
      n_sites = sigma_->get_n_sites();
      per_site_orbital_size = sigma_->get_per_site_orbital_size();
      tot_orbital_size = n_sites * per_site_orbital_size;
-     N_boson = parms["measurement.G2.n_bosonic_freq"];
-     int N_Qmesh = static_cast<size_t>(parms["bseq.N_QBSEQ"]);
-     size_t N_max = sigma_->get_n_matsubara_freqs();
-     bubble_dim = parms.exists("bseq.N_NU_BSEQ") ? static_cast<int>(parms["bseq.N_NU_BSEQ"]) : N_max - N_boson;
-     if (compute_bubble) {
-	  std::cout << "Computing bubbles for " << bubble_dim << " fermionic frequencies, "
-		    << std::endl << " q mesh based on " << N_Qmesh << " points, i.e. "
-		    << lattice_bs->get_nb_points_for_bseq() << " q points, and " 
-		    << N_boson << " bosonic frequencies" << std::endl;
-	  world_local_bubble.clear();
-	  world_local_bubble.resize(N_boson);
-	  for (size_t boson_freq = 0; boson_freq < N_boson; boson_freq++) {
-	       for (size_t freq_index = 0; freq_index < bubble_dim; freq_index++) {
-		    world_local_bubble[boson_freq].push_back(
-			 Eigen::MatrixXcd::Zero(n_sites * per_site_orbital_size * per_site_orbital_size,
-						n_sites * per_site_orbital_size * per_site_orbital_size));
-	       }
-	  }
-	  world_lattice_bubble.clear();
-	  world_lattice_bubble.resize(N_boson);
-	  for (size_t boson_freq = 0; boson_freq < N_boson; boson_freq++) {
-	       world_lattice_bubble[boson_freq].resize(lattice_bs_->get_nb_points_for_bseq());
-	       for (size_t q_index = 0; q_index < lattice_bs_->get_nb_points_for_bseq(); q_index++) {
-		    for (size_t freq_index = 0; freq_index < bubble_dim; freq_index++) {
-			 world_lattice_bubble[boson_freq][q_index].push_back(
-			      Eigen::MatrixXcd::Zero(n_sites * per_site_orbital_size * per_site_orbital_size,
-						     n_sites * per_site_orbital_size * per_site_orbital_size));
-		    }
-	       }
-	  }
-     }
      world_bath_moment_1 = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      world_bath_moment_2 = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      // Compute the site-level-averaged contribution of
@@ -188,13 +157,6 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
      Eigen::MatrixXcd bath_moment_1(tot_orbital_size, tot_orbital_size);
      Eigen::MatrixXcd bath_moment_2(tot_orbital_size, tot_orbital_size);
      Eigen::MatrixXcd pure_inverse_bare_gf(tot_orbital_size, tot_orbital_size);
-     if (compute_bubble) {
-	  world_local_gf.clear();
-	  for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
-	       world_local_gf.push_back(Eigen::MatrixXcd::Zero(
-						tot_orbital_size, tot_orbital_size));
-	  }
-     }
      world_bath_moment_1 = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      world_bath_moment_2 = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
      // mu_tilde is the opposite of xm1 in the original Fortran code.
@@ -246,21 +208,6 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
 	  // out on each site. xm1 is projected on site as well
 	  inverse_gf = Eigen::MatrixXcd::Zero(tot_orbital_size, tot_orbital_size);
 	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
-	       if (compute_bubble) {
-		    // We are interested in the linear response
-		    // in the paramagentic phase, thus we do
-		    // not need to separate spins anymore.
-		    world_local_gf[freq_index].block(
-			 site_index * per_site_orbital_size,
-			 site_index * per_site_orbital_size,
-			 per_site_orbital_size,
-			 per_site_orbital_size) =
-			 world_local_greens_function.block(
-			      site_index * per_site_orbital_size,
-			      site_index * per_site_orbital_size,
-			      per_site_orbital_size,
-			      per_site_orbital_size);
-	       }
 	       Eigen::MatrixXcd world_inverse =
 		    world_local_greens_function.block(
 			 site_index * per_site_orbital_size,
@@ -318,183 +265,49 @@ void HybFunction::compute_hybridization_function(complex<double> mu) {
      world_bath_moment_2 = world_bath_moment_2 + world_bath_moment_1 * world_bath_moment_1;
 }
 
-std::vector<Eigen::MatrixXcd> HybFunction::get_greens_function(
-     Eigen::Ref<Eigen::VectorXd> k_point, int boson_index) {
-     size_t N_max = sigma_->get_n_matsubara_freqs();
-     std::vector<Eigen::MatrixXcd> output;
-     output.clear();
-     output.resize(N_max);
-     Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
-     for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
-	  Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
-	       (tot_orbital_size, chemical_potential +
-		sigma_->get_matsubara_frequency(freq_index));
-	  Eigen::MatrixXcd self_E = sigma_->values_[freq_index];
-	  inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
-	  inverse_gf.diagonal() += mu_plus_iomega;
-	  output[freq_index] = inverse_gf.inverse();
-     }
-     return output;
-}
-
-void HybFunction::compute_local_bubble() {
-     if (world_rank_ == 0)
-     {
-	  cout << "***********************************************" << endl;
-	  cout << "** LOCAL BUBBLE CALCULATION                 ***" << endl;
-	  cout << "***********************************************" << endl << endl;
-	  boost::timer::auto_cpu_timer bubble_calc;
-	  int orbital_size(lattice_bs_->get_orbital_size());
-	  int new_i(0);
-	  int new_j(0);
-	  for (int boson_index = 0; boson_index < N_boson; boson_index++) {
-	       for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
-		    for(size_t site_index = 0; site_index < n_sites; site_index++) {
-			 for (int part_index_1 = 0; part_index_1 < orbital_size;
-			      part_index_1++) {
-			      for (int hole_index_2 = 0; hole_index_2 < orbital_size;
-				   hole_index_2++) {
-				   for (int part_index_2 = 0; part_index_2 < orbital_size;
-					part_index_2++) {
-					for (int hole_index_1 = 0;
-					     hole_index_1 < orbital_size; hole_index_1++) {
-					     new_i = part_index_1 *
-						  orbital_size + hole_index_2;
-					     new_j = part_index_2 *
-						  orbital_size + hole_index_1;
-					     world_local_bubble[boson_index]
-						  [freq_index].block(
-						       site_index *
-						       per_site_orbital_size *
-						       per_site_orbital_size,
-						       site_index *
-						       per_site_orbital_size *
-						       per_site_orbital_size,
-						       per_site_orbital_size *
-						       per_site_orbital_size,
-						       per_site_orbital_size *
-						       per_site_orbital_size)(new_i,
-									      new_j) =
-						  world_local_gf[
-						       freq_index].block(
-							    site_index *
-							    per_site_orbital_size,
-							    site_index *
-							    per_site_orbital_size,
-							    per_site_orbital_size,
-							    per_site_orbital_size)(
-								 part_index_1,
-								 part_index_2) *
-						  world_local_gf[freq_index + boson_index].block(
-						       site_index *
-						       per_site_orbital_size,
-						       site_index *
-						       per_site_orbital_size,
-						       per_site_orbital_size,
-						       per_site_orbital_size)(
-							    hole_index_1, hole_index_2);
-					} // hole_index_1
-				   }  // part_index_2
-			      }  // hole_index_2
-			 }  // part_index_1
-		    }  // site_index
-	       } // freq_index
-	  } // boson
-	  std::cout << "local bubble time : " << std::endl;
-     } // world_rank_
-     MPI_Barrier(MPI_COMM_WORLD);
-}
-
-void HybFunction::compute_lattice_bubble() {
-     boost::timer::auto_cpu_timer lattice_bubble_calc;
-     size_t k_min(0);
-     size_t k_max(lattice_bs_->get_lattice_size());
-     int orbital_size(lattice_bs_->get_orbital_size());
-     int nb_q_points(lattice_bs_->get_nb_points_for_bseq());
-     int new_i(0);
-     int new_j(0);
-     std::vector<std::vector<Eigen::MatrixXcd> > partial_sum;
-     lattice_bubble.clear();
-     lattice_bubble.resize(N_boson);
-     std::vector<Eigen::MatrixXcd> gf_kq, gf_k;
-     int block_size = per_site_orbital_size * per_site_orbital_size;
-     for (int boson_index = 0; boson_index < N_boson; boson_index++) {
-	  boost::timer::auto_cpu_timer boson_calc; 
-	  partial_sum.clear();
-	  partial_sum.resize(nb_q_points);
-	  for(int q_index = 0; q_index < nb_q_points; q_index++) {
-	       for(int freq_index = 0; freq_index < bubble_dim; freq_index++) {
-		    partial_sum[q_index].push_back(
-			 Eigen::MatrixXcd::Zero(n_sites * per_site_orbital_size * per_site_orbital_size,
-						n_sites * per_site_orbital_size * per_site_orbital_size));
-	       }
+void HybFunction::dump_delta_hdf5() {
+     if (world_rank_ == 0) {
+	  double beta = sigma_->get_beta();
+	  if (enforce_real) {
+	       cout << "Enforcing REAL DELTA function" << endl;
 	  }
-	  lattice_bubble[boson_index].resize(nb_q_points);
-	  for (int k_index = k_min; k_index < k_max; k_index++) {
-	       double l_weight = lattice_bs_->get_weight(k_index);
-	       if (abs(l_weight) < 1e-6) {
-		    if (world_rank_ == 0) {
-			 cout << "skipping k point in lattice bubble" << endl;
+	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
+	       int orb_index = 0;
+	       std::string archive_name = imaginary_time_hdf5_root + "_"
+		    + boost::lexical_cast<std::string>(site_index) + ".h5";
+	       alps::hdf5::archive delta_output(archive_name, "a");
+	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+		    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++, orb_index++) {
+			 std::vector<complex<double> > delta_function;
+			 for (size_t tau_index = 0; tau_index < delta_tau.size(); tau_index++) {
+			      // CAREFUL! delta_tau has been extended to include tau = beta
+			      // it has one more element than should be for a proper definition of
+			      // tau_value:
+			      if (enforce_real) {
+				   delta_function.push_back(
+					-delta_tau[tau_index].
+					block(site_index * per_site_orbital_size,
+					      site_index * per_site_orbital_size,
+					      per_site_orbital_size,
+					      per_site_orbital_size).real()(orb1, orb2));
+			      } else {
+				   delta_function.push_back(
+					-delta_tau[tau_index].
+					block(site_index * per_site_orbital_size,
+					      site_index * per_site_orbital_size,
+					      per_site_orbital_size,
+					      per_site_orbital_size)(orb1, orb2));
+			      }
+			 }
+			 std::stringstream h5_group_name;
+			 h5_group_name << "/Delta_" << orb_index;
+			 delta_output << alps::make_pvp(h5_group_name.str(), delta_function);
 		    }
-		    continue;
-	       } else {
-		    Eigen::VectorXd k_point = lattice_bs_->get_k_point(k_index);
-		    gf_k = get_greens_function(k_point, boson_index);
-		    for(int q_index = 0; q_index < nb_q_points; q_index++) {
-			 Eigen::VectorXd k_plus_q_point = lattice_bs_->get_k_plus_q_point(k_index, q_index);
-			 gf_kq = get_greens_function(k_plus_q_point, boson_index);
-			 for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
-			      for(size_t site_index = 0; site_index < n_sites;
-				  site_index++) {
-				   // block start for full system greens function
-				   int block_index = site_index * per_site_orbital_size * per_site_orbital_size;
-				   for (int part_index_1 = 0; part_index_1 < orbital_size;
-					part_index_1++) {
-					for (int hole_index_2 = 0; hole_index_2 < orbital_size;
-					     hole_index_2++) {
-					     for (int part_index_2 = 0; part_index_2 < orbital_size;
-						  part_index_2++) {
-						  for (int hole_index_1 = 0; hole_index_1 < orbital_size;
-						       hole_index_1++) {
-						       new_i = part_index_1 *
-							    orbital_size + hole_index_2;
-						       new_j = part_index_2 *
-							    orbital_size + hole_index_1;
-						       //Careful here: greens functions are based
-						       //on the full orbital dimension of the
-						       // system
-						       partial_sum[q_index][freq_index].block(
-							    block_index, block_index,
-							    block_size, block_size)(new_i, new_j) +=
-							    l_weight *
-							    gf_k[freq_index].block(
-								 block_index, block_index,
-								 block_size, block_size)(
-								      part_index_1, part_index_2) *
-							    gf_kq[freq_index + boson_index].block(
-								 block_index, block_index,
-								 block_size, block_size)(
-								      hole_index_1, hole_index_2);
-						  } // hole_index_1
-					     }  // part_index_2
-					}  // hole_index_2
-				   }  // part_index_1
-			      }  // site_index
-			 } // freq
-		    } // q_index
-	       } // if weight
-	  } // k_index
-	  for (int q_index = 0; q_index < nb_q_points; q_index++) {
-	       for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {	       
-		    MPI_Allreduce(partial_sum[q_index][freq_index].data(),
-				  world_lattice_bubble[boson_index][q_index][freq_index].data(),
-				  partial_sum[q_index][freq_index].size(),
-				  MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 	       }
+	       delta_output.close();
 	  }
-	  std::cout << "Time for boson freq " << boson_index
-		    << ": " << std::endl;
-     } // boson
+     }
+     MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void HybFunction::dump_delta() {
@@ -827,160 +640,7 @@ void HybFunction::dump_G0_for_ctint_hdf5(alps::hdf5::archive &h5_archive) {
 
      }
 }
-
-void HybFunction::dump_delta_hdf5() {
-     if (world_rank_ == 0) {
-	  double beta = sigma_->get_beta();
-	  if (enforce_real) {
-	       cout << "Enforcing REAL DELTA function" << endl;
-	  }
-	  for(size_t site_index = 0; site_index < n_sites; site_index++) {
-	       int orb_index = 0;
-	       std::string archive_name = imaginary_time_hdf5_root + "_"
-		    + boost::lexical_cast<std::string>(site_index) + ".h5";
-	       alps::hdf5::archive delta_output(archive_name, "a");
-	       for (size_t orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
-		    for (size_t orb2 = 0; orb2 < per_site_orbital_size; orb2++, orb_index++) {
-			 std::vector<complex<double> > delta_function;
-			 for (size_t tau_index = 0; tau_index < delta_tau.size(); tau_index++) {
-			      // CAREFUL! delta_tau has been extended to include tau = beta
-			      // it has one more element than should be for a proper definition of
-			      // tau_value:
-			      if (enforce_real) {
-				   delta_function.push_back(
-					-delta_tau[tau_index].
-					block(site_index * per_site_orbital_size,
-					      site_index * per_site_orbital_size,
-					      per_site_orbital_size,
-					      per_site_orbital_size).real()(orb1, orb2));
-			      } else {
-				   delta_function.push_back(
-					-delta_tau[tau_index].
-					block(site_index * per_site_orbital_size,
-					      site_index * per_site_orbital_size,
-					      per_site_orbital_size,
-					      per_site_orbital_size)(orb1, orb2));
-			      }
-			 }
-			 std::stringstream h5_group_name;
-			 h5_group_name << "/Delta_" << orb_index;
-			 delta_output << alps::make_pvp(h5_group_name.str(), delta_function);
-		    }
-	       }
-	       delta_output.close();
-	  }
-     }
-     MPI_Barrier(MPI_COMM_WORLD);
-}
-
-void HybFunction::dump_bubble_hdf5() {
-     if (world_rank_ == 0) {
-	  std::string archive_name = bubble_hdf5_root + ".h5";
-	  alps::hdf5::archive bubble_output(archive_name, "a");
-	  std::string h5_group_name("/local_bubble");
-	  for (int site_index = 0; site_index < n_sites; site_index++) {
-	       for(int boson_index = 0; boson_index < N_boson; boson_index++) {
-		    std::stringstream site_path;
-		    site_path << h5_group_name + "/site_" +
-			 boost::lexical_cast<std::string>(site_index) + "/" +
-			 "boson_" + boost::lexical_cast<std::string>(boson_index) + "/";
-		    for(int line_idx = 0;
-			line_idx < per_site_orbital_size * per_site_orbital_size;
-			++line_idx) {
-			 for(int col_idx = 0;
-			     col_idx < per_site_orbital_size * per_site_orbital_size;
-			     ++col_idx) {
-			      std::stringstream orbital_path;
-			      int part_index_1 = line_idx / per_site_orbital_size;
-			      int hole_index_2 = line_idx % per_site_orbital_size;
-			      int part_index_2 = col_idx / per_site_orbital_size;
-			      int hole_index_1 = col_idx % per_site_orbital_size;
-			      orbital_path << site_path.str() <<
-				   boost::lexical_cast<std::string>(part_index_1) + "/"
-				   + boost::lexical_cast<std::string>(hole_index_2) + "/"
-				   + boost::lexical_cast<std::string>(part_index_2) + "/"
-				   + boost::lexical_cast<std::string>(hole_index_1) + "/value";
-			      std::vector<std::complex<double>> temp_data;
-			      temp_data.resize(bubble_dim);
-			      for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
-				   temp_data[freq_index] =
-					world_local_bubble[boson_index][freq_index].block(
-					     site_index * per_site_orbital_size *
-					     per_site_orbital_size,
-					     site_index * per_site_orbital_size *
-					     per_site_orbital_size,
-					     per_site_orbital_size *
-					     per_site_orbital_size,
-					     per_site_orbital_size *
-					     per_site_orbital_size)(line_idx, col_idx);
-			      }
-			      bubble_output << alps::make_pvp(orbital_path.str(), temp_data);
-			 }
-		    }
-	       }
-	  }
-	  std::string h5_group_name_2("/lattice_bubble");
-	  for (int site_index = 0; site_index < n_sites; site_index++) {
-	       for(int boson_index = 0; boson_index < N_boson; boson_index++) {
-		    for(int q_index = 0;
-			q_index < lattice_bs_->get_nb_points_for_bseq(); q_index++) {
-			 std::stringstream site_path;
-			 site_path <<
-			      h5_group_name_2 +
-			      "/site_" + boost::lexical_cast<std::string>(site_index) + "/" +
-			      "boson_" + boost::lexical_cast<std::string>(boson_index) + "/" +
-			      "q_" + boost::lexical_cast<std::string>(q_index) + "/";
-			 for(int line_idx = 0;
-			     line_idx < per_site_orbital_size * per_site_orbital_size;
-			     ++line_idx) {
-			      for(int col_idx = 0;
-				  col_idx < per_site_orbital_size * per_site_orbital_size;
-				  ++col_idx) {
-				   std::stringstream orbital_path;
-				   int part_index_1 = line_idx / per_site_orbital_size;
-				   int hole_index_2 = line_idx % per_site_orbital_size;
-				   int part_index_2 = col_idx / per_site_orbital_size;
-				   int hole_index_1 = col_idx % per_site_orbital_size;
-				   orbital_path << site_path.str() <<
-					boost::lexical_cast<std::string>(part_index_1) + "/"
-					+ boost::lexical_cast<std::string>(hole_index_2) + "/"
-					+ boost::lexical_cast<std::string>(part_index_2) + "/"
-					+ boost::lexical_cast<std::string>(hole_index_1) + "/value";
-				   std::vector<std::complex<double>> temp_data;
-				   temp_data.resize(bubble_dim);
-				   for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
-					temp_data[freq_index] =
-					     world_lattice_bubble[boson_index][q_index][freq_index].block(
-						  site_index * per_site_orbital_size *
-						  per_site_orbital_size,
-						  site_index * per_site_orbital_size *
-						  per_site_orbital_size,
-						  per_site_orbital_size *
-						  per_site_orbital_size,
-						  per_site_orbital_size *
-						  per_site_orbital_size)(line_idx, col_idx);
-				   }
-				   bubble_output << alps::make_pvp(orbital_path.str(), temp_data);
-			      }
-			 }
-		    }
-	       }
-	  }
-	  h5_group_name_2 = "/lattice_bubble/q_point_list";
-	  std::vector<std::complex<double>> temp_data;
-	  temp_data.resize(lattice_bs_->get_nb_points_for_bseq());
-	  int nb_q_points = lattice_bs_->get_nb_points_for_bseq();
-	  Eigen::VectorXd q_point;
-	  for (int q_index = 0; q_index < nb_q_points; q_index++) {
-	       q_point = lattice_bs_->get_q_point(q_index);
-	       temp_data[q_index] = std::complex<double>(q_point(0), q_point(1));
-	  }
-	  bubble_output << alps::make_pvp(h5_group_name_2, temp_data);
-	  bubble_output.close();
-     }
-     MPI_Barrier(MPI_COMM_WORLD);
-}
-
+ 
 void HybFunction::elementary_compute_delta_tau() {
      double beta = sigma_->get_beta();
      size_t N_max = sigma_->get_n_matsubara_freqs();
@@ -1233,7 +893,6 @@ const string HybFunction::imaginary_time_dump_name = "c_delta.tau";
 const string HybFunction::imaginary_time_dump_name_for_matrix = "ec_delta.tau";
 const string HybFunction::imaginary_time_dump_name_for_hf = "gtau";
 const string HybFunction::imaginary_time_hdf5_root = "c_delta";
-const string HybFunction::bubble_hdf5_root = "c_bubble";
 const string HybFunction::shift_dump_name = "c_shift.tmp";
 const string HybFunction::hf_shift_dump_name = "shift.tmp";
 const string HybFunction::shift_sq_dump_name = "c_shift_sq.tmp";

@@ -14,6 +14,16 @@ double square_inverse(complex<double> omega) {
      return real(pow(1.0 / omega, 2));
 }
 
+
+// Constructor for a zero-valued self-energy
+// Useful for the non-interacting case
+Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
+		       bool verbose)
+     :GfBase(parms, world_rank), is_alps3(false), is_analytic_tail(true) {
+     basic_init(parms, verbose);
+     compute_order2_partial_sum();
+}
+
 // The initial version, able to read sigma from txt or hdf5,
 // -- compliant with the output format of the mix procedure.
 Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
