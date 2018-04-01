@@ -10,6 +10,7 @@
 #include <fstream>
 #include <boost/timer/timer.hpp>
 #include <mpi.h>
+#include "bubble.hpp"
 #include "../shared_libs/chemical_potential.hpp"
 #include "../shared_libs/cmd_line.hpp"
 #include <alps/params.hpp>
@@ -97,7 +98,7 @@ int main(int argc, const char* argv[]) {
 	  const string input_file(tmp_file_name);
 	  boost::shared_ptr<Chemicalpotential> chempot(
 	       new Chemicalpotential(parms, from_alps3, world_rank));
-	  // Compute hybridization function
+	  // Compute bubbles
 	  if (computation_type == 0) {
                alps::hdf5::archive h5_archive(input_file, "r");
                boost::shared_ptr<Bandstructure> bare_band(
@@ -111,8 +112,7 @@ int main(int argc, const char* argv[]) {
 	        	 std::cout << "Using Matsubara source for self-energy" << std::endl << std::endl;
 	            }
 	       }
-	       boost::shared_ptr<Selfenergy> self_energy(
-	            new Selfenergy(parms, world_rank, true));
+	       boost::shared_ptr<Selfenergy> self_energy(new Selfenergy(parms, world_rank, true));
 	       h5_archive.close();
                {
                     boost::timer::auto_cpu_timer all_loop;
@@ -127,13 +127,10 @@ int main(int argc, const char* argv[]) {
                     MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
                     MPI_Bcast(&chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
                     bool compute_bubble(true);
-                    boost::shared_ptr<DMFTModel> dmft_model(
-	         	 new DMFTModel(bare_band, self_energy, parms, chemical_potential,
-                                       compute_bubble, world_rank));
+                    boost::shared_ptr<LocalBubble> local_bubble(
+	         	 new LocalBubble(bare_band, self_energy, parms,
+                                          chemical_potential, world_rank));
                     //Restrict reading to process 0, then broadcast.
-                    bare_band->compute_bare_dos(chemical_potential);
-                    bare_band->dump_bare_dos();
-                    chempot->dump_values();
                }
 	  }
 	  MPI_Finalize();
