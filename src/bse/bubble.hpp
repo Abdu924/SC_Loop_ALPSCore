@@ -29,7 +29,7 @@ public:
      void compute_local_bubble();
      virtual ~LocalBubble() {}
 
-     boost::multi_array<std::complex<double>, 4> values_;
+     boost::multi_array<std::complex<double>, 6> values_;
      
 private:
      int world_rank_;

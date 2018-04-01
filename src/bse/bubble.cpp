@@ -45,8 +45,8 @@ LocalBubble::LocalBubble(alps::hdf5::archive &h5_archive,
                         [per_site_orbital_size][per_site_orbital_size][N_max]);
      h5_archive["/legendre_gf/data"] >> raw_full_gf;     
      values_.resize(boost::extents[N_boson][bubble_dim]
-                    [n_sites * per_site_orbital_size * per_site_orbital_size]
-                    [n_sites * per_site_orbital_size * per_site_orbital_size]);
+                    [per_site_orbital_size][per_site_orbital_size]
+                    [per_site_orbital_size][per_site_orbital_size]);
      std::fill(values_.origin(), values_.origin() + values_.num_elements(), 0.0);
 }
 
@@ -124,35 +124,14 @@ void LocalBubble::dump_bubble_hdf5() {
 }
 
 
-void LocalBubble::compute_local_bubble() {
-
-     // NEED to CHECK thiS!!!!
-     // TODO FIXME
-     // if (compute_bubble) {
-     //      // We are interested in the linear response
-     //      // in the paramagentic phase, thus we do
-     //      // not need to separate spins anymore.
-     //      world_local_gf[freq_index].block(
-     //           site_index * per_site_orbital_size,
-     //           site_index * per_site_orbital_size,
-     //           per_site_orbital_size,
-     //           per_site_orbital_size) =
-     //           world_local_greens_function.block(
-     //                site_index * per_site_orbital_size,
-     //                site_index * per_site_orbital_size,
-     //                per_site_orbital_size,
-     //                per_site_orbital_size);
-     // }
-     
+void LocalBubble::compute_local_bubble() {     
      if (world_rank_ == 0)
      {
 	  cout << "***********************************************" << endl;
 	  cout << "** LOCAL BUBBLE CALCULATION                 ***" << endl;
 	  cout << "***********************************************" << endl << endl;
 	  boost::timer::auto_cpu_timer bubble_calc;
-	  int orbital_size(lattice_bs_->get_orbital_size());
-	  int new_i(0);
-	  int new_j(0);
+	  int orbital_size = per_site_orbital_size;
 	  for (int boson_index = 0; boson_index < N_boson; boson_index++) {
 	       for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
 		    for(size_t site_index = 0; site_index < n_sites; site_index++) {
@@ -164,9 +143,8 @@ void LocalBubble::compute_local_bubble() {
 					part_index_2++) {
 					for (int hole_index_1 = 0;
 					     hole_index_1 < orbital_size; hole_index_1++) {
-					     new_i = part_index_1 * orbital_size + hole_index_2;
-					     new_j = part_index_2 * orbital_size + hole_index_1;
-					     values_[boson_index][freq_index][new_i][new_j] =
+					     values_[boson_index][freq_index][part_index_1][hole_index_2]
+                                                  [part_index_2][hole_index_1] =
 						  raw_full_gf[part_index_1][part_index_2][freq_index]
                                                   * raw_full_gf[hole_index_1][hole_index_2][freq_index + boson_index];
 					} // hole_index_1
