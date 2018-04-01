@@ -11,6 +11,7 @@
 #include <alps/hdf5/multi_array.hpp>
 #include <alps/hdf5/pointer.hpp>
 #include <alps/params/convenience_params.hpp>
+#include <boost/timer/timer.hpp>
 
 #include "../shared_libs/band_structure.hpp"
 #include "../shared_libs/self_energy.hpp"
@@ -25,6 +26,7 @@ public:
                  const alps::params& parms, complex<double> chemical_potential,
                  int world_rank);
      void dump_bubble_hdf5();
+     void compute_local_bubble();
      virtual ~LocalBubble() {}
 
      boost::multi_array<std::complex<double>, 4> values_;
@@ -41,6 +43,7 @@ private:
      int n_sites;
      int tot_orbital_size;
      int per_site_orbital_size;
+     boost::multi_array<complex<double> , 3> raw_full_gf;
      vector<Eigen::MatrixXcd> world_local_gf;
      vector<vector<Eigen::MatrixXcd> > world_local_bubble;
 

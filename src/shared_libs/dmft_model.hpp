@@ -41,7 +41,6 @@ public:
      int check_density_success(double cur_density);
      void compute_order_parameter();
      void get_spin_current();
-     void compute_local_bubble();
      void compute_lattice_bubble();
      void set_chemical_potential(std::complex<double> new_chemical_potential) {
           chemical_potential = new_chemical_potential;

@@ -127,6 +127,8 @@ int main(int argc, const char* argv[]) {
                boost::shared_ptr<LocalBubble> local_bubble(
                     new LocalBubble(h5_archive, bare_band, self_energy, parms,
                                     chemical_potential, world_rank));
+
+               local_bubble->dump_bubble_hdf5();
                h5_archive.close();
 	  }
 	  MPI_Finalize();
