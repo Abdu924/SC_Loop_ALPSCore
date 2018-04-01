@@ -168,7 +168,7 @@ void LocalBubble::compute_local_bubble() {
 					     new_j = part_index_2 * orbital_size + hole_index_1;
 					     values_[boson_index][freq_index][new_i][new_j] =
 						  raw_full_gf[part_index_1][part_index_2][freq_index]
-                                                  * raw_full_gf[hole_index_1][hole_index_2][freq_index];
+                                                  * raw_full_gf[hole_index_1][hole_index_2][freq_index + boson_index];
 					} // hole_index_1
 				   }  // part_index_2
 			      }  // hole_index_2

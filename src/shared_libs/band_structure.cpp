@@ -11,8 +11,8 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      std::vector<Eigen::MatrixXcd> world_dispersion_;
      Eigen::VectorXd world_weights_;
      std::vector<Eigen::VectorXd> world_k_lattice_;
-     int N_Qmesh = static_cast<int>(parms["N_QBSEQ"]);
-     double max_qmesh = static_cast<double>(parms["MAX_QBSEQ"]);
+     int N_Qmesh = static_cast<int>(parms["bseq.N_QBSEQ"]);
+     double max_qmesh = static_cast<double>(parms["bseq.MAX_QBSEQ"]);
      generate_bseq_lattice(N_Qmesh, max_qmesh);
      if (world_rank == 0) {
 	  int n_k_points;
