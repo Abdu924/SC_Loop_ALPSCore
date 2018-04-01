@@ -9,11 +9,10 @@ HybFunction::HybFunction(const alps::params &parms,
 			 boost::shared_ptr<Bandstructure> const &lattice_bs,
 			 boost::shared_ptr<Selfenergy> const &sigma,
 			 complex<double> chemical_potential, int world_rank,
-			 bool compute_bubble, bool verbose):
+			 bool verbose):
      lattice_bs_(lattice_bs), sigma_(sigma), world_rank_(world_rank),
      enforce_real(sigma->get_enforce_real()),
-     chemical_potential(chemical_potential),
-     compute_bubble(compute_bubble) {
+     chemical_potential(chemical_potential) {
      boost::timer::auto_cpu_timer hyb_calc; 
      n_tau = static_cast<size_t>(parms["N_TAU"]);
      n_sites = sigma_->get_n_sites();

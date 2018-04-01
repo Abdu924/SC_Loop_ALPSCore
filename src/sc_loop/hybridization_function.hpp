@@ -31,7 +31,7 @@ public:
 		 boost::shared_ptr<Bandstructure> const &lattice_bs,
 		 boost::shared_ptr<Selfenergy> const &sigma,
 		 complex<double> chemical_potential,
-		 int world_rank, bool compute_bubble, bool verbose=false);
+		 int world_rank, bool verbose=false);
      
      void compute_hybridization_function(complex<double> mu);
      void display_asymptotics();
@@ -49,7 +49,6 @@ public:
      static const string imaginary_time_dump_name_for_hf;
      
 private:
-     bool compute_bubble;
      boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::shared_ptr<Selfenergy> sigma_;
      Eigen::MatrixXcd world_bath_moment_1;

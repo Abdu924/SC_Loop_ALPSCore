@@ -144,7 +144,6 @@ int main(int argc, const char* argv[]) {
 	  // Compute hybridization function
 	  if ((computation_type == 0) || (computation_type == 4)) {
 	       alps::hdf5::archive h5_archive(input_file, "r");
-	       bool compute_bubble(false);
 	       boost::shared_ptr<Bandstructure> bare_band(
 		    new Bandstructure(parms, world_rank, true));
 	       string h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
@@ -173,8 +172,10 @@ int main(int argc, const char* argv[]) {
 		    MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		    MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		    MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+                    bool compute_bubble(false);
                     boost::shared_ptr<DMFTModel> dmft_model(
-			 new DMFTModel(bare_band, self_energy, parms, old_chemical_potential, world_rank));
+			 new DMFTModel(bare_band, self_energy, parms, old_chemical_potential,
+                                       compute_bubble, world_rank));
 		    boost::timer::auto_cpu_timer mu_calc;
 		    tie(newton_success, new_chemical_potential, density, new_dn_dmu) =
 			 dmft_model->get_mu_from_density(old_chemical_potential);
@@ -216,8 +217,7 @@ int main(int argc, const char* argv[]) {
 		    MPI_Barrier(MPI_COMM_WORLD);
 		    boost::shared_ptr<HybFunction> hybridization_function(
 			 new HybFunction(parms, bare_band, self_energy,
-					 new_chemical_potential, world_rank,
-					 compute_bubble, verbose));
+					 new_chemical_potential, world_rank, verbose));
 		    if (world_rank == 0)
 		    {
 			 alps::hdf5::archive w_h5_archive(input_file, "w");

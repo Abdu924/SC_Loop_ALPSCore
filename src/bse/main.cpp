@@ -126,8 +126,10 @@ int main(int argc, const char* argv[]) {
                     }
                     MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
                     MPI_Bcast(&chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+                    bool compute_bubble(true);
                     boost::shared_ptr<DMFTModel> dmft_model(
-	         	 new DMFTModel(bare_band, self_energy, parms, chemical_potential, world_rank));
+	         	 new DMFTModel(bare_band, self_energy, parms, chemical_potential,
+                                       compute_bubble, world_rank));
                     //Restrict reading to process 0, then broadcast.
                     bare_band->compute_bare_dos(chemical_potential);
                     bare_band->dump_bare_dos();

@@ -26,9 +26,9 @@ Eigen::MatrixXcd get_pauli_matrix(int i) {
 DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
 		     boost::shared_ptr<Selfenergy> const &sigma,
 		     const alps::params& parms, complex<double> chemical_potential,
-                     int world_rank)
+                     bool compute_bubble, int world_rank)
      : lattice_bs_(lattice_bs), sigma_(sigma), chemical_potential(chemical_potential),
-       world_rank_(world_rank) {
+       compute_bubble(compute_bubble), world_rank_(world_rank) {
      size_t N_max = sigma_->get_n_matsubara_freqs();
      double omega_max = abs(sigma_->get_matsubara_frequency(N_max - 1));
      string ref_exact ("exact");
@@ -77,7 +77,6 @@ DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
      N_boson = parms["measurement.G2.n_bosonic_freq"];
      int N_Qmesh = static_cast<size_t>(parms["bseq.N_QBSEQ"]);
      bubble_dim = parms.exists("bseq.N_NU_BSEQ") ? static_cast<int>(parms["bseq.N_NU_BSEQ"]) : N_max - N_boson;
-     bool compute_bubble(true);
      n_sites = sigma_->get_n_sites();
      per_site_orbital_size = sigma_->get_per_site_orbital_size();
      tot_orbital_size = n_sites * per_site_orbital_size;

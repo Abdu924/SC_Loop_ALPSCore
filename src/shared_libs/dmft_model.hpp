@@ -24,7 +24,7 @@ public:
      DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
 	       boost::shared_ptr<Selfenergy> const &sigma,
 	       const alps::params& parms, std::complex<double> chemical_potential,
-               int world_rank);
+               bool compute_bubble, int world_rank);
      tuple<double, double> get_particle_density(double chemical_potential,
 						bool compute_derivative);
      tuple<int, double, double, double> get_mu_from_density(double initial_mu);
@@ -102,7 +102,7 @@ private:
      double kinetic_energy;
      double potential_energy;
      std::complex<double> chemical_potential;
-
+     bool compute_bubble;
 
      static const std::size_t max_iter_for_bounds;     
      static const std::size_t max_iter_for_bisec;
