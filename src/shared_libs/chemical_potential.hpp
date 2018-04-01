@@ -5,6 +5,7 @@
 #include <iostream>
 #include <alps/hdf5.hpp>
 #include <alps/params.hpp>
+#include <alps/params/convenience_params.hpp>
 #include <boost/filesystem.hpp>
 #include "band_structure.hpp"
 

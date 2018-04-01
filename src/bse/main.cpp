@@ -113,25 +113,21 @@ int main(int argc, const char* argv[]) {
 	            }
 	       }
 	       boost::shared_ptr<Selfenergy> self_energy(new Selfenergy(parms, world_rank, true));
-	       h5_archive.close();
-               {
-                    boost::timer::auto_cpu_timer all_loop;
-                    if (world_rank == 0) {
-                         //FIXME TODO
-                         // HERE Horrible bug fix in order to align crystal
-                         // field and value in scf file!! Has to be changed, and old_chemical_potential
-                         // only retrieved from crystal_field.h5
-                         chemical_potential = ((*chempot)[0] + (*chempot)[2]) / 2.0;
-                         found_old_mu = 1;
-                    }
-                    MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
-                    MPI_Bcast(&chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-                    bool compute_bubble(true);
-                    boost::shared_ptr<LocalBubble> local_bubble(
-	         	 new LocalBubble(bare_band, self_energy, parms,
-                                          chemical_potential, world_rank));
-                    //Restrict reading to process 0, then broadcast.
+               if (world_rank == 0) {
+                    //FIXME TODO
+                    // HERE Horrible bug fix in order to align crystal
+                    // field and value in scf file!! Has to be changed, and old_chemical_potential
+                    // only retrieved from crystal_field.h5
+                    chemical_potential = ((*chempot)[0] + (*chempot)[2]) / 2.0;
+                    found_old_mu = 1;
                }
+               MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
+               MPI_Bcast(&chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+               bool compute_bubble(true);
+               boost::shared_ptr<LocalBubble> local_bubble(
+                    new LocalBubble(h5_archive, bare_band, self_energy, parms,
+                                    chemical_potential, world_rank));
+               h5_archive.close();
 	  }
 	  MPI_Finalize();
 	  return 0;
