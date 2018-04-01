@@ -47,8 +47,6 @@ public:
      virtual ~HybFunction() {}
 
      static const string matsubara_bare_gf_dump_name;
-     static const string matsubara_self_energy_name;
-     static const string legendre_self_energy_name;
      static const string mom1_dump_name;
      static const string mom2_dump_name;
      static const string imaginary_time_dump_name_for_hf;

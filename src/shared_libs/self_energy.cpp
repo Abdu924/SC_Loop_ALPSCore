@@ -973,3 +973,5 @@ void Selfenergy::hdf5_dump_tail(alps::hdf5::archive h5_archive, string h5_group_
 
 const size_t Selfenergy::tail_fit_length = 10;
 const std::string Selfenergy::density_density_result_name = "DENSITY_DENSITY_CORRELATION_FUNCTIONS";
+const std::string Selfenergy::matsubara_self_energy_name = "current_sigma";
+const std::string Selfenergy::legendre_self_energy_name = "current_legendre_sigma";

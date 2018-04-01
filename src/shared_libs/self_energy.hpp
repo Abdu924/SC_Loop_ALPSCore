@@ -48,6 +48,9 @@ public:
 				   double alpha);
      
      virtual ~Selfenergy() {}
+
+     static const std::string matsubara_self_energy_name;
+     static const std::string legendre_self_energy_name;
      
 protected:
      void compute_order2_partial_sum();

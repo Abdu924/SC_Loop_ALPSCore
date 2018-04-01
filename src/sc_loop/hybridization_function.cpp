@@ -1237,7 +1237,5 @@ const string HybFunction::bubble_hdf5_root = "c_bubble";
 const string HybFunction::shift_dump_name = "c_shift.tmp";
 const string HybFunction::hf_shift_dump_name = "shift.tmp";
 const string HybFunction::shift_sq_dump_name = "c_shift_sq.tmp";
-const string HybFunction::matsubara_self_energy_name = "current_sigma";
-const string HybFunction::legendre_self_energy_name = "current_legendre_sigma";
 const string HybFunction::mom1_dump_name = "mom1.tmp";
 const string HybFunction::mom2_dump_name = "mom2.tmp";

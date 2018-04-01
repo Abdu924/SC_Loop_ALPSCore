@@ -98,11 +98,10 @@ int main(int argc, const char* argv[]) {
 	  boost::shared_ptr<Chemicalpotential> chempot(
 	       new Chemicalpotential(parms, from_alps3, world_rank));
 	  // Compute hybridization function
-	  if ((computation_type == 0) || (computation_type == 4)) {
-	  //      alps::hdf5::archive h5_archive(input_file, "r");
-	  //      bool compute_bubble(computation_type == 4 ? true : false);
-	  //      boost::shared_ptr<Bandstructure> bare_band(
-	  //           new Bandstructure(parms, world_rank, true));
+	  if (computation_type == 0) {
+               alps::hdf5::archive h5_archive(input_file, "r");
+               boost::shared_ptr<Bandstructure> bare_band(
+                    new Bandstructure(parms, world_rank, true));
 	  //      string h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
 	  //           HybFunction::legendre_self_energy_name : HybFunction::matsubara_self_energy_name;
 	  //      if (world_rank == 0) {

@@ -154,7 +154,7 @@ int main(int argc, const char* argv[]) {
 	       boost::shared_ptr<Bandstructure> bare_band(
 		    new Bandstructure(parms, world_rank, true));
 	       string h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
-		    HybFunction::legendre_self_energy_name : HybFunction::matsubara_self_energy_name;
+		    Selfenergy::legendre_self_energy_name : Selfenergy::matsubara_self_energy_name;
 	       if (world_rank == 0) {
 		    if (parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>()) {
 			 std::cout << "Using LEGENDRE for SC LOOP " << std::endl << std::endl;
@@ -252,7 +252,7 @@ int main(int argc, const char* argv[]) {
 		    // sigma gotten from QMC + tails
 		    int ref_site_index = 0;
 		    string old_h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
-			 HybFunction::legendre_self_energy_name : HybFunction::matsubara_self_energy_name;
+			 Selfenergy::legendre_self_energy_name : Selfenergy::matsubara_self_energy_name;
 		    boost::shared_ptr<Selfenergy>
 			 old_self_energy(new Selfenergy(parms, world_rank, h5_archive,
 							old_h5_group_name, verbose));
