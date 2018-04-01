@@ -18,18 +18,18 @@
 
 using namespace std;
 
-class LocalBubble {
+class Bubble {
 public:
-     LocalBubble(alps::hdf5::archive &h5_archive,
+     Bubble(alps::hdf5::archive &h5_archive,
                  boost::shared_ptr<Bandstructure> const &lattice_bs,
                  boost::shared_ptr<Selfenergy> const &sigma,
                  const alps::params& parms, complex<double> chemical_potential,
                  int world_rank);
      void dump_bubble_hdf5();
      void compute_local_bubble();
-     virtual ~LocalBubble() {}
+     virtual ~Bubble() {}
 
-     boost::multi_array<std::complex<double>, 6> values_;
+     boost::multi_array<std::complex<double>, 6> local_values_;
      
 private:
      int world_rank_;
@@ -48,17 +48,4 @@ private:
      vector<vector<Eigen::MatrixXcd> > world_local_bubble;
 
      static const std::string bubble_hdf5_root;
-};
-
-class LatticeBubble {
-public:
-     LatticeBubble();
-     boost::multi_array<std::complex<double>, 7> values_;
-     
-     virtual ~LatticeBubble() {}
-
-private:
-     int n_orbitals;
-     int N_l_G4;
-     int N_boson;
 };

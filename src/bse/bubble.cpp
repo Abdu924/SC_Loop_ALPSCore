@@ -3,11 +3,7 @@
 using namespace std;
 typedef boost::multi_array<complex<double> , 3> cplx_array_type;
 
-LatticeBubble::LatticeBubble() {
-     values_.resize(boost::extents[n_orbitals][n_orbitals][n_orbitals][n_orbitals][N_l_G4][N_l_G4][N_boson]);
-}
-
-LocalBubble::LocalBubble(alps::hdf5::archive &h5_archive,
+Bubble::Bubble(alps::hdf5::archive &h5_archive,
                          boost::shared_ptr<Bandstructure> const &lattice_bs,
                          boost::shared_ptr<Selfenergy> const &sigma,
                          const alps::params& parms, complex<double> chemical_potential,
@@ -29,28 +25,25 @@ LocalBubble::LocalBubble(alps::hdf5::archive &h5_archive,
      std::cout << "Computing bubbles for " << bubble_dim << " fermionic frequencies, "
                << std::endl << " q mesh based on " << N_Qmesh << " points, i.e. "
                << lattice_bs->get_nb_points_for_bseq() << " q points, and " 
-               << N_boson << " bosonic frequencies" << std::endl;
-
-     
+               << N_boson << " bosonic frequencies" << std::endl;     
      world_local_gf.clear();
      for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
           world_local_gf.push_back(Eigen::MatrixXcd::Zero(
                                         tot_orbital_size, tot_orbital_size));
      }
-
      // n_matsubara is parms[N_MATSUBARA]
      // FIXME check if this is consistent with N_max... 
      int n_matsubara = parms["N_MATSUBARA"];
      raw_full_gf.resize(boost::extents
                         [per_site_orbital_size][per_site_orbital_size][N_max]);
      h5_archive["/legendre_gf/data"] >> raw_full_gf;     
-     values_.resize(boost::extents[N_boson][bubble_dim]
+     local_values_.resize(boost::extents[N_boson][bubble_dim]
                     [per_site_orbital_size][per_site_orbital_size]
                     [per_site_orbital_size][per_site_orbital_size]);
-     std::fill(values_.origin(), values_.origin() + values_.num_elements(), 0.0);
+     std::fill(local_values_.origin(), local_values_.origin() + local_values_.num_elements(), 0.0);
 }
 
-void LocalBubble::dump_bubble_hdf5() {
+void Bubble::dump_bubble_hdf5() {
      if (world_rank_ == 0) {
 	  std::string archive_name = bubble_hdf5_root + ".h5";
 	  alps::hdf5::archive bubble_output(archive_name, "a");
@@ -59,7 +52,7 @@ void LocalBubble::dump_bubble_hdf5() {
                std::stringstream site_path;
                site_path << h5_group_name + "/site_" +
                     boost::lexical_cast<std::string>(site_index) + "/data";
-               bubble_output[site_path.str()] << values_;
+               bubble_output[site_path.str()] << local_values_;
 	  }
 	  // std::string h5_group_name_2("/lattice_bubble");
 	  // for (int site_index = 0; site_index < n_sites; site_index++) {
@@ -123,8 +116,7 @@ void LocalBubble::dump_bubble_hdf5() {
      MPI_Barrier(MPI_COMM_WORLD);
 }
 
-
-void LocalBubble::compute_local_bubble() {     
+void Bubble::compute_local_bubble() {     
      if (world_rank_ == 0)
      {
 	  cout << "***********************************************" << endl;
@@ -143,7 +135,7 @@ void LocalBubble::compute_local_bubble() {
 					part_index_2++) {
 					for (int hole_index_1 = 0;
 					     hole_index_1 < orbital_size; hole_index_1++) {
-					     values_[boson_index][freq_index][part_index_1][hole_index_2]
+					     local_values_[boson_index][freq_index][part_index_1][hole_index_2]
                                                   [part_index_2][hole_index_1] =
 						  raw_full_gf[part_index_1][part_index_2][freq_index]
                                                   * raw_full_gf[hole_index_1][hole_index_2][freq_index + boson_index];
@@ -159,4 +151,4 @@ void LocalBubble::compute_local_bubble() {
      MPI_Barrier(MPI_COMM_WORLD);
 }
 
-const std::string LocalBubble::bubble_hdf5_root = "c_bubble";
+const std::string Bubble::bubble_hdf5_root = "c_bubble";
