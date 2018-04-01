@@ -22,21 +22,8 @@ void init(int world_rank, int computation_type,
 	  string &output_file_name, string &backup_file_name) {
      string error_file_name;
      if (computation_type == 0) {
-	  output_file_name = "c_dmft.out";
-	  error_file_name = "error_dmft.txt";
-     } else if (computation_type == 1) {
-	  output_file_name = "c_mix.out";
-	  error_file_name = "error_mix.txt";
-     } else if (computation_type == 2) {
-	  output_file_name = "c_dump_hamilt.out";
-	  error_file_name = "error_dump.txt";
-     } else if (computation_type == 3) {
-	  output_file_name = "c_debug.out";
-	  error_file_name = "error_debug.txt";
-     }
-     else if (computation_type == 4) {
-	  output_file_name = "c_bubble.out";
-	  error_file_name = "error_bubble.txt";
+	  output_file_name = "c_bse.out";
+	  error_file_name = "error_bse.txt";
      }
      backup_file_name = output_file_name + ".old";
      if (world_rank == 0) {
@@ -44,7 +31,6 @@ void init(int world_rank, int computation_type,
 	       if (boost::filesystem::is_regular_file(output_file_name)) {
 		    boost::filesystem::copy_file(output_file_name, backup_file_name,
 						 boost::filesystem::copy_option::overwrite_if_exists);
-		    //cout << p << " size is " << boost::filesystem::file_size(p) << endl;
 	       }
 	  }
 	  auto dummy1 = freopen(output_file_name.c_str(), "w", stdout );
@@ -73,15 +59,7 @@ tuple<string, int, bool> handle_command_line(alps::params par) {
 	  par["help"] = true;
      } else {
 	  if (par["action"].as<int>() == 0) {
-	       cout << "Computing hybridization function" << "\n";
-	  } else if (par["action"].as<int>() == 1) {
-	       cout << "Running mix action" << "\n";
-	  } else if (par["action"].as<int>() == 2) {
-	       cout << "Dumping Hamiltonian" << "\n";
-	  } else if (par["action"].as<int>() == 3) {
-	       cout << "Debug mode" << "\n";
-	  } else if (par["action"].as<int>() == 4) {
-	       cout << "Computing bubble" << "\n";
+	       cout << "Computing bubbles" << "\n";
 	  } else {
 	       std::cout << "The requested action was not recognized" << std::endl;
 	       par["help"] = true;
@@ -107,9 +85,7 @@ int main(int argc, const char* argv[]) {
 	  double chemical_potential;
           int found_old_mu = 0;
 	  // kind of computation
-	  // 0 --- compute hybridization function
-	  // 1 --- compute tail of new_sigma, mix new_sigma with old_sigma,
-	  // and copy sigma to old_sigma.
+	  // 0 --- compute bubbles
 	  int computation_type;
 	  bool from_alps3(false);
 	  string tmp_file_name;
@@ -118,11 +94,7 @@ int main(int argc, const char* argv[]) {
 	  define_parameters(parms);
 	  tie(tmp_file_name, computation_type, from_alps3) = handle_command_line(parms);
 	  init(world_rank, computation_type, output_file_name, old_output_file_name);
-	  //if (world_rank == 0)
-	  //	  std::cout << "Parameters : " << std::endl << parms << std::endl;
 	  const string input_file(tmp_file_name);
-	  // Note: the input (parameter) file also contains the
-	  // result of previous runs for sigma.
 	  boost::shared_ptr<Chemicalpotential> chempot(
 	       new Chemicalpotential(parms, from_alps3, world_rank));
 	  // Compute hybridization function
@@ -302,29 +274,6 @@ int main(int argc, const char* argv[]) {
 		    new Bandstructure(parms, world_rank, true));
 	       bare_band->dump_hamilt(parms);
 	  } else if (computation_type == 3) {
-	       // Perform debug action
-	       // bool compute_bubble = false;
-	       // boost::shared_ptr<Bandstructure> bare_band(
-	       //      new Bandstructure(parms, world_rank, true));
-	       // string h5_group_name("/current_sigma");
-	       // boost::shared_ptr<Selfenergy> self_energy(
-	       //      new Selfenergy(parms, world_rank, h5_archive, h5_group_name, false));
-	       // boost::shared_ptr<DMFTModel> dmft_model(
-	       //      new DMFTModel(bare_band, self_energy,
-	       // 		     parms, world_rank));
-	       // // Restrict reading to process 0, then broadcast.
-	       // if (world_rank == 0) {
-	       //      found_old_mu = true;
-	       //      old_chemical_potential = 1.3790653;
-	       //      dn_dmu = 0.0197718;
-	       // }
-	       // MPI_Bcast(&found_old_mu, 1, MPI::BOOL, 0, MPI_COMM_WORLD);
-	       // MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	       // MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	       // double debug_density, debug_deriv;
-	       // tie(debug_density, debug_deriv) =
-	       //      dmft_model->get_particle_density(old_chemical_potential, dn_dmu);
-	       // cout << "debug_density " << debug_density << endl;
 	  }
 	  MPI_Finalize();
 	  return 0;
