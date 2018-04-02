@@ -87,16 +87,16 @@ void Bubble::dump_bubble_hdf5() {
                     boost::lexical_cast<std::string>(site_index) + "/data";
                bubble_output[site_path.str()] << local_values_;
 	  }
-	  // std::string h5_group_name_2("/lattice_bubble");
-	  // for (int site_index = 0; site_index < n_sites; site_index++) {
-	  //      for(int boson_index = 0; boson_index < N_boson; boson_index++) {
+          std::string h5_group_name_2("/lattice_bubble");
+          for (int site_index = 0; site_index < n_sites; site_index++) {
+               //     for(int boson_index = 0; boson_index < N_boson; boson_index++) {
 	  //           for(int q_index = 0;
 	  //       	q_index < lattice_bs_->get_nb_points_for_bseq(); q_index++) {
-	  //       	 std::stringstream site_path;
-	  //       	 site_path <<
-	  //       	      h5_group_name_2 +
-	  //       	      "/site_" + boost::lexical_cast<std::string>(site_index) + "/" +
-	  //       	      "boson_" + boost::lexical_cast<std::string>(boson_index) + "/" +
+	         	 std::stringstream site_path;
+	         	 site_path <<
+	         	      h5_group_name_2 +
+	         	      "/site_" + boost::lexical_cast<std::string>(site_index) + "/data";
+                         bubble_output[site_path.str()] << lattice_values_;
 	  //       	      "q_" + boost::lexical_cast<std::string>(q_index) + "/";
 	  //       	 for(int line_idx = 0;
 	  //       	     line_idx < per_site_orbital_size * per_site_orbital_size;
@@ -133,7 +133,7 @@ void Bubble::dump_bubble_hdf5() {
 	  //       	 }
 	  //           }
 	  //      }
-	  // }
+          }
 	  // h5_group_name_2 = "/lattice_bubble/q_point_list";
 	  // std::vector<std::complex<double>> temp_data;
 	  // temp_data.resize(lattice_bs_->get_nb_points_for_bseq());
