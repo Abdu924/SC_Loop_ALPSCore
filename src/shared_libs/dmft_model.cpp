@@ -27,7 +27,7 @@ DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
 		     boost::shared_ptr<Selfenergy> const &sigma,
 		     const alps::params& parms, complex<double> chemical_potential,
                      bool compute_bubble, int world_rank)
-     : lattice_bs_(lattice_bs), sigma_(sigma), chemical_potential(chemical_potential),
+     : lattice_bs_(lattice_bs), sigma_(sigma), chemical_potential_(chemical_potential),
        compute_bubble(compute_bubble), world_rank_(world_rank) {
      size_t N_max = sigma_->get_n_matsubara_freqs();
      double omega_max = abs(sigma_->get_matsubara_frequency(N_max - 1));

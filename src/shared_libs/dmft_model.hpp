@@ -41,8 +41,8 @@ public:
      int check_density_success(double cur_density);
      void compute_order_parameter();
      void get_spin_current();
-     void set_chemical_potential(std::complex<double> new_chemical_potential) {
-          chemical_potential = new_chemical_potential;
+     void set_chemical_potential(std::complex<double> chemical_potential) {
+          chemical_potential_ = chemical_potential;
      };
      virtual ~DMFTModel() {}
 	
@@ -92,7 +92,7 @@ private:
      std::vector<Eigen::VectorXcd> spin_current_components;
      double kinetic_energy;
      double potential_energy;
-     std::complex<double> chemical_potential;
+     std::complex<double> chemical_potential_;
      bool compute_bubble;
 
      static const std::size_t max_iter_for_bounds;     
