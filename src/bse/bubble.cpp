@@ -269,6 +269,18 @@ void Bubble::compute_lattice_bubble() {
 				  world_lattice_bubble[boson_index][q_index][freq_index].data(),
 				  partial_sum[q_index][freq_index].size(),
 				  MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+                    for(int line_idx = 0; line_idx < per_site_orbital_size * per_site_orbital_size; ++line_idx) {
+                         for(int col_idx = 0; col_idx < per_site_orbital_size * per_site_orbital_size; ++col_idx) {
+                              int part_index_1 = line_idx / per_site_orbital_size;
+                              int hole_index_2 = line_idx % per_site_orbital_size;
+                              int part_index_2 = col_idx / per_site_orbital_size;
+                              int hole_index_1 = col_idx % per_site_orbital_size;
+                              lattice_values_[boson_index][q_index][freq_index]
+                                   [part_index_1][hole_index_2]
+                                   [part_index_2][hole_index_1] =
+                                   world_lattice_bubble[boson_index][q_index][freq_index](line_idx, col_idx);
+                         }
+                    }
 	       }
 	  }
 	  std::cout << "Time for boson freq " << boson_index
@@ -276,4 +288,4 @@ void Bubble::compute_lattice_bubble() {
      } // boson
 }
 
-const std::string Bubble::bubble_hdf5_root = "c_bubble";
+const std::string Bubble::bubble_hdf5_root = "c_bubble_new";

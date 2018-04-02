@@ -123,7 +123,6 @@ int main(int argc, const char* argv[]) {
                }
                MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
                MPI_Bcast(&chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-               bool compute_bubble(true);
                boost::shared_ptr<Bubble> local_bubble(
                     new Bubble(h5_archive, bare_band, self_energy, parms,
                                     chemical_potential, world_rank));
