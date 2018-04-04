@@ -89,61 +89,20 @@ void Bubble::dump_bubble_hdf5() {
 	  }
           std::string h5_group_name_2("/lattice_bubble");
           for (int site_index = 0; site_index < n_sites; site_index++) {
-               //     for(int boson_index = 0; boson_index < N_boson; boson_index++) {
-	  //           for(int q_index = 0;
-	  //       	q_index < lattice_bs_->get_nb_points_for_bseq(); q_index++) {
-	         	 std::stringstream site_path;
-	         	 site_path <<
-	         	      h5_group_name_2 +
-	         	      "/site_" + boost::lexical_cast<std::string>(site_index) + "/data";
-                         bubble_output[site_path.str()] << lattice_values_;
-	  //       	      "q_" + boost::lexical_cast<std::string>(q_index) + "/";
-	  //       	 for(int line_idx = 0;
-	  //       	     line_idx < per_site_orbital_size * per_site_orbital_size;
-	  //       	     ++line_idx) {
-	  //       	      for(int col_idx = 0;
-	  //       		  col_idx < per_site_orbital_size * per_site_orbital_size;
-	  //       		  ++col_idx) {
-	  //       		   std::stringstream orbital_path;
-	  //       		   int part_index_1 = line_idx / per_site_orbital_size;
-	  //       		   int hole_index_2 = line_idx % per_site_orbital_size;
-	  //       		   int part_index_2 = col_idx / per_site_orbital_size;
-	  //       		   int hole_index_1 = col_idx % per_site_orbital_size;
-	  //       		   orbital_path << site_path.str() <<
-	  //       			boost::lexical_cast<std::string>(part_index_1) + "/"
-	  //       			+ boost::lexical_cast<std::string>(hole_index_2) + "/"
-	  //       			+ boost::lexical_cast<std::string>(part_index_2) + "/"
-	  //       			+ boost::lexical_cast<std::string>(hole_index_1) + "/value";
-	  //       		   std::vector<std::complex<double>> temp_data;
-	  //       		   temp_data.resize(bubble_dim);
-	  //       		   for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
-	  //       			temp_data[freq_index] =
-	  //       			     world_lattice_bubble[boson_index][q_index][freq_index].block(
-	  //       				  site_index * per_site_orbital_size *
-	  //       				  per_site_orbital_size,
-	  //       				  site_index * per_site_orbital_size *
-	  //       				  per_site_orbital_size,
-	  //       				  per_site_orbital_size *
-	  //       				  per_site_orbital_size,
-	  //       				  per_site_orbital_size *
-	  //       				  per_site_orbital_size)(line_idx, col_idx);
-	  //       		   }
-	  //       		   bubble_output << alps::make_pvp(orbital_path.str(), temp_data);
-	  //       	      }
-	  //       	 }
-	  //           }
-	  //      }
+               std::stringstream site_path;
+               site_path << h5_group_name_2 + "/site_" +
+                    boost::lexical_cast<std::string>(site_index) + "/data";
+               bubble_output[site_path.str()] << lattice_values_;
           }
-	  // h5_group_name_2 = "/lattice_bubble/q_point_list";
-	  // std::vector<std::complex<double>> temp_data;
-	  // temp_data.resize(lattice_bs_->get_nb_points_for_bseq());
-	  // int nb_q_points = lattice_bs_->get_nb_points_for_bseq();
-	  // Eigen::VectorXd q_point;
-	  // for (int q_index = 0; q_index < nb_q_points; q_index++) {
-	  //      q_point = lattice_bs_->get_q_point(q_index);
-	  //      temp_data[q_index] = std::complex<double>(q_point(0), q_point(1));
-	  // }
-	  // bubble_output << alps::make_pvp(h5_group_name_2, temp_data);
+          h5_group_name_2 = "/lattice_bubble/q_point_list";
+          std::vector<std::complex<double>> temp_data;
+          temp_data.resize(nb_q_points);
+          Eigen::VectorXd q_point;
+          for (int q_index = 0; q_index < nb_q_points; q_index++) {
+               q_point = lattice_bs_->get_q_point(q_index);
+               temp_data[q_index] = std::complex<double>(q_point(0), q_point(1));
+          }
+          bubble_output[h5_group_name_2] = temp_data;
 	  bubble_output.close();
      }
      MPI_Barrier(MPI_COMM_WORLD);
