@@ -172,9 +172,11 @@ void Bubble::compute_local_bubble_legendre() {
      {
           const	int orbital_size = per_site_orbital_size;
           const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl(legendre_trans_->Tnl());
+          const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl_neg(legendre_trans_->Tnl_neg());
           Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat(bubble_dim, bubble_dim),
-               tmp_mat_leg(n_legendre, n_legendre);
+               tmp_mat_neg(bubble_dim, bubble_dim), tmp_mat_leg(n_legendre, n_legendre);
           tmp_mat = Eigen::MatrixXcd::Zero(bubble_dim, bubble_dim);
+          tmp_mat_neg = Eigen::MatrixXcd::Zero(bubble_dim, bubble_dim);
           for (int boson_index = 0; boson_index < N_boson; boson_index++) {
                for(size_t site_index = 0; site_index < n_sites; site_index++) {
                     for(int orb1 = 0; orb1 < orbital_size; orb1++) {
@@ -184,7 +186,10 @@ void Bubble::compute_local_bubble_legendre() {
                                         for (int n1 = 0; n1 < bubble_dim; n1++) {
                                              tmp_mat(n1, n1) = local_values_[boson_index][n1][orb1][orb2][orb3][orb4];
                                         }
-                                        tmp_mat_leg = Tnl.adjoint() * (tmp_mat * Tnl);
+                                        // The negative freq contribution
+                                        tmp_mat_neg = tmp_mat.conjugate();
+                                        tmp_mat_leg = Tnl.adjoint() * (tmp_mat * Tnl) +
+                                             Tnl_neg.adjoint() * (tmp_mat_neg * Tnl_neg);
                                         for (int l1 = 0; l1 < n_legendre; l1++) {
                                              for (int l2 = 0; l2 < n_legendre; l2++) {
                                                   local_legendre_values_[boson_index][l1][l2]

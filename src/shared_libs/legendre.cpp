@@ -2,12 +2,15 @@
 
 LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre):
      n_matsubara_(n_matsubara), n_legendre_(n_legendre),
-     Tnl_(n_matsubara, n_legendre), inv_l_(n_legendre) {
+     Tnl_(n_matsubara, n_legendre), Tnl_neg_(n_matsubara, n_legendre), inv_l_(n_legendre) {
      double sign_tmp = 1.0;
+     double neg_tmp = 1.0;
      for (int im = 0; im < n_matsubara_; ++im) {
           std::complex<double> ztmp(0.0, 1.0);
           for (int il = 0; il < n_legendre_; ++il) {
                Tnl_(im, il) = sign_tmp * ztmp * std::sqrt(2 * il + 1.0) * boost::math::sph_bessel(il, 0.5 * (2 * im + 1) * M_PI);
+               Tnl_neg_(im, il) = neg_tmp * Tnl_(im, il);
+               neg_tmp *= -1.0;
                ztmp *= std::complex<double>(0.0, 1.0);
           }
           sign_tmp *= -1;
@@ -37,6 +40,10 @@ void LegendreTransformer::compute_legendre(double x, std::vector<double> &val) c
 
 const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &LegendreTransformer::Tnl() const {
      return Tnl_;
+}
+
+const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &LegendreTransformer::Tnl_neg() const {
+     return Tnl_neg_;
 }
 
 void LegendreTransformer::compute_legendre(const std::vector<double> &xval,

@@ -23,6 +23,7 @@ private:
 
 public:
      const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl() const;
+     const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl_neg() const;
      void compute_legendre(double x, std::vector<double> &val) const;
      void compute_legendre(const std::vector<double> &xval, boost::multi_array<double, 2> &val) const;
      const std::vector<double> &get_sqrt_2l_1() const { return sqrt_2l_1; }
@@ -30,5 +31,6 @@ public:
 
 private:
      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> Tnl_;
+     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> Tnl_neg_;
      std::vector<double> inv_l_, sqrt_2l_1;
 };
