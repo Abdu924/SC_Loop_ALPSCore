@@ -112,7 +112,10 @@ int main(int argc, const char* argv[]) {
 	        	 std::cout << "Using Matsubara source for self-energy" << std::endl << std::endl;
 	            }
 	       }
-	       boost::shared_ptr<Selfenergy> self_energy(new Selfenergy(parms, world_rank, true));
+	       // 0 self-enerfy for non interacting case
+               // boost::shared_ptr<Selfenergy> self_energy(new Selfenergy(parms, world_rank, true));
+               boost::shared_ptr<Selfenergy> self_energy(
+		    new Selfenergy(parms, world_rank, h5_archive, h5_group_name, true));
                if (world_rank == 0) {
                     //FIXME TODO
                     // HERE Horrible bug fix in order to align crystal
