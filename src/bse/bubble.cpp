@@ -144,6 +144,12 @@ void Bubble::compute_local_bubble() {
 }
 
 void Bubble::compute_lattice_bubble() {
+     if (world_rank_ == 0)
+     {
+	  cout << "***********************************************" << endl;
+	  cout << "** LATTICE BUBBLE CALCULATION               ***" << endl;
+	  cout << "***********************************************" << endl << endl;
+     }
      boost::timer::auto_cpu_timer lattice_bubble_calc;
      size_t k_min(0);
      size_t k_max(lattice_bs_->get_lattice_size());
