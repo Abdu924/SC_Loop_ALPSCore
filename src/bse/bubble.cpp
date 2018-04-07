@@ -30,6 +30,8 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      // n_matsubara is parms[N_MATSUBARA]
      // FIXME check if this is consistent with N_max... 
      int n_matsubara = parms["N_MATSUBARA"];
+     n_legendre = parms["mixing.L_MAX"];
+     legendre_trans_.reset(new LegendreTransformer(bubble_dim, n_legendre));
      raw_full_gf.resize(boost::extents
                         [per_site_orbital_size][per_site_orbital_size][N_max]);
      h5_archive["/legendre_gf/data"] >> raw_full_gf;     
@@ -37,10 +39,18 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                     [per_site_orbital_size][per_site_orbital_size]
                     [per_site_orbital_size][per_site_orbital_size]);
      std::fill(local_values_.origin(), local_values_.origin() + local_values_.num_elements(), 0.0);
+     local_legendre_values_.resize(boost::extents[N_boson][n_legendre][n_legendre]
+                                   [per_site_orbital_size][per_site_orbital_size]
+                                   [per_site_orbital_size][per_site_orbital_size]);
+     std::fill(local_legendre_values_.origin(), local_legendre_values_.origin() + local_legendre_values_.num_elements(), 0.0);
      lattice_values_.resize(boost::extents[N_boson][nb_q_points][bubble_dim]
                     [per_site_orbital_size][per_site_orbital_size]
                     [per_site_orbital_size][per_site_orbital_size]);
      std::fill(lattice_values_.origin(), lattice_values_.origin() + lattice_values_.num_elements(), 0.0);
+     lattice_legendre_values_.resize(boost::extents[N_boson][nb_q_points][n_legendre][n_legendre]
+                                     [per_site_orbital_size][per_site_orbital_size]
+                                     [per_site_orbital_size][per_site_orbital_size]);
+     std::fill(lattice_legendre_values_.origin(), lattice_legendre_values_.origin() + lattice_legendre_values_.num_elements(), 0.0);
      // The Eigen matrix objects are useful for the MPI gather operation
      // The boost multi array are used for hdf5 interface...
      world_lattice_bubble.clear();
@@ -57,8 +67,8 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      }
 }
 
-std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(
-     Eigen::Ref<Eigen::VectorXd> k_point, int boson_index) {
+std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point,
+                                                          int boson_index) {
      size_t N_max = sigma_->get_n_matsubara_freqs();
      std::vector<Eigen::MatrixXcd> output;
      output.clear();
@@ -80,6 +90,7 @@ void Bubble::dump_bubble_hdf5() {
      if (world_rank_ == 0) {
 	  std::string archive_name = bubble_hdf5_root + ".h5";
 	  alps::hdf5::archive bubble_output(archive_name, "a");
+          // Local bubble
 	  std::string h5_group_name("/local_bubble");
 	  for (int site_index = 0; site_index < n_sites; site_index++) {
                std::stringstream site_path;
@@ -87,6 +98,7 @@ void Bubble::dump_bubble_hdf5() {
                     boost::lexical_cast<std::string>(site_index) + "/data";
                bubble_output[site_path.str()] << local_values_;
 	  }
+          // Lattice bubble          
           std::string h5_group_name_2("/lattice_bubble");
           for (int site_index = 0; site_index < n_sites; site_index++) {
                std::stringstream site_path;
@@ -94,6 +106,7 @@ void Bubble::dump_bubble_hdf5() {
                     boost::lexical_cast<std::string>(site_index) + "/data";
                bubble_output[site_path.str()] << lattice_values_;
           }
+          // q point list
           h5_group_name_2 = "/lattice_bubble/q_point_list";
           std::vector<std::complex<double>> temp_data;
           temp_data.resize(nb_q_points);
@@ -103,6 +116,15 @@ void Bubble::dump_bubble_hdf5() {
                temp_data[q_index] = std::complex<double>(q_point(0), q_point(1));
           }
           bubble_output[h5_group_name_2] = temp_data;
+          // Local bubble Legendre
+          std::string h5_group_name_3("/legendre_local_bubble");
+	  for (int site_index = 0; site_index < n_sites; site_index++) {
+               std::stringstream site_path;
+               site_path << h5_group_name_3 + "/site_" +
+                    boost::lexical_cast<std::string>(site_index) + "/data";
+               bubble_output[site_path.str()] << local_legendre_values_;
+	  }
+          // Close file
 	  bubble_output.close();
      }
      MPI_Barrier(MPI_COMM_WORLD);
@@ -139,6 +161,43 @@ void Bubble::compute_local_bubble() {
 	       } // freq_index
 	  } // boson
 	  std::cout << "local bubble time : " << std::endl;
+     } // world_rank_
+     MPI_Barrier(MPI_COMM_WORLD);
+     compute_local_bubble_legendre();
+}
+
+void Bubble::compute_local_bubble_legendre() {
+     // Only rank 0 has knowledge of the local bubble!
+     if (world_rank_ == 0)
+     {
+          const	int orbital_size = per_site_orbital_size;
+          const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl(legendre_trans_->Tnl());
+          Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat(bubble_dim, bubble_dim),
+               tmp_mat_leg(n_legendre, n_legendre);
+          tmp_mat = Eigen::MatrixXcd::Zero(bubble_dim, bubble_dim);
+          for (int boson_index = 0; boson_index < N_boson; boson_index++) {
+               for(size_t site_index = 0; site_index < n_sites; site_index++) {
+                    for(int orb1 = 0; orb1 < orbital_size; orb1++) {
+                         for(int orb2 = 0; orb2 < orbital_size; orb2++) {
+                              for(int orb3 = 0; orb3 < orbital_size; orb3++) {
+                                   for(int orb4 = 0; orb4 < orbital_size; orb4++) {
+                                        for (int n1 = 0; n1 < bubble_dim; n1++) {
+                                             tmp_mat(n1, n1) = local_values_[boson_index][n1][orb1][orb2][orb3][orb4];
+                                        }
+                                        tmp_mat_leg = Tnl.adjoint() * (tmp_mat * Tnl);
+                                        for (int l1 = 0; l1 < n_legendre; l1++) {
+                                             for (int l2 = 0; l2 < n_legendre; l2++) {
+                                                  local_legendre_values_[boson_index][l1][l2]
+                                                       [orb1][orb2][orb3][orb4] = tmp_mat_leg(l1, l2);
+                                             }
+                                        }
+                                   }
+                              }
+                         }
+                    }
+               }
+          }
+          std::cout << "local bubble legendre time : " << std::endl;
      } // world_rank_
      MPI_Barrier(MPI_COMM_WORLD);
 }

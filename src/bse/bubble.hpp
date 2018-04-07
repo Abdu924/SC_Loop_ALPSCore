@@ -15,6 +15,7 @@
 
 #include "../shared_libs/band_structure.hpp"
 #include "../shared_libs/self_energy.hpp"
+#include "../shared_libs/legendre.hpp"
 
 using namespace std;
 
@@ -27,11 +28,14 @@ public:
                  int world_rank);
      void dump_bubble_hdf5();
      void compute_local_bubble();
+     void compute_local_bubble_legendre();
      void compute_lattice_bubble();
      virtual ~Bubble() {}
 
      boost::multi_array<std::complex<double>, 6> local_values_;
+     boost::multi_array<std::complex<double>, 7> local_legendre_values_;
      boost::multi_array<std::complex<double>, 7> lattice_values_;
+     boost::multi_array<std::complex<double>, 8> lattice_legendre_values_;
      
 private:
      int world_rank_;
@@ -45,10 +49,12 @@ private:
      int n_sites;
      int tot_orbital_size;
      int per_site_orbital_size;
+     int n_legendre;
      boost::multi_array<complex<double> , 3> raw_full_gf;
      vector<vector<vector<Eigen::MatrixXcd> > > lattice_bubble;
      vector<vector<vector<Eigen::MatrixXcd> > > world_lattice_bubble;
-
+     boost::shared_ptr<LegendreTransformer> legendre_trans_;
+     
      std::vector<Eigen::MatrixXcd> get_greens_function(
 	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);
      

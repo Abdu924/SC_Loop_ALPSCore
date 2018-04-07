@@ -5,25 +5,22 @@ LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre):
      Tnl_(n_matsubara, n_legendre), inv_l_(n_legendre) {
      double sign_tmp = 1.0;
      for (int im = 0; im < n_matsubara_; ++im) {
-	  std::complex<double> ztmp(0.0, 1.0);
-	  for (int il = 0; il < n_legendre_; ++il) {
-	       //gsl_sf_result tmp;
-	       //gsl_sf_bessel_jl_e(il, 0.5 * (2 * im + 1) * M_PI, &tmp);
-	       //Tnl_(im, il) = sign_tmp * ztmp * std::sqrt(2 * il + 1.0) * tmp.val;
-	       ztmp *= std::complex<double>(0.0, 1.0);
-	  }
-	  sign_tmp *= -1;
+          std::complex<double> ztmp(0.0, 1.0);
+          for (int il = 0; il < n_legendre_; ++il) {
+               Tnl_(im, il) = sign_tmp * ztmp * std::sqrt(2 * il + 1.0) * boost::math::sph_bessel(il, 0.5 * (2 * im + 1) * M_PI);
+               ztmp *= std::complex<double>(0.0, 1.0);
+          }
+          sign_tmp *= -1;
      }
      sqrt_2l_1.resize(n_legendre);
      sqrt_2l_1[0] = 1.0;
      for (int l = 1; l < n_legendre_; l++) {
-	  inv_l_[l] = 1.0 / l;
-	  sqrt_2l_1[l] = std::sqrt(2.0 * l + 1.0);
+          inv_l_[l] = 1.0 / l;
+          sqrt_2l_1[l] = std::sqrt(2.0 * l + 1.0);
      }
 };
 
-void LegendreTransformer::compute_legendre(double x,
-					   std::vector<double> &val) const {
+void LegendreTransformer::compute_legendre(double x, std::vector<double> &val) const {
      assert(val.size() >= n_legendre_);
      assert(x >= -1.00001 && x <= 1.00001);
      for (int l = 0; l < n_legendre_; l++) {
@@ -38,8 +35,7 @@ void LegendreTransformer::compute_legendre(double x,
      }
 }
 
-const Eigen::Matrix<std::complex<double>,
-		    Eigen::Dynamic, Eigen::Dynamic> &LegendreTransformer::Tnl() const {
+const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &LegendreTransformer::Tnl() const {
      return Tnl_;
 }
 

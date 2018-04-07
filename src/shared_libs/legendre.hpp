@@ -4,7 +4,10 @@
 #include<cmath>
 #include<vector>
 #include<assert.h>
+
+#include "boost/math/special_functions/bessel.hpp"
 #include "boost/multi_array.hpp"
+
 #include <math.h>
 //#include <gsl/gsl_sf_bessel.h>
 //#include <gsl/gsl_errno.h> 
