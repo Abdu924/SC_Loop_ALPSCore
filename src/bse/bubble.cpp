@@ -199,6 +199,9 @@ void Bubble::compute_local_bubble_legendre() {
                          for(int orb2 = 0; orb2 < orbital_size; orb2++) {
                               for(int orb3 = 0; orb3 < orbital_size; orb3++) {
                                    for(int orb4 = 0; orb4 < orbital_size; orb4++) {
+                                        for (int n1 = 0; n1 < bubble_dim; n1++) {
+                                             tmp_mat(n1, n1) = local_values_[boson_index][n1][orb1][orb2][orb3][orb4];
+                                        }
                                         tmp_mat_leg = get_legendre_representation(tmp_mat);
                                         for (int l1 = 0; l1 < n_legendre; l1++) {
                                              for (int l2 = 0; l2 < n_legendre; l2++) {
