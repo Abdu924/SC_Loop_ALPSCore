@@ -362,7 +362,7 @@ void Bubble::get_lattice_legendre_representation() {
           std::cout << "boson freq " << boson_index << std::endl;               
           boost::timer::auto_cpu_timer lattice_bubble_leg;
           for (int q_index = world_rank_ * nb_q_points_per_proc;
-               q_index < min(world_rank_ * nb_q_points_per_proc, nb_q_points); q_index++) {
+               q_index < min((world_rank_ + 1) * nb_q_points_per_proc, nb_q_points); q_index++) {
                std::cout << "q index " << q_index << std::endl;
                for(int orb1 = 0; orb1 < orbital_size; orb1++) {
                     for(int orb2 = 0; orb2 < orbital_size; orb2++) {
@@ -418,7 +418,7 @@ void Bubble::get_lattice_legendre_representation() {
                                              }
                                         }
                                    } else {
-                                        MPI_Send(tmp_mpi_mat.data(), tmp_mpi_mat.size(),
+                                        MPI_Send(tmp_mat_leg.data(), tmp_mat_leg.size(),
                                                  MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
                                    }
                                    if (world_rank_ == 0) {
@@ -426,7 +426,7 @@ void Bubble::get_lattice_legendre_representation() {
                                              for (int l2 = 0; l2 < n_legendre; l2++) {
                                                   world_lattice_legendre_values_[boson_index][q_index][l1][l2]
                                                        [orb1][orb2][orb3][orb4] =
-                                                       tmp_mpi_mat(l1, l2);
+                                                       tmp_mat_leg(l1, l2);
                                              }
                                         }
                                    }
