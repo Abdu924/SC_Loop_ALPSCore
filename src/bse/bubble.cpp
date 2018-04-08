@@ -189,6 +189,7 @@ void Bubble::compute_local_bubble() {
 		    }  // site_index
 	       } // freq_index
 	  } // boson
+          std::cout << "legendre rep " << std::endl();
           get_local_legendre_representation();
           std::cout << "local bubble time : " << std::endl;
      } // world_rank_
@@ -209,6 +210,7 @@ Eigen::MatrixXcd Bubble::get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd
 }
 
 void Bubble::get_local_legendre_representation() {
+     std::cout << "entering leg rep... " << std::endl();     
      // NOte: only rank 0 has knowledge of the local bubble!
      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat(bubble_dim, bubble_dim),
           tmp_mat_leg(n_legendre, n_legendre);
@@ -236,6 +238,7 @@ void Bubble::get_local_legendre_representation() {
                }
           }
      }
+     std::cout << "done leg rep... " << std::endl();     
 }
 
 void Bubble::compute_lattice_bubble() {
