@@ -340,12 +340,13 @@ void Bubble::get_lattice_legendre_representation() {
                cout << "** LATTICE BUBBLE LEGENDRE REP              ***" << endl;
                cout << "***********************************************" << endl << endl;
           }
-          boost::timer::auto_cpu_timer lattice_bubble_calc;
           int orbital_size(per_site_orbital_size);
           Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat(bubble_dim, bubble_dim),
                tmp_mat_leg(n_legendre, n_legendre);
           tmp_mat = Eigen::MatrixXcd::Zero(bubble_dim, bubble_dim);
-          for (int boson_index = 0; boson_index < N_boson; boson_index++) {          
+          for (int boson_index = 0; boson_index < N_boson; boson_index++) {
+               std::cout << "boson freq " << boson_index << std::endl;               
+               boost::timer::auto_cpu_timer lattice_bubble_leg;
                for (int q_index = 0; q_index < nb_q_points; q_index++) {
                     for(int orb1 = 0; orb1 < orbital_size; orb1++) {
                          for(int orb2 = 0; orb2 < orbital_size; orb2++) {
@@ -367,8 +368,8 @@ void Bubble::get_lattice_legendre_representation() {
                          }
                     }
                }
+               std::cout << "Time for boson freq " << boson_index << ": " << std::endl;
           }
-          std::cout << "local bubble time : " << std::endl;
      }
 }
      
