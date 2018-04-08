@@ -13,6 +13,15 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      int N_max = sigma_->get_n_matsubara_freqs();
      int N_Qmesh = parms["bseq.N_QBSEQ"];
      nb_q_points = lattice_bs_->get_nb_points_for_bseq();
+     if (world_rank == 0) {
+          MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+          nb_q_points_per_proc = nb_q_points / world_size;
+          if (nb_q_points % world_size > 0) {
+               nb_q_points_per_proc += 1;
+          }
+     }
+     MPI_Bcast(&world_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&nb_q_points_per_proc, 1, MPI_INT, 0, MPI_COMM_WORLD);
      N_boson = parms["measurement.G2.n_bosonic_freq"];
      dump_matsubara = parms["bseq.bubbles.dump_matsubara"];
      dump_legendre = parms["bseq.bubbles.dump_legendre"];
@@ -49,10 +58,16 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                     [per_site_orbital_size][per_site_orbital_size]
                     [per_site_orbital_size][per_site_orbital_size]);
      std::fill(lattice_values_.origin(), lattice_values_.origin() + lattice_values_.num_elements(), 0.0);
-     lattice_legendre_values_.resize(boost::extents[N_boson][nb_q_points][n_legendre][n_legendre]
+     lattice_legendre_values_.resize(boost::extents[N_boson][nb_q_points_per_proc * world_size][n_legendre][n_legendre]
                                      [per_site_orbital_size][per_site_orbital_size]
                                      [per_site_orbital_size][per_site_orbital_size]);
      std::fill(lattice_legendre_values_.origin(), lattice_legendre_values_.origin() + lattice_legendre_values_.num_elements(), 0.0);
+     world_lattice_legendre_values_.resize(boost::extents[N_boson][nb_q_points_per_proc * world_size][n_legendre][n_legendre]
+                                           [per_site_orbital_size][per_site_orbital_size]
+                                           [per_site_orbital_size][per_site_orbital_size]);
+     std::fill(world_lattice_legendre_values_.origin(),
+               world_lattice_legendre_values_.origin() + world_lattice_legendre_values_.num_elements(), 0.0);
+
      // The Eigen matrix objects are useful for the MPI gather operation
      // The boost multi array are used for hdf5 interface...
      world_lattice_bubble.clear();
@@ -335,43 +350,90 @@ void Bubble::compute_lattice_bubble() {
 
 void Bubble::get_lattice_legendre_representation() {
      if (world_rank_ == 0) {
-          {
-               cout << "***********************************************" << endl;
-               cout << "** LATTICE BUBBLE LEGENDRE REP              ***" << endl;
-               cout << "***********************************************" << endl << endl;
+          cout << "***********************************************" << endl;
+          cout << "** LATTICE BUBBLE LEGENDRE REP              ***" << endl;
+          cout << "***********************************************" << endl << endl;
+     }
+     int orbital_size(per_site_orbital_size);
+     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat(bubble_dim, bubble_dim),
+          tmp_mat_leg(n_legendre, n_legendre), tmp_mpi_mat(n_legendre, n_legendre);
+     tmp_mat = Eigen::MatrixXcd::Zero(bubble_dim, bubble_dim);
+     for (int boson_index = 0; boson_index < N_boson; boson_index++) {
+          std::cout << "boson freq " << boson_index << std::endl;               
+          boost::timer::auto_cpu_timer lattice_bubble_leg;
+          for (int q_index = world_rank_ * nb_q_points_per_proc;
+               q_index < min(world_rank_ * nb_q_points_per_proc, nb_q_points); q_index++) {
+               std::cout << "q index " << q_index << std::endl;
+               for(int orb1 = 0; orb1 < orbital_size; orb1++) {
+                    for(int orb2 = 0; orb2 < orbital_size; orb2++) {
+                         for(int orb3 = 0; orb3 < orbital_size; orb3++) {
+                              for(int orb4 = 0; orb4 < orbital_size; orb4++) {
+                                   for (int n1 = 0; n1 < bubble_dim; n1++) {
+                                        tmp_mat(n1, n1) = lattice_values_[boson_index][q_index][n1]
+                                             [orb1][orb2][orb3][orb4];
+                                   }
+                                   tmp_mat_leg = get_legendre_representation(tmp_mat);
+                                   for (int l1 = 0; l1 < n_legendre; l1++) {
+                                        for (int l2 = 0; l2 < n_legendre; l2++) {
+                                             lattice_legendre_values_[boson_index][q_index][l1][l2]
+                                                  [orb1][orb2][orb3][orb4] = tmp_mat_leg(l1, l2);
+                                        }
+                                   }
+                              }
+                         }
+                    }
+               }
           }
-          int orbital_size(per_site_orbital_size);
-          Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat(bubble_dim, bubble_dim),
-               tmp_mat_leg(n_legendre, n_legendre);
-          tmp_mat = Eigen::MatrixXcd::Zero(bubble_dim, bubble_dim);
-          for (int boson_index = 0; boson_index < N_boson; boson_index++) {
-               std::cout << "boson freq " << boson_index << std::endl;               
-               boost::timer::auto_cpu_timer lattice_bubble_leg;
-               for (int q_index = 0; q_index < nb_q_points; q_index++) {
-                    std::cout << "q index " << q_index << std::endl;               
-                    boost::timer::auto_cpu_timer lattice_bubble_qind;
-                    for(int orb1 = 0; orb1 < orbital_size; orb1++) {
-                         for(int orb2 = 0; orb2 < orbital_size; orb2++) {
-                              for(int orb3 = 0; orb3 < orbital_size; orb3++) {
-                                   for(int orb4 = 0; orb4 < orbital_size; orb4++) {
-                                        for (int n1 = 0; n1 < bubble_dim; n1++) {
-                                             tmp_mat(n1, n1) = lattice_values_[boson_index][q_index][n1]
+          std::cout << "Time for boson freq " << boson_index << ": " << std::endl;
+     }
+     // Gather all results
+     for (int boson_index = 0; boson_index < N_boson; boson_index++) {
+          for(int orb1 = 0; orb1 < orbital_size; orb1++) {
+               for(int orb2 = 0; orb2 < orbital_size; orb2++) {
+                    for(int orb3 = 0; orb3 < orbital_size; orb3++) {
+                         for(int orb4 = 0; orb4 < orbital_size; orb4++) {
+
+
+                              for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
+                                   for (int l1 = 0; l1 < n_legendre; l1++) {
+                                        for (int l2 = 0; l2 < n_legendre; l2++) {
+                                             tmp_mat_leg(l1, l2) =
+                                                  lattice_legendre_values_[boson_index]
+                                                  [world_rank_ * nb_q_points_per_proc + q_index][l1][l2]
                                                   [orb1][orb2][orb3][orb4];
                                         }
-                                        tmp_mat_leg = get_legendre_representation(tmp_mat);
+                                   }
+                                   if (world_rank_ == 0) {
+                                        for (int proc_index = 1; proc_index < world_size; proc_index++) {
+                                             MPI_Recv(
+                                                  tmp_mpi_mat.data(), tmp_mpi_mat.size(),
+                                                  MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                                             for (int l1 = 0; l1 < n_legendre; l1++) {
+                                                  for (int l2 = 0; l2 < n_legendre; l2++) {
+                                                       world_lattice_legendre_values_[boson_index]
+                                                            [proc_index * nb_q_points_per_proc + q_index][l1][l2]
+                                                            [orb1][orb2][orb3][orb4] =
+                                                            tmp_mpi_mat(l1, l2);
+                                                  }
+                                             }
+                                        }
+                                   } else {
+                                        MPI_Send(tmp_mpi_mat.data(), tmp_mpi_mat.size(),
+                                                 MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
+                                   }
+                                   if (world_rank_ == 0) {
                                         for (int l1 = 0; l1 < n_legendre; l1++) {
                                              for (int l2 = 0; l2 < n_legendre; l2++) {
-                                                  lattice_legendre_values_[boson_index][q_index][l1][l2]
-                                                       [orb1][orb2][orb3][orb4] = tmp_mat_leg(l1, l2);
+                                                  world_lattice_legendre_values_[boson_index][q_index][l1][l2]
+                                                       [orb1][orb2][orb3][orb4] =
+                                                       tmp_mpi_mat(l1, l2);
                                              }
                                         }
                                    }
                               }
                          }
                     }
-                    std::cout << "Time for q index " << q_index << ": " << std::endl;
                }
-               std::cout << "Time for boson freq " << boson_index << ": " << std::endl;
           }
      }
 }

@@ -64,7 +64,7 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      MPI_Bcast(&nb_r_points, 1, MPI_INT, 0, MPI_COMM_WORLD);
      MPI_Bcast(&world_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
      MPI_Bcast(&real_n_points, 1, MPI_INT, 0, MPI_COMM_WORLD);
-     MPI_Bcast(&n_points_per_proc, 1, MPI_INT, 0, MPI_COMM_WORLD);     
+     MPI_Bcast(&n_points_per_proc, 1, MPI_INT, 0, MPI_COMM_WORLD);
      weights_.resize(n_points_per_proc);
      dispersion_.resize(n_points_per_proc);
      proc_k_lattice_.resize(n_points_per_proc);

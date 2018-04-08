@@ -37,13 +37,16 @@ public:
      boost::multi_array<std::complex<double>, 7> local_legendre_values_;
      boost::multi_array<std::complex<double>, 7> lattice_values_;
      boost::multi_array<std::complex<double>, 8> lattice_legendre_values_;
+     boost::multi_array<std::complex<double>, 8> world_lattice_legendre_values_;
      
 private:
      int world_rank_;
+     int world_size;
      boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::shared_ptr<Selfenergy> sigma_;
      std::complex<double> chemical_potential;
      int nb_q_points;
+     int nb_q_points_per_proc;
      int N_l_G4;
      int N_boson;
      int bubble_dim;
