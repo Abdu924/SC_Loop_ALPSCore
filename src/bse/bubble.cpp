@@ -348,6 +348,8 @@ void Bubble::get_lattice_legendre_representation() {
                std::cout << "boson freq " << boson_index << std::endl;               
                boost::timer::auto_cpu_timer lattice_bubble_leg;
                for (int q_index = 0; q_index < nb_q_points; q_index++) {
+                    std::cout << "q index " << q_index << std::endl;               
+                    boost::timer::auto_cpu_timer lattice_bubble_qind;
                     for(int orb1 = 0; orb1 < orbital_size; orb1++) {
                          for(int orb2 = 0; orb2 < orbital_size; orb2++) {
                               for(int orb3 = 0; orb3 < orbital_size; orb3++) {
@@ -367,6 +369,7 @@ void Bubble::get_lattice_legendre_representation() {
                               }
                          }
                     }
+                    std::cout << "Time for q index " << q_index << ": " << std::endl;
                }
                std::cout << "Time for boson freq " << boson_index << ": " << std::endl;
           }
