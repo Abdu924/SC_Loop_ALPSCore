@@ -174,8 +174,8 @@ void Bubble::compute_local_bubble() {
 		    }  // site_index
 	       } // freq_index
 	  } // boson
-	  std::cout << "local bubble time : " << std::endl;
           get_local_legendre_representation();
+          std::cout << "local bubble time : " << std::endl;
      } // world_rank_
      MPI_Barrier(MPI_COMM_WORLD);
 }
@@ -194,8 +194,7 @@ Eigen::MatrixXcd Bubble::get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd
 }
 
 void Bubble::get_local_legendre_representation() {
-     // Only rank 0 has knowledge of the local bubble!
-     boost::timer::auto_cpu_timer local_legendre_rep;
+     // NOte: only rank 0 has knowledge of the local bubble!
      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat(bubble_dim, bubble_dim),
           tmp_mat_leg(n_legendre, n_legendre);
      const	int orbital_size = per_site_orbital_size;
@@ -221,9 +220,6 @@ void Bubble::get_local_legendre_representation() {
                     }
                }
           }
-     }
-     if (world_rank_ == 0) {
-          std::cout << "local bubble legendre time : " << std::endl;
      }
 }
 
