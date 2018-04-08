@@ -10,6 +10,7 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                          int world_rank)
      :lattice_bs_(lattice_bs), sigma_(sigma), chemical_potential(chemical_potential),
       world_rank_(world_rank) {
+     cout << "bubble contructor " << endl;
      int N_max = sigma_->get_n_matsubara_freqs();
      int N_Qmesh = parms["bseq.N_QBSEQ"];
      nb_q_points = lattice_bs_->get_nb_points_for_bseq();
@@ -67,7 +68,7 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                                            [per_site_orbital_size][per_site_orbital_size]);
      std::fill(world_lattice_legendre_values_.origin(),
                world_lattice_legendre_values_.origin() + world_lattice_legendre_values_.num_elements(), 0.0);
-
+     cout << "bubble contructor OK" << endl;
      // The Eigen matrix objects are useful for the MPI gather operation
      // The boost multi array are used for hdf5 interface...
      world_lattice_bubble.clear();
