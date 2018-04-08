@@ -30,6 +30,7 @@ public:
      void compute_local_bubble();
      void get_local_legendre_representation();
      void compute_lattice_bubble();
+     void get_lattice_legendre_representation();
      virtual ~Bubble() {}
 
      boost::multi_array<std::complex<double>, 6> local_values_;
