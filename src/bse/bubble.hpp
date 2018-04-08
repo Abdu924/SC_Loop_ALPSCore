@@ -50,6 +50,8 @@ private:
      int tot_orbital_size;
      int per_site_orbital_size;
      int n_legendre;
+     int dump_legendre;
+     int dump_matsubara;
      boost::multi_array<complex<double> , 3> raw_full_gf;
      vector<vector<vector<Eigen::MatrixXcd> > > lattice_bubble;
      vector<vector<vector<Eigen::MatrixXcd> > > world_lattice_bubble;

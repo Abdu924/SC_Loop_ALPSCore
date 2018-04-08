@@ -14,6 +14,8 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      int N_Qmesh = parms["bseq.N_QBSEQ"];
      nb_q_points = lattice_bs_->get_nb_points_for_bseq();
      N_boson = parms["measurement.G2.n_bosonic_freq"];
+     dump_matsubara = parms["bseq.bubbles.dump_matsubara"];
+     dump_legendre = parms["bseq.bubbles.dump_legendre"];
      bubble_dim = parms.exists("bseq.N_NU_BSEQ") ? parms["bseq.N_NU_BSEQ"] : N_max - N_boson;
      n_sites = sigma_->get_n_sites();
      if (n_sites > 1) {
@@ -30,7 +32,7 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      // n_matsubara is parms[N_MATSUBARA]
      // FIXME check if this is consistent with N_max... 
      int n_matsubara = parms["N_MATSUBARA"];
-     n_legendre = parms["mixing.L_MAX"];
+     n_legendre = parms["measurement.G2.n_legendre"];
      legendre_trans_.reset(new LegendreTransformer(bubble_dim, n_legendre));
      raw_full_gf.resize(boost::extents
                         [per_site_orbital_size][per_site_orbital_size][N_max]);
@@ -88,26 +90,38 @@ std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::Vect
 
 void Bubble::dump_bubble_hdf5() {
      if (world_rank_ == 0) {
-	  std::string archive_name = bubble_hdf5_root + ".h5";
-	  alps::hdf5::archive bubble_output(archive_name, "a");
-          // Local bubble
-	  std::string h5_group_name("/local_bubble");
-	  for (int site_index = 0; site_index < n_sites; site_index++) {
-               std::stringstream site_path;
-               site_path << h5_group_name + "/site_" +
-                    boost::lexical_cast<std::string>(site_index) + "/data";
-               bubble_output[site_path.str()] << local_values_;
-	  }
-          // Lattice bubble          
-          std::string h5_group_name_2("/lattice_bubble");
-          for (int site_index = 0; site_index < n_sites; site_index++) {
-               std::stringstream site_path;
-               site_path << h5_group_name_2 + "/site_" +
-                    boost::lexical_cast<std::string>(site_index) + "/data";
-               bubble_output[site_path.str()] << lattice_values_;
+          std::string archive_name = bubble_hdf5_root + ".h5";
+          alps::hdf5::archive bubble_output(archive_name, "a");
+          if (dump_matsubara == 1) {
+               // Local bubble
+               std::string h5_group_name("/local_bubble");
+               for (int site_index = 0; site_index < n_sites; site_index++) {
+                    std::stringstream site_path;
+                    site_path << h5_group_name + "/site_" +
+                         boost::lexical_cast<std::string>(site_index) + "/data";
+                    bubble_output[site_path.str()] << local_values_;
+               }
+               // Lattice bubble          
+               std::string h5_group_name_2("/lattice_bubble");
+               for (int site_index = 0; site_index < n_sites; site_index++) {
+                    std::stringstream site_path;
+                    site_path << h5_group_name_2 + "/site_" +
+                         boost::lexical_cast<std::string>(site_index) + "/data";
+                    bubble_output[site_path.str()] << lattice_values_;
+               }
+          }
+          if (dump_legendre == 1) {          
+               // Local bubble Legendre
+               std::string h5_group_name("/legendre_local_bubble");
+               for (int site_index = 0; site_index < n_sites; site_index++) {
+                    std::stringstream site_path;
+                    site_path << h5_group_name + "/site_" +
+                         boost::lexical_cast<std::string>(site_index) + "/data";
+                    bubble_output[site_path.str()] << local_legendre_values_;
+               }
           }
           // q point list
-          h5_group_name_2 = "/lattice_bubble/q_point_list";
+          std::string h5_group_name("/lattice_bubble/q_point_list");
           std::vector<std::complex<double>> temp_data;
           temp_data.resize(nb_q_points);
           Eigen::VectorXd q_point;
@@ -115,15 +129,7 @@ void Bubble::dump_bubble_hdf5() {
                q_point = lattice_bs_->get_q_point(q_index);
                temp_data[q_index] = std::complex<double>(q_point(0), q_point(1));
           }
-          bubble_output[h5_group_name_2] = temp_data;
-          // Local bubble Legendre
-          std::string h5_group_name_3("/legendre_local_bubble");
-	  for (int site_index = 0; site_index < n_sites; site_index++) {
-               std::stringstream site_path;
-               site_path << h5_group_name_3 + "/site_" +
-                    boost::lexical_cast<std::string>(site_index) + "/data";
-               bubble_output[site_path.str()] << local_legendre_values_;
-	  }
+          bubble_output[h5_group_name] = temp_data;
           // Close file
 	  bubble_output.close();
      }
