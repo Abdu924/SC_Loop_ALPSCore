@@ -28,7 +28,7 @@ public:
                  int world_rank);
      void dump_bubble_hdf5();
      void compute_local_bubble();
-     void compute_local_bubble_legendre();
+     void get_local_legendre_representation();
      void compute_lattice_bubble();
      virtual ~Bubble() {}
 
