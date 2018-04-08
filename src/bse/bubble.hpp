@@ -59,6 +59,7 @@ private:
      
      std::vector<Eigen::MatrixXcd> get_greens_function(
 	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);
+     Eigen::MatrixXcd get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd> matsu_data);
      
      static const std::string bubble_hdf5_root;
 };

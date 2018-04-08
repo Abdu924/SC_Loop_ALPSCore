@@ -76,6 +76,7 @@ void define_parameters(alps::params &parameters) {
 	  .define<int >("FLAVORS","number of spin-orbitals (sometimes called flavors)")
 	  .define<int >("N_TAU","number of imaginary time discretization points")
 	  .define<int>("measurement.G2.n_bosonic_freq", 1, "Number of bosonic frequencies for measurement")
+          .define<int>("measurement.G2.n_legendre", 20, "Number of legendre polynomials for measurement")
 	  .define<int >("cthyb.N_nn", 0,
 			"number of points for the measurement of the density density correlator")
 	  .define<int >("cthyb.N_w2", 0,
