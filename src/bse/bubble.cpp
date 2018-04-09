@@ -2,6 +2,7 @@
 
 using namespace std;
 typedef boost::multi_array<complex<double> , 3> cplx_array_type;
+typedef boost::multi_array_types::index_range range;
 
 Bubble::Bubble(alps::hdf5::archive &h5_archive,
                          boost::shared_ptr<Bandstructure> const &lattice_bs,
@@ -10,7 +11,6 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                          int world_rank)
      :lattice_bs_(lattice_bs), sigma_(sigma), chemical_potential(chemical_potential),
       world_rank_(world_rank) {
-     cout << "bubble contructor " << endl;
      int N_max = sigma_->get_n_matsubara_freqs();
      int N_Qmesh = parms["bseq.N_QBSEQ"];
      nb_q_points = lattice_bs_->get_nb_points_for_bseq();
@@ -47,30 +47,33 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      raw_full_gf.resize(boost::extents
                         [per_site_orbital_size][per_site_orbital_size][N_max]);
      h5_archive["/legendre_gf/data"] >> raw_full_gf;     
-     local_values_.resize(boost::extents[N_boson][bubble_dim]
-                    [per_site_orbital_size][per_site_orbital_size]
-                    [per_site_orbital_size][per_site_orbital_size]);
+     local_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
+                          [per_site_orbital_size][per_site_orbital_size]
+                          [bubble_dim][N_boson]);
      std::fill(local_values_.origin(), local_values_.origin() + local_values_.num_elements(), 0.0);
-     local_legendre_values_.resize(boost::extents[N_boson][n_legendre][n_legendre]
+     local_legendre_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                                    [per_site_orbital_size][per_site_orbital_size]
-                                   [per_site_orbital_size][per_site_orbital_size]);
+                                   [n_legendre][n_legendre][N_boson]);
      std::fill(local_legendre_values_.origin(), local_legendre_values_.origin() + local_legendre_values_.num_elements(), 0.0);
-     lattice_values_.resize(boost::extents[N_boson][nb_q_points][bubble_dim]
-                    [per_site_orbital_size][per_site_orbital_size]
-                    [per_site_orbital_size][per_site_orbital_size]);
+     lattice_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
+                            [per_site_orbital_size][per_site_orbital_size]
+                            [bubble_dim][N_boson][nb_q_points]);
      std::fill(lattice_values_.origin(), lattice_values_.origin() + lattice_values_.num_elements(), 0.0);
-     lattice_legendre_values_.resize(boost::extents[N_boson][nb_q_points_per_proc][n_legendre][n_legendre]
+     lattice_legendre_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                                      [per_site_orbital_size][per_site_orbital_size]
-                                     [per_site_orbital_size][per_site_orbital_size]);
+                                     [n_legendre][n_legendre][N_boson][nb_q_points_per_proc]);
      std::fill(lattice_legendre_values_.origin(), lattice_legendre_values_.origin() + lattice_legendre_values_.num_elements(), 0.0);
-     world_lattice_legendre_values_.resize(boost::extents[N_boson][nb_q_points_per_proc * world_size][n_legendre][n_legendre]
+     world_lattice_legendre_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                                            [per_site_orbital_size][per_site_orbital_size]
-                                           [per_site_orbital_size][per_site_orbital_size]);
+                                           [n_legendre][n_legendre][N_boson][nb_q_points_per_proc * world_size]);
      std::fill(world_lattice_legendre_values_.origin(),
                world_lattice_legendre_values_.origin() + world_lattice_legendre_values_.num_elements(), 0.0);
      cout << "bubble contructor OK" << endl;
      // The Eigen matrix objects are useful for the MPI gather operation
      // The boost multi array are used for hdf5 interface...
+     // This imposes the order of dimension for this object.
+     // It unfortunately differs from the one used throughout, which respects
+     // the order used by ALPSCore/CT-HYB.
      world_lattice_bubble.clear();
      world_lattice_bubble.resize(N_boson);
      for (size_t boson_freq = 0; boson_freq < N_boson; boson_freq++) {
@@ -136,6 +139,12 @@ void Bubble::dump_bubble_hdf5() {
                     bubble_output[site_path.str()] << local_legendre_values_;
                }
                // Lattice bubble Legendre
+               range a_range;
+               a_range = range(0, nb_q_points);
+               boost::multi_array<std::complex<double>, 8>::array_view<8>::type myview =
+                    world_lattice_legendre_values_[
+                         boost::indices[range()][range()][range()][range()][range()][range()]
+                         [range()][a_range]];
                std::string h5_group_name_2("/legendre_lattice_bubble");
                for (int site_index = 0; site_index < n_sites; site_index++) {
                     std::stringstream site_path;
@@ -179,8 +188,8 @@ void Bubble::compute_local_bubble() {
 					part_index_2++) {
 					for (int hole_index_1 = 0;
 					     hole_index_1 < orbital_size; hole_index_1++) {
-					     local_values_[boson_index][freq_index][part_index_1][hole_index_2]
-                                                  [part_index_2][hole_index_1] =
+					     local_values_[part_index_1][hole_index_2]
+                                                  [part_index_2][hole_index_1][freq_index][boson_index] =
 						  raw_full_gf[part_index_1][part_index_2][freq_index]
                                                   * raw_full_gf[hole_index_1][hole_index_2][freq_index + boson_index];
 					} // hole_index_1
@@ -190,7 +199,6 @@ void Bubble::compute_local_bubble() {
 		    }  // site_index
 	       } // freq_index
 	  } // boson
-          std::cout << "legendre rep " << std::endl;
           get_local_legendre_representation();
           std::cout << "local bubble time : " << std::endl;
      } // world_rank_
@@ -211,7 +219,6 @@ Eigen::MatrixXcd Bubble::get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd
 }
 
 void Bubble::get_local_legendre_representation() {
-     std::cout << "entering leg rep... " << std::endl;     
      // NOte: only rank 0 has knowledge of the local bubble!
      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat(bubble_dim, bubble_dim),
           tmp_mat_leg(n_legendre, n_legendre);
@@ -224,13 +231,13 @@ void Bubble::get_local_legendre_representation() {
                          for(int orb3 = 0; orb3 < orbital_size; orb3++) {
                               for(int orb4 = 0; orb4 < orbital_size; orb4++) {
                                    for (int n1 = 0; n1 < bubble_dim; n1++) {
-                                        tmp_mat(n1, n1) = local_values_[boson_index][n1][orb1][orb2][orb3][orb4];
+                                        tmp_mat(n1, n1) = local_values_[orb1][orb2][orb3][orb4][n1][boson_index];
                                    }
                                    tmp_mat_leg = get_legendre_representation(tmp_mat);
                                    for (int l1 = 0; l1 < n_legendre; l1++) {
                                         for (int l2 = 0; l2 < n_legendre; l2++) {
-                                             local_legendre_values_[boson_index][l1][l2]
-                                                  [orb1][orb2][orb3][orb4] = tmp_mat_leg(l1, l2);
+                                             local_legendre_values_[orb1][orb2][orb3][orb4][l1][l2][boson_index] =
+                                                  tmp_mat_leg(l1, l2);
                                         }
                                    }
                               }
@@ -239,7 +246,6 @@ void Bubble::get_local_legendre_representation() {
                }
           }
      }
-     std::cout << "done leg rep... " << std::endl;
 }
 
 void Bubble::compute_lattice_bubble() {
@@ -338,9 +344,8 @@ void Bubble::compute_lattice_bubble() {
                               int hole_index_2 = line_idx % per_site_orbital_size;
                               int part_index_2 = col_idx / per_site_orbital_size;
                               int hole_index_1 = col_idx % per_site_orbital_size;
-                              lattice_values_[boson_index][q_index][freq_index]
-                                   [part_index_1][hole_index_2]
-                                   [part_index_2][hole_index_1] =
+                              lattice_values_[part_index_1][hole_index_2]
+                                   [part_index_2][hole_index_1][freq_index][boson_index][q_index] =
                                    world_lattice_bubble[boson_index][q_index][freq_index](line_idx, col_idx);
                          }
                     }
@@ -375,14 +380,14 @@ void Bubble::get_lattice_legendre_representation() {
                               for(int orb4 = 0; orb4 < orbital_size; orb4++) {
                                    tmp_mat = Eigen::MatrixXcd::Zero(bubble_dim, bubble_dim);
                                    for (int n1 = 0; n1 < bubble_dim; n1++) {
-                                        tmp_mat(n1, n1) = lattice_values_[boson_index][world_q_index][n1]
-                                             [orb1][orb2][orb3][orb4];
+                                        tmp_mat(n1, n1) = lattice_values_[orb1][orb2][orb3][orb4]
+                                             [n1][boson_index][world_q_index];
                                    }
                                    tmp_mat_leg = get_legendre_representation(tmp_mat);
                                    for (int l1 = 0; l1 < n_legendre; l1++) {
                                         for (int l2 = 0; l2 < n_legendre; l2++) {
-                                             lattice_legendre_values_[boson_index][q_index][l1][l2]
-                                                  [orb1][orb2][orb3][orb4] = tmp_mat_leg(l1, l2);
+                                             lattice_legendre_values_[orb1][orb2][orb3][orb4]
+                                                  [l1][l2][boson_index][q_index] = tmp_mat_leg(l1, l2);
                                         }
                                    }
                               }
@@ -404,8 +409,8 @@ void Bubble::get_lattice_legendre_representation() {
                                    for (int l1 = 0; l1 < n_legendre; l1++) {
                                         for (int l2 = 0; l2 < n_legendre; l2++) {
                                              tmp_mat_leg(l1, l2) =
-                                                  lattice_legendre_values_[boson_index]
-                                                  [q_index][l1][l2][orb1][orb2][orb3][orb4];
+                                                  lattice_legendre_values_[orb1][orb2][orb3][orb4]
+                                                  [l1][l2][boson_index][q_index];
                                         }
                                    }
                                    if (world_rank_ == 0) {
@@ -415,8 +420,8 @@ void Bubble::get_lattice_legendre_representation() {
                                                   MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                                              for (int l1 = 0; l1 < n_legendre; l1++) {
                                                   for (int l2 = 0; l2 < n_legendre; l2++) {
-                                                       world_lattice_legendre_values_[boson_index]
-                                                            [world_q_index][l1][l2][orb1][orb2][orb3][orb4] =
+                                                       world_lattice_legendre_values_[orb1][orb2][orb3][orb4]
+                                                            [l1][l2][boson_index][world_q_index] =
                                                             tmp_mpi_mat(l1, l2);
                                                   }
                                              }
@@ -428,8 +433,9 @@ void Bubble::get_lattice_legendre_representation() {
                                    if (world_rank_ == 0) {
                                         for (int l1 = 0; l1 < n_legendre; l1++) {
                                              for (int l2 = 0; l2 < n_legendre; l2++) {
-                                                  world_lattice_legendre_values_[boson_index][world_q_index][l1][l2]
-                                                       [orb1][orb2][orb3][orb4] = tmp_mat_leg(l1, l2);
+                                                  world_lattice_legendre_values_[orb1][orb2][orb3][orb4]
+                                                       [l1][l2][boson_index][world_q_index] =
+                                                       tmp_mat_leg(l1, l2);
                                              }
                                         }
                                    }
