@@ -61,7 +61,9 @@ tuple<string, int, bool> handle_command_line(alps::params par) {
      } else {
 	  if (par["action"].as<int>() == 0) {
 	       cout << "Computing bubbles" << "\n";
-	  } else {
+	  } else if (par["action"].as<int>() == 1) {
+               cout << "Computing disconnected part" << "\n";
+          } else {
 	       std::cout << "The requested action was not recognized" << std::endl;
 	       par["help"] = true;
 	  }
@@ -112,7 +114,7 @@ int main(int argc, const char* argv[]) {
 	        	 std::cout << "Using Matsubara source for self-energy" << std::endl << std::endl;
 	            }
 	       }
-	       // 0 self-enerfy for non interacting case
+	       // TODO: self-energy for non interacting case, RPA. Below, constructor for sigma=0
                // boost::shared_ptr<Selfenergy> self_energy(new Selfenergy(parms, world_rank, true));
                boost::shared_ptr<Selfenergy> self_energy(
 		    new Selfenergy(parms, world_rank, h5_archive, h5_group_name, true));
@@ -134,7 +136,11 @@ int main(int argc, const char* argv[]) {
                local_bubble->compute_lattice_bubble();
                local_bubble->dump_bubble_hdf5();
                h5_archive.close();
-	  }
+	  } else if (computation_type == 1) {
+               // Solve BSEQ
+               alps::hdf5::archive h5_archive(input_file, "r");
+               
+          }
 	  MPI_Finalize();
 	  return 0;
      }
