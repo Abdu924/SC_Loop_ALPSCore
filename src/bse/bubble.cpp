@@ -59,7 +59,7 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                     [per_site_orbital_size][per_site_orbital_size]
                     [per_site_orbital_size][per_site_orbital_size]);
      std::fill(lattice_values_.origin(), lattice_values_.origin() + lattice_values_.num_elements(), 0.0);
-     lattice_legendre_values_.resize(boost::extents[N_boson][nb_q_points_per_proc * world_size][n_legendre][n_legendre]
+     lattice_legendre_values_.resize(boost::extents[N_boson][nb_q_points_per_proc][n_legendre][n_legendre]
                                      [per_site_orbital_size][per_site_orbital_size]
                                      [per_site_orbital_size][per_site_orbital_size]);
      std::fill(lattice_legendre_values_.origin(), lattice_legendre_values_.origin() + lattice_legendre_values_.num_elements(), 0.0);
@@ -141,7 +141,7 @@ void Bubble::dump_bubble_hdf5() {
                     std::stringstream site_path;
                     site_path << h5_group_name_2 + "/site_" +
                          boost::lexical_cast<std::string>(site_index) + "/data";
-                    bubble_output[site_path.str()] << lattice_legendre_values_;
+                    bubble_output[site_path.str()] << world_lattice_legendre_values_;
                } 
           }
           // q point list
@@ -361,19 +361,21 @@ void Bubble::get_lattice_legendre_representation() {
      int orbital_size(per_site_orbital_size);
      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat(bubble_dim, bubble_dim),
           tmp_mat_leg(n_legendre, n_legendre), tmp_mpi_mat(n_legendre, n_legendre);
-     tmp_mat = Eigen::MatrixXcd::Zero(bubble_dim, bubble_dim);
      for (int boson_index = 0; boson_index < N_boson; boson_index++) {
           std::cout << "boson freq " << boson_index << std::endl;               
           boost::timer::auto_cpu_timer lattice_bubble_leg;
-          for (int q_index = world_rank_ * nb_q_points_per_proc;
-               q_index < min((world_rank_ + 1) * nb_q_points_per_proc, nb_q_points); q_index++) {
-               std::cout << "q index " << q_index << std::endl;
+          for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
+               int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
+               if (world_q_index >= nb_q_points)
+                    continue;
+               std::cout << "world_q_index " << world_q_index << std::endl;
                for(int orb1 = 0; orb1 < orbital_size; orb1++) {
                     for(int orb2 = 0; orb2 < orbital_size; orb2++) {
                          for(int orb3 = 0; orb3 < orbital_size; orb3++) {
                               for(int orb4 = 0; orb4 < orbital_size; orb4++) {
+                                   tmp_mat = Eigen::MatrixXcd::Zero(bubble_dim, bubble_dim);
                                    for (int n1 = 0; n1 < bubble_dim; n1++) {
-                                        tmp_mat(n1, n1) = lattice_values_[boson_index][q_index][n1]
+                                        tmp_mat(n1, n1) = lattice_values_[boson_index][world_q_index][n1]
                                              [orb1][orb2][orb3][orb4];
                                    }
                                    tmp_mat_leg = get_legendre_representation(tmp_mat);
@@ -397,14 +399,13 @@ void Bubble::get_lattice_legendre_representation() {
                     for(int orb3 = 0; orb3 < orbital_size; orb3++) {
                          for(int orb4 = 0; orb4 < orbital_size; orb4++) {
 
-
                               for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
+                                   int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
                                    for (int l1 = 0; l1 < n_legendre; l1++) {
                                         for (int l2 = 0; l2 < n_legendre; l2++) {
                                              tmp_mat_leg(l1, l2) =
                                                   lattice_legendre_values_[boson_index]
-                                                  [world_rank_ * nb_q_points_per_proc + q_index][l1][l2]
-                                                  [orb1][orb2][orb3][orb4];
+                                                  [q_index][l1][l2][orb1][orb2][orb3][orb4];
                                         }
                                    }
                                    if (world_rank_ == 0) {
@@ -415,8 +416,7 @@ void Bubble::get_lattice_legendre_representation() {
                                              for (int l1 = 0; l1 < n_legendre; l1++) {
                                                   for (int l2 = 0; l2 < n_legendre; l2++) {
                                                        world_lattice_legendre_values_[boson_index]
-                                                            [proc_index * nb_q_points_per_proc + q_index][l1][l2]
-                                                            [orb1][orb2][orb3][orb4] =
+                                                            [world_q_index][l1][l2][orb1][orb2][orb3][orb4] =
                                                             tmp_mpi_mat(l1, l2);
                                                   }
                                              }
@@ -428,9 +428,8 @@ void Bubble::get_lattice_legendre_representation() {
                                    if (world_rank_ == 0) {
                                         for (int l1 = 0; l1 < n_legendre; l1++) {
                                              for (int l2 = 0; l2 < n_legendre; l2++) {
-                                                  world_lattice_legendre_values_[boson_index][q_index][l1][l2]
-                                                       [orb1][orb2][orb3][orb4] =
-                                                       tmp_mat_leg(l1, l2);
+                                                  world_lattice_legendre_values_[boson_index][world_q_index][l1][l2]
+                                                       [orb1][orb2][orb3][orb4] = tmp_mat_leg(l1, l2);
                                              }
                                         }
                                    }
