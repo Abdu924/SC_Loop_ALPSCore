@@ -14,22 +14,21 @@
 #include <boost/timer/timer.hpp>
 
 #include "../shared_libs/band_structure.hpp"
-#include "../shared_libs/self_energy.hpp"
 #include "../shared_libs/legendre.hpp"
 
 using namespace std;
+typedef boost::multi_array<std::complex<double>, 8> lattice_leg_type;
+typedef boost::multi_array<std::complex<double>, 7> local_leg_type;
 
 class BseqSolver {
+
 public:
      BseqSolver(alps::hdf5::archive &g2_h5_archive,
                 alps::hdf5::archive &bubble_h5_archive,
-                boost::shared_ptr<Bandstructure> const &lattice_bs, int world_rank);
+                boost::shared_ptr<Bandstructure> const &lattice_bs,
+                const alps::params& parms, int world_rank);
      virtual ~BseqSolver() {}
      
-
-  
-     boost::multi_array<std::complex<double>, 7> local_legendre_values_;
-     boost::multi_array<std::complex<double>, 8> lattice_legendre_values_;
      
 private:
      int world_rank_;
@@ -40,7 +39,13 @@ private:
      int n_legendre;
      int n_sites;
      int per_site_orbital_size;
+     boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::multi_array<complex<double> , 4> fixed_legendre_gf_;
+     local_leg_type local_legendre_bubble_;
+     lattice_leg_type lattice_legendre_bubble_;
+
+     void read_local_g2(alps::hdf5::archive &g2_h5_archive);
+     void read_local_bubble(alps::hdf5::archive &bubble_h5_archive);
      
      static const std::string susceptibility_dump_filename;
 };

@@ -1,7 +1,6 @@
 #include "bubble.hpp"
 
 using namespace std;
-typedef boost::multi_array<complex<double> , 3> cplx_array_type;
 typedef boost::multi_array_types::index_range range;
 
 Bubble::Bubble(alps::hdf5::archive &h5_archive,
@@ -46,7 +45,7 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      legendre_trans_.reset(new LegendreTransformer(bubble_dim, n_legendre));
      raw_full_gf.resize(boost::extents
                         [per_site_orbital_size][per_site_orbital_size][N_max]);
-     h5_archive["/legendre_gf/data"] >> raw_full_gf;     
+     h5_archive["/legendre_gf/data"] >> raw_full_gf;
      local_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                           [per_site_orbital_size][per_site_orbital_size]
                           [bubble_dim][N_boson]);
