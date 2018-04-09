@@ -397,6 +397,7 @@ void Bubble::get_lattice_legendre_representation() {
           }
           std::cout << "Time for boson freq " << boson_index << ": " << std::endl;
      }
+     // MPI_Barrier(MPI_COMM_WORLD);     
      // Gather all results
      for (int boson_index = 0; boson_index < N_boson; boson_index++) {
           for(int orb1 = 0; orb1 < orbital_size; orb1++) {
@@ -405,7 +406,6 @@ void Bubble::get_lattice_legendre_representation() {
                          for(int orb4 = 0; orb4 < orbital_size; orb4++) {
 
                               for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
-                                   int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
                                    for (int l1 = 0; l1 < n_legendre; l1++) {
                                         for (int l2 = 0; l2 < n_legendre; l2++) {
                                              tmp_mat_leg(l1, l2) =
@@ -418,6 +418,7 @@ void Bubble::get_lattice_legendre_representation() {
                                              MPI_Recv(
                                                   tmp_mpi_mat.data(), tmp_mpi_mat.size(),
                                                   MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                                             int world_q_index = q_index + nb_q_points_per_proc * proc_index;
                                              for (int l1 = 0; l1 < n_legendre; l1++) {
                                                   for (int l2 = 0; l2 < n_legendre; l2++) {
                                                        world_lattice_legendre_values_[orb1][orb2][orb3][orb4]
@@ -434,7 +435,7 @@ void Bubble::get_lattice_legendre_representation() {
                                         for (int l1 = 0; l1 < n_legendre; l1++) {
                                              for (int l2 = 0; l2 < n_legendre; l2++) {
                                                   world_lattice_legendre_values_[orb1][orb2][orb3][orb4]
-                                                       [l1][l2][boson_index][world_q_index] =
+                                                       [l1][l2][boson_index][q_index] =
                                                        tmp_mat_leg(l1, l2);
                                              }
                                         }
