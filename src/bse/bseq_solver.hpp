@@ -27,6 +27,7 @@ public:
      virtual ~BseqSolver() {}
      
 
+  
      boost::multi_array<std::complex<double>, 7> local_legendre_values_;
      boost::multi_array<std::complex<double>, 8> lattice_legendre_values_;
      

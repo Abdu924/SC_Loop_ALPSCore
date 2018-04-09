@@ -2,7 +2,7 @@
 
 using namespace std;
 
-Bseq_Solver::BseqSolver(alps::hdf5::archive &g2_h5_archive, alps::hdf5::archive &bubble_h5_archive,
+BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive, alps::hdf5::archive &bubble_h5_archive,
                         boost::shared_ptr<Bandstructure> const &lattice_bs,
                         int world_rank)
      : world_rank_(world_rank) {
@@ -17,4 +17,4 @@ Bseq_Solver::BseqSolver(alps::hdf5::archive &g2_h5_archive, alps::hdf5::archive 
      MPI_Bcast(&nb_q_points_per_proc, 1, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
-const std::string Bseq_Solver::susceptibility_dump_filename = "c_susceptibility";
+const std::string BseqSolver::susceptibility_dump_filename = "c_susceptibility";

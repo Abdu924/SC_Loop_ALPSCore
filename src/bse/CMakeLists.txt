@@ -28,7 +28,7 @@ include_directories(
   ${MPI_CXX_INCLUDE_PATH}
   $ENV{EIGEN3_INCLUDE_DIR})
 
-add_executable(${PROJECT_NAME} main.cpp bubble.cpp)
+add_executable(${PROJECT_NAME} main.cpp bubble.cpp bseq_solver.cpp)
 
 set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-deprecated)
 target_link_libraries(${PROJECT_NAME} gf_base ${ALPSCore_LIBRARIES} ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
