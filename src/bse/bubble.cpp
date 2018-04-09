@@ -69,23 +69,6 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      std::fill(world_lattice_legendre_values_.origin(),
                world_lattice_legendre_values_.origin() + world_lattice_legendre_values_.num_elements(), 0.0);
      cout << "bubble contructor OK" << endl;
-     // The Eigen matrix objects are useful for the MPI gather operation
-     // The boost multi array are used for hdf5 interface...
-     // This imposes the order of dimension for this object.
-     // It unfortunately differs from the one used throughout, which respects
-     // the order used by ALPSCore/CT-HYB.
-     world_lattice_bubble.clear();
-     world_lattice_bubble.resize(N_boson);
-     for (size_t boson_freq = 0; boson_freq < N_boson; boson_freq++) {
-          world_lattice_bubble[boson_freq].resize(nb_q_points);
-          for (size_t q_index = 0; q_index < nb_q_points; q_index++) {
-               for (size_t freq_index = 0; freq_index < bubble_dim; freq_index++) {
-                    world_lattice_bubble[boson_freq][q_index].push_back(
-                         Eigen::MatrixXcd::Zero(n_sites * per_site_orbital_size * per_site_orbital_size,
-                                                n_sites * per_site_orbital_size * per_site_orbital_size));
-               }
-          }
-     }
 }
 
 std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point,
@@ -333,9 +316,12 @@ void Bubble::compute_lattice_bubble() {
 	       } // if weight
 	  } // k_index
 	  for (int q_index = 0; q_index < nb_q_points; q_index++) {
-	       for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {	       
+	       for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
+                    Eigen::MatrixXcd tmp_lattice_bubble;
+                    tmp_lattice_bubble = Eigen::MatrixXcd::Zero(n_sites * per_site_orbital_size * per_site_orbital_size,
+                                                                n_sites * per_site_orbital_size * per_site_orbital_size);
 		    MPI_Allreduce(partial_sum[q_index][freq_index].data(),
-				  world_lattice_bubble[boson_index][q_index][freq_index].data(),
+				  tmp_lattice_bubble.data(),
 				  partial_sum[q_index][freq_index].size(),
 				  MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
                     for(int line_idx = 0; line_idx < per_site_orbital_size * per_site_orbital_size; ++line_idx) {
@@ -346,7 +332,7 @@ void Bubble::compute_lattice_bubble() {
                               int hole_index_1 = col_idx % per_site_orbital_size;
                               lattice_values_[part_index_1][hole_index_2]
                                    [part_index_2][hole_index_1][freq_index][boson_index][q_index] =
-                                   world_lattice_bubble[boson_index][q_index][freq_index](line_idx, col_idx);
+                                   tmp_lattice_bubble(line_idx, col_idx);
                          }
                     }
                }
