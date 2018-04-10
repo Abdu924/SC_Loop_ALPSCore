@@ -19,7 +19,7 @@
 
 using namespace std;
 typedef boost::multi_array<std::complex<double>, 8> lattice_leg_type;
-typedef boost::multi_array<std::complex<double>, 6> local_leg_type;
+typedef boost::multi_array<std::complex<double>, 4> local_leg_type;
 typedef boost::multi_array<std::complex<double>, 7> extended_local_leg_type;
 typedef boost::bimap<std::pair<int, int>, int> bm_type;
 typedef bm_type::value_type triplet_type;
