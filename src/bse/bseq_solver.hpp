@@ -34,7 +34,6 @@ public:
                 const alps::params& parms, int world_rank);
      virtual ~BseqSolver() {}
      
-     
 private:
      int world_rank_;
      int world_size;

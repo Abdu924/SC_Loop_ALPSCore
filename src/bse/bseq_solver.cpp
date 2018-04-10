@@ -93,8 +93,8 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
                     for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
                          for (int l1 = 0; l1 < n_legendre; l1++) {
                               for (int l2 = 0; l2 < n_legendre; l2++) {
-                                   line_idx = line_from_orbital_pair.left.at(std::make_pair<int,int>(orb1, orb2));
-                                   col_idx = col_from_orbital_pair.left.at(std::make_pair<int,int>(orb3, orb4));
+                                   line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
+                                   col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
                                    g2_data_[line_idx][col_idx][l1][l2] =
                                         -temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq] / beta;
                               }
@@ -106,8 +106,8 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
 }
 
 void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
-     extended_local_leg_type temp_g2_data;     
-     bubble_h5_archive["/legendre_local_bubble/site_0/data"] >> temp_g2_data;
+     extended_local_leg_type temp_local_bubble;     
+     bubble_h5_archive["/legendre_local_bubble/site_0/data"] >> temp_local_bubble;
      local_legendre_bubble_.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
                                    [per_site_orbital_size * per_site_orbital_size]
                                    [n_legendre][n_legendre]);
@@ -119,10 +119,10 @@ void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
                     for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
                          for (int l1 = 0; l1 < n_legendre; l1++) {
                               for (int l2 = 0; l2 < n_legendre; l2++) {
-                                   line_idx = line_from_orbital_pair.left.at(std::make_pair<int,int>(orb1, orb2));
-                                   col_idx = col_from_orbital_pair.left.at(std::make_pair<int,int>(orb3, orb4));
+                                   line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
+                                   col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
                                    local_legendre_bubble_[line_idx][col_idx][l1][l2] =
-                                        temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq];
+                                        temp_local_bubble[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq];
                               }
                          }
                     }
