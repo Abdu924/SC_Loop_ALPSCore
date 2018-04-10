@@ -54,7 +54,23 @@ void BseqSolver::build_matrix_shuffle_map() {
      line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 3), 13));
      line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 0), 14));
      line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 3), 15));
-     
+     col_from_orbital_pair.clear();
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 0), 0));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 0), 1));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 3), 2));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 3), 3));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 2), 4));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 2), 5));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 1), 6));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 1), 7));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 0), 8));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 0), 9));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 3), 10));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 3), 11));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 2), 12));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 2), 13));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 1), 14));
+     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 1), 15));     
 }
 
 // We transform to the orbital order used by Kunes (ijkl) vs (ijlk).
