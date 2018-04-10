@@ -13,6 +13,7 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      per_site_orbital_size = lattice_bs_->get_orbital_size();
      n_legendre = parms["measurement.G2.n_legendre"];
      N_boson = parms["measurement.G2.n_bosonic_freq"];
+     beta = parms["model.beta"];
      n_sites = 1;
      if (world_rank == 0) {
           MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -23,16 +24,43 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      }
      MPI_Bcast(&world_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
      MPI_Bcast(&nb_q_points_per_proc, 1, MPI_INT, 0, MPI_COMM_WORLD);
+     build_matrix_shuffle_map();
      if (world_rank == 0) {
-          local_legendre_bubble_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
-                                        [per_site_orbital_size][per_site_orbital_size]
-                                        [n_legendre][n_legendre]);
-          std::fill(local_legendre_bubble_.origin(), local_legendre_bubble_.origin() + local_legendre_bubble_.num_elements(), 0.0);
           read_local_bubble(bubble_h5_archive);
           read_local_g2(g2_h5_archive);
      }
 }
 
+void BseqSolver::build_matrix_shuffle_map() {
+     std::map<int, int> corresp1, corresp2;
+     // we go from
+     // aup bdown adown bup
+     // to
+     // aup bup adown bdown
+     line_from_orbital_pair.clear();
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 0), 0));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 3), 1));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 0), 2));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 3), 3));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 2), 4));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 1), 5));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 2), 6));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 1), 7));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 2), 8));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 1), 9));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 2), 10));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 1), 11));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 0), 12));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 3), 13));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 0), 14));
+     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 3), 15));
+     
+}
+
+// We transform to the orbital order used by Kunes (ijkl) vs (ijlk).
+// we also transform the 4-orbital indexing scheme to the 2-orbital-pair indexing scheme
+// Block diagonalization will be introduced as an option at a later stage. (maybe :) )
+// The matrix format is given in Boehnke's PhD thesis.
 void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
      extended_local_leg_type temp_g2_data;
      temp_g2_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
@@ -49,7 +77,7 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
                          for (int l1 = 0; l1 < n_legendre; l1++) {
                               for (int l2 = 0; l2 < n_legendre; l2++) {
                                    g2_data_[orb1][orb2][orb3][orb4][l1][l2] =
-                                        temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq];
+                                        -temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq] / beta;
                               }
                          }
                     }
@@ -59,8 +87,40 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
 }
 
 void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
-     
-     bubble_h5_archive["/legendre_local_bubble/site_0/data"] >> local_legendre_bubble_;
+     extended_local_leg_type temp_g2_data;     
+     bubble_h5_archive["/legendre_local_bubble/site_0/data"] >> temp_g2_data;
+     local_legendre_bubble_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
+                                   [per_site_orbital_size][per_site_orbital_size]
+                                   [n_legendre][n_legendre]);
+     std::fill(local_legendre_bubble_.origin(), local_legendre_bubble_.origin() + local_legendre_bubble_.num_elements(), 0.0);
+     for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+          for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+               for (int orb3 = 0; orb3 < per_site_orbital_size; orb3++) {
+                    for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
+                         for (int l1 = 0; l1 < n_legendre; l1++) {
+                              for (int l2 = 0; l2 < n_legendre; l2++) {
+                                   local_legendre_bubble_[orb1][orb2][orb3][orb4][l1][l2] =
+                                        temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq];
+                              }
+                         }
+                    }
+               }
+          }
+     }
+}
+
+Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_leg_type &in_array) {
+     int orb_dim = in_array.shape()[0] * in_array.shape()[1];
+     int leg_dim = in_array.shape()[4];
+     int flattened_dim = orb_dim * leg_dim;
+     Eigen::MatrixXcd flattened_view = Eigen::MatrixXcd::Zero(flattened_dim, flattened_dim);
+     for (int l1 = 0; l1 < leg_dim; l1++) {
+          for (int l2 = 0; l2 < leg_dim; l2++) {
+               flattened_view.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(0,0) = 0.0;
+                    
+          }
+     }
+
 }
 
 const std::string BseqSolver::susceptibility_dump_filename = "c_susceptibility.h5";
