@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include <boost/multi_array.hpp>
 #include <boost/bimap.hpp>
 #include <boost/range/algorithm.hpp>
@@ -19,6 +20,7 @@
 
 using namespace std;
 typedef boost::multi_array<std::complex<double>, 8> lattice_leg_type;
+typedef boost::multi_array<std::complex<double>, 3> g1_type;
 typedef boost::multi_array<std::complex<double>, 4> local_leg_type;
 typedef boost::multi_array<std::complex<double>, 7> extended_local_leg_type;
 typedef boost::bimap<std::pair<int, int>, int> bm_type;
@@ -59,6 +61,7 @@ private:
      void read_local_bubble(alps::hdf5::archive &bubble_h5_archive);
      Eigen::MatrixXcd get_flattened_representation(local_leg_type &in_array);
      void build_matrix_shuffle_map();
-     
+     void subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive);
+          
      static const std::string susceptibility_dump_filename;
 };

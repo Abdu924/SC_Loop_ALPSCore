@@ -28,6 +28,7 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      if (world_rank == 0) {
           read_local_bubble(bubble_h5_archive);
           read_local_g2(g2_h5_archive);
+          subtract_disconnected_part(g2_h5_archive);
      }
 }
 
@@ -103,6 +104,40 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
                }
           }
      }
+}
+
+void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) {
+     if (current_bose_freq == 0) {
+          g1_type temp_g1_data;
+          temp_g1_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
+          g2_h5_archive["legendre_gf_fixed/data"] >> temp_g1_data;
+          local_leg_type disconnected_part;
+          disconnected_part.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
+                                   [per_site_orbital_size * per_site_orbital_size]
+                                   [n_legendre][n_legendre]);
+          std::fill(disconnected_part.origin(), disconnected_part.origin() + disconnected_part.num_elements(), 0.0);
+          int line_idx, col_idx;
+          for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+               for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+                    for (int orb3 = 0; orb3 < per_site_orbital_size; orb3++) {
+                         for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
+                              for (int l1 = 0; l1 < n_legendre; l1++) {
+                                   double sign_factor = -1.0;
+                                   for (int l2 = 0; l2 < n_legendre; l2++) {
+                                        line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
+                                        col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
+                                        disconnected_part[line_idx][col_idx][l1][l2] =0.0;
+                                        temp_g1_data[orb1][orb2][l1] *
+                                             temp_g1_data[orb3][orb4][l2] * sign_factor;
+                                        sign_factor *= -1.0;
+                                   }
+                              }
+                         }
+                    }
+               }
+          }
+     }
+     
 }
 
 void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
