@@ -23,7 +23,7 @@ using namespace std;
 void init(int world_rank, int computation_type,
 	  string &output_file_name, string &backup_file_name) {
      string error_file_name;
-     if (computation_type == 0) {
+     if ((computation_type == 0) or (computation_type == 1)) {
 	  output_file_name = "c_bse.out";
 	  error_file_name = "error_bse.txt";
      }

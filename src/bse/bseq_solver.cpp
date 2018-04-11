@@ -15,7 +15,7 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      N_boson = parms["measurement.G2.n_bosonic_freq"];
      beta = parms["model.beta"];
      n_sites = 1;
-     if (world_rank == 0) {
+     if (world_rank_ == 0) {
           MPI_Comm_size(MPI_COMM_WORLD, &world_size);
           nb_q_points_per_proc = nb_q_points / world_size;
           if (nb_q_points % world_size > 0) {
@@ -25,7 +25,7 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      MPI_Bcast(&world_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
      MPI_Bcast(&nb_q_points_per_proc, 1, MPI_INT, 0, MPI_COMM_WORLD);
      build_matrix_shuffle_map();
-     if (world_rank == 0) {
+     if (world_rank_ == 0) {
           read_local_bubble(bubble_h5_archive);
           std::cout << "read_local_bubble DONE " << std::endl;
           read_local_g2(g2_h5_archive);
