@@ -11,6 +11,7 @@
 #include <boost/timer/timer.hpp>
 #include <mpi.h>
 #include "bubble.hpp"
+#include "bseq_solver.hpp"
 #include "../shared_libs/chemical_potential.hpp"
 #include "../shared_libs/cmd_line.hpp"
 #include <alps/params.hpp>
@@ -138,9 +139,15 @@ int main(int argc, const char* argv[]) {
                local_bubble->dump_bubble_hdf5(parms);
 	  } else if (computation_type == 1) {
                // Solve BSEQ
-               alps::hdf5::archive h5_archive(input_file, "r");
-               //alps::hdf5::archive h5_archive(input_file, "r");
-               
+               boost::shared_ptr<Bandstructure> bare_band(
+                    new Bandstructure(parms, world_rank, true));
+               alps::hdf5::archive g2_archive(input_file, "r");
+               const string bubble_file = parms["bseq.bubbles.filename"].as<string>();
+               alps::hdf5::archive bubble_archive(bubble_file, "r");
+               int current_bose_freq = 0;
+               boost::shared_ptr<BseqSolver> bseq_solver(
+                    new BseqSolver(g2_archive, bubble_archive, bare_band,
+                                   current_bose_freq, parms, world_rank));
           }
 	  MPI_Finalize();
 	  return 0;
