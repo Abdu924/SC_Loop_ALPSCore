@@ -63,7 +63,7 @@ tuple<string, int, bool> handle_command_line(alps::params par) {
 	  if (par["action"].as<int>() == 0) {
 	       cout << "Computing bubbles" << "\n";
 	  } else if (par["action"].as<int>() == 1) {
-               cout << "Computing disconnected part" << "\n";
+               cout << "Inverting bseq" << "\n";
           } else {
 	       std::cout << "The requested action was not recognized" << std::endl;
 	       par["help"] = true;
