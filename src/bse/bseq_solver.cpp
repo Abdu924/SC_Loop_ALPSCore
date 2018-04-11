@@ -57,6 +57,7 @@ void BseqSolver::get_flattened_representation(
                }
           }
      }
+     std::cout << result.block(8 * leg_dim, 8 * leg_dim, orb_dim, orb_dim) << std::endl;
 }
 
 void BseqSolver::build_matrix_shuffle_map() {
