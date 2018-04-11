@@ -112,5 +112,6 @@ void define_parameters(alps::params &parameters) {
 	  .define<int >("bseq.N_NU_BSEQ", 0, "number of fermionic frequencies for bubble calculation")
           .define<int >("bseq.bubbles.dump_matsubara", 0, "save Matsubara bubbles to hdf5")
           .define<int >("bseq.bubbles.dump_legendre", 0, "save Legendre bubbles to hdf5")
+          .define<std::string>("bseq.bubbles.filename", "Name of the file for writing/reading bubbles")
 	  ;
 }
