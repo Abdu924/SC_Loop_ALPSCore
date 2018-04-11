@@ -89,9 +89,9 @@ std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::Vect
      return output;
 }
 
-void Bubble::dump_bubble_hdf5() {
+void Bubble::dump_bubble_hdf5(const alps::params& parms) {
      if (world_rank_ == 0) {
-          std::string archive_name = bubble_hdf5_root + ".h5";
+          const string archive_name = parms["bseq.bubbles.filename"].as<string>();
           alps::hdf5::archive bubble_output(archive_name, "a");
           if (dump_matsubara == 1) {
                // Local bubble
@@ -432,5 +432,3 @@ void Bubble::get_lattice_legendre_representation() {
           }
      }
 }
-     
-const std::string Bubble::bubble_hdf5_root = "c_bubble_new";

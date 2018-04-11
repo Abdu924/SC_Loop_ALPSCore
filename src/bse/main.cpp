@@ -135,10 +135,11 @@ int main(int argc, const char* argv[]) {
                h5_archive.close();
                local_bubble->compute_local_bubble();
                local_bubble->compute_lattice_bubble();
-               local_bubble->dump_bubble_hdf5();
+               local_bubble->dump_bubble_hdf5(parms);
 	  } else if (computation_type == 1) {
                // Solve BSEQ
                alps::hdf5::archive h5_archive(input_file, "r");
+               //alps::hdf5::archive h5_archive(input_file, "r");
                
           }
 	  MPI_Finalize();

@@ -22,11 +22,11 @@ using namespace std;
 class Bubble {
 public:
      Bubble(alps::hdf5::archive &h5_archive,
-                 boost::shared_ptr<Bandstructure> const &lattice_bs,
-                 boost::shared_ptr<Selfenergy> const &sigma,
-                 const alps::params& parms, complex<double> chemical_potential,
-                 int world_rank);
-     void dump_bubble_hdf5();
+            boost::shared_ptr<Bandstructure> const &lattice_bs,
+            boost::shared_ptr<Selfenergy> const &sigma,
+            const alps::params& parms, complex<double> chemical_potential,
+            int world_rank);
+     void dump_bubble_hdf5(const alps::params& parms);
      void compute_local_bubble();
      void get_local_legendre_representation();
      void compute_lattice_bubble();
@@ -63,6 +63,4 @@ private:
      std::vector<Eigen::MatrixXcd> get_greens_function(
 	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);
      Eigen::MatrixXcd get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd> matsu_data);
-     
-     static const std::string bubble_hdf5_root;
 };

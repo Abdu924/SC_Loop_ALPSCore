@@ -137,7 +137,7 @@ void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) 
                     }
                }
           }
-          g2_data_ = g2_data_ - disconnected_part;
+          g2_data_ = g2_data_ + disconnected_part;
      }
 }
 
@@ -167,18 +167,28 @@ void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
      }
 }
 
-Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_leg_type &in_array) {
-     int orb_dim = in_array.shape()[0] * in_array.shape()[1];
-     int leg_dim = in_array.shape()[4];
+template<class Derived, int AccessLevel>
+void BseqSolver::get_flattened_representation(
+     Eigen::TensorBase<Derived, AccessLevel>& tensor,
+     Eigen::Ref<Eigen::MatrixXcd> result) {
+     
+     assert(tensor.dimension(0) = tensor.dimension(1));
+     assert(tensor.dimension(2) = tensor.dimension(3));
+     assert(AccessLevel >= 4);
+     int orb_dim = tensor.dimension(0);
+     int leg_dim = tensor.dimension(2);
      int flattened_dim = orb_dim * leg_dim;
-     Eigen::MatrixXcd flattened_view = Eigen::MatrixXcd::Zero(flattened_dim, flattened_dim);
+     result = Eigen::MatrixXcd::Zero(flattened_dim, flattened_dim);
      for (int l1 = 0; l1 < leg_dim; l1++) {
           for (int l2 = 0; l2 < leg_dim; l2++) {
-               flattened_view.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(0,0) = 0.0;
-                    
+               Eigen::array<int, 2> offsets = {1, 0};
+               Eigen::array<int, 2> extents = {2, 2};
+               auto test = (tensor.chip(l1, 3)).chip(l2, 4);
+               //Eigen::Tensor<int, 1> slice = a.slice(offsets, extents);
+               result.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim) =
+                    test;
           }
      }
-
 }
 
 const std::string BseqSolver::susceptibility_dump_filename = "c_susceptibility.h5";

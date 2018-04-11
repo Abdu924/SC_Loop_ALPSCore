@@ -20,11 +20,11 @@
 
 using namespace std;
 typedef boost::multi_array<std::complex<double>, 8> lattice_leg_type;
-typedef boost::multi_array<std::complex<double>, 3> g1_type;
 
 typedef Eigen::Tensor<std::complex<double>, 4> local_g2_type;
-
 typedef boost::multi_array<std::complex<double>, 4> local_leg_type;
+typedef boost::multi_array<std::complex<double>, 3> g1_type;
+
 typedef boost::multi_array<std::complex<double>, 7> extended_local_leg_type;
 typedef boost::bimap<std::pair<int, int>, int> bm_type;
 typedef bm_type::value_type triplet_type;
@@ -62,7 +62,9 @@ private:
 
      void read_local_g2(alps::hdf5::archive &g2_h5_archive);
      void read_local_bubble(alps::hdf5::archive &bubble_h5_archive);
-     Eigen::MatrixXcd get_flattened_representation(local_leg_type &in_array);
+     template<class Derived, int AccessLevel>
+     void get_flattened_representation(Eigen::TensorBase<Derived, AccessLevel >& tensor,
+                                       Eigen::Ref<Eigen::MatrixXcd> result);
      void build_matrix_shuffle_map();
      void subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive);
           
