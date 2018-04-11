@@ -84,9 +84,10 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
                          [per_site_orbital_size][per_site_orbital_size]
                          [n_legendre][n_legendre][N_boson]);
      g2_h5_archive["G2_LEGENDRE"] >> temp_g2_data;
-     g2_data_.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
-                     [per_site_orbital_size * per_site_orbital_size]
-                     [n_legendre][n_legendre]);
+     g2_data_ = Eigen::Tensor<std::complex<double>, 4>(per_site_orbital_size * per_site_orbital_size,
+                                                       per_site_orbital_size * per_site_orbital_size,
+                                                       n_legendre,n_legendre);
+     g2_data_.setZero();
      int line_idx, col_idx;
      for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
           for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
@@ -96,7 +97,7 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
                               for (int l2 = 0; l2 < n_legendre; l2++) {
                                    line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
                                    col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
-                                   g2_data_[line_idx][col_idx][l1][l2] =
+                                   g2_data_(line_idx, col_idx, l1, l2) =
                                         -temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq] / beta;
                               }
                          }
@@ -111,11 +112,11 @@ void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) 
           g1_type temp_g1_data;
           temp_g1_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
           g2_h5_archive["legendre_gf_fixed/data"] >> temp_g1_data;
-          local_leg_type disconnected_part;
-          disconnected_part.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
-                                   [per_site_orbital_size * per_site_orbital_size]
-                                   [n_legendre][n_legendre]);
-          std::fill(disconnected_part.origin(), disconnected_part.origin() + disconnected_part.num_elements(), 0.0);
+          local_g2_type disconnected_part;
+          disconnected_part = Eigen::Tensor<std::complex<double>, 4>(per_site_orbital_size * per_site_orbital_size,
+                                                                     per_site_orbital_size * per_site_orbital_size,
+                                                                     n_legendre,n_legendre);
+          disconnected_part.setZero();
           int line_idx, col_idx;
           for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
                for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
@@ -126,8 +127,8 @@ void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) 
                                    for (int l2 = 0; l2 < n_legendre; l2++) {
                                         line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
                                         col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
-                                        disconnected_part[line_idx][col_idx][l1][l2] =0.0;
-                                        temp_g1_data[orb1][orb2][l1] *
+                                        disconnected_part(line_idx, col_idx, l1, l2) =
+                                             temp_g1_data[orb1][orb2][l1] *
                                              temp_g1_data[orb3][orb4][l2] * sign_factor;
                                         sign_factor *= -1.0;
                                    }
@@ -136,17 +137,17 @@ void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) 
                     }
                }
           }
+          g2_data_ = g2_data_ - disconnected_part;
      }
-     
 }
 
 void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
-     extended_local_leg_type temp_local_bubble;     
+     extended_local_leg_type temp_local_bubble;
      bubble_h5_archive["/legendre_local_bubble/site_0/data"] >> temp_local_bubble;
-     local_legendre_bubble_.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
-                                   [per_site_orbital_size * per_site_orbital_size]
-                                   [n_legendre][n_legendre]);
-     std::fill(local_legendre_bubble_.origin(), local_legendre_bubble_.origin() + local_legendre_bubble_.num_elements(), 0.0);
+     local_legendre_bubble_ = Eigen::Tensor<std::complex<double>, 4>(per_site_orbital_size * per_site_orbital_size,
+                                                                     per_site_orbital_size * per_site_orbital_size,
+                                                                     n_legendre,n_legendre);
+     local_legendre_bubble_.setZero();
      int line_idx, col_idx;
      for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
           for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
@@ -156,7 +157,7 @@ void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
                               for (int l2 = 0; l2 < n_legendre; l2++) {
                                    line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
                                    col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
-                                   local_legendre_bubble_[line_idx][col_idx][l1][l2] =
+                                   local_legendre_bubble_(line_idx, col_idx, l1, l2) =
                                         temp_local_bubble[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq];
                               }
                          }

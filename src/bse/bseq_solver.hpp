@@ -21,6 +21,9 @@
 using namespace std;
 typedef boost::multi_array<std::complex<double>, 8> lattice_leg_type;
 typedef boost::multi_array<std::complex<double>, 3> g1_type;
+
+typedef Eigen::Tensor<std::complex<double>, 4> local_g2_type;
+
 typedef boost::multi_array<std::complex<double>, 4> local_leg_type;
 typedef boost::multi_array<std::complex<double>, 7> extended_local_leg_type;
 typedef boost::bimap<std::pair<int, int>, int> bm_type;
@@ -52,8 +55,8 @@ private:
      double beta;
      boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::multi_array<complex<double> , 4> fixed_legendre_gf_;
-     local_leg_type g2_data_;
-     local_leg_type local_legendre_bubble_;
+     local_g2_type g2_data_;
+     local_g2_type local_legendre_bubble_;
      // local_leg_type irr_vertex_;
      lattice_leg_type lattice_legendre_bubble_;
 
