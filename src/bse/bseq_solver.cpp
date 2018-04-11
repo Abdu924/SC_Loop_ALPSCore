@@ -29,6 +29,33 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           read_local_bubble(bubble_h5_archive);
           read_local_g2(g2_h5_archive);
           subtract_disconnected_part(g2_h5_archive);
+          Eigen::MatrixXcd flat_view;
+          get_flattened_representation(g2_data_, flat_view);
+     }
+}
+
+void BseqSolver::get_flattened_representation(
+     Eigen::Tensor<std::complex<double>, 4>& tensor,
+     Eigen::Ref<Eigen::MatrixXcd> result) {
+     assert(tensor.dimension(0) = tensor.dimension(1));
+     assert(tensor.dimension(2) = tensor.dimension(3));
+     int orb_dim = tensor.dimension(0);
+     int leg_dim = tensor.dimension(2);
+     int flattened_dim = orb_dim * leg_dim;
+     result = Eigen::MatrixXcd::Zero(flattened_dim, flattened_dim);
+     for (int l1 = 0; l1 < leg_dim; l1++) {
+          for (int l2 = 0; l2 < leg_dim; l2++) {
+               Eigen::array<int, 2> offsets = {1, 0};
+               Eigen::array<int, 2> extents = {2, 2};
+               Eigen::Tensor<std::complex<double>, 2> test = (tensor.chip(l1, 3)).chip(l2, 4);
+               for (int orb1 = 0; orb1 < orb_dim; orb1++) {
+                    for (int orb2 = 0; orb2 < orb_dim; orb2++) {
+                         //Eigen::Tensor<int, 1> slice = a.slice(offsets, extents);
+                         result.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(orb1, orb2) =
+                              test(orb1, orb2);
+                    }
+               }
+          }
      }
 }
 
@@ -167,28 +194,5 @@ void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
      }
 }
 
-template<class Derived, int AccessLevel>
-void BseqSolver::get_flattened_representation(
-     Eigen::TensorBase<Derived, AccessLevel>& tensor,
-     Eigen::Ref<Eigen::MatrixXcd> result) {
-     
-     assert(tensor.dimension(0) = tensor.dimension(1));
-     assert(tensor.dimension(2) = tensor.dimension(3));
-     assert(AccessLevel >= 4);
-     int orb_dim = tensor.dimension(0);
-     int leg_dim = tensor.dimension(2);
-     int flattened_dim = orb_dim * leg_dim;
-     result = Eigen::MatrixXcd::Zero(flattened_dim, flattened_dim);
-     for (int l1 = 0; l1 < leg_dim; l1++) {
-          for (int l2 = 0; l2 < leg_dim; l2++) {
-               Eigen::array<int, 2> offsets = {1, 0};
-               Eigen::array<int, 2> extents = {2, 2};
-               auto test = (tensor.chip(l1, 3)).chip(l2, 4);
-               //Eigen::Tensor<int, 1> slice = a.slice(offsets, extents);
-               result.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim) =
-                    test;
-          }
-     }
-}
 
 const std::string BseqSolver::susceptibility_dump_filename = "c_susceptibility.h5";
