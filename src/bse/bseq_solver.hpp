@@ -62,9 +62,7 @@ private:
 
      void read_local_g2(alps::hdf5::archive &g2_h5_archive);
      void read_local_bubble(alps::hdf5::archive &bubble_h5_archive);
-     //template<typename Derived, int AccessLevel>
      Eigen::MatrixXcd get_flattened_representation(local_g2_type& tensor);
-          //Eigen::TensorBase<Derived, AccessLevel> &tensor,
      void build_matrix_shuffle_map();
      void subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive);
           
