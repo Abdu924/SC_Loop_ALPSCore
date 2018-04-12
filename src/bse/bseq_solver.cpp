@@ -27,41 +27,31 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      build_matrix_shuffle_map();
      if (world_rank_ == 0) {
           read_local_bubble(bubble_h5_archive);
-          std::cout << "read_local_bubble DONE " << std::endl;
           read_local_g2(g2_h5_archive);
-          std::cout << "read_local_g2 DONE " << std::endl;
           subtract_disconnected_part(g2_h5_archive);
-          std::cout << "subtract_disconnected_part DONE " << std::endl;
-          Eigen::MatrixXcd flat_view;
-          get_flattened_representation(g2_data_, flat_view);
-          std::cout << "get_flattened_representation DONE " << std::endl;
+          Eigen::MatrixXcd flat_view = get_flattened_representation(g2_data_);
      }
 }
 
-//template<typename Derived, int AccessLevel>
-void BseqSolver::get_flattened_representation(
-     //Eigen::TensorBase<Derived, AccessLevel> &tensor,
-     local_g2_type& tensor,
-     Eigen::Ref<Eigen::MatrixXcd> result) {
+Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor) {
      assert(tensor.dimension(0) = tensor.dimension(1));
      assert(tensor.dimension(2) = tensor.dimension(3));
      int orb_dim = tensor.dimension(0);
      int leg_dim = tensor.dimension(2);
      int flattened_dim = orb_dim * leg_dim;
-     result = Eigen::MatrixXcd::Zero(flattened_dim, flattened_dim);
+     Eigen::MatrixXcd result = Eigen::MatrixXcd::Zero(flattened_dim, flattened_dim);
      for (int l1 = 0; l1 < leg_dim; l1++) {
           for (int l2 = 0; l2 < leg_dim; l2++) {
-               Eigen::Tensor<std::complex<double>, 2> sub_matrix = (tensor.chip(l1, 2)).chip(l2, 3);
+               Eigen::Tensor<std::complex<double>, 2> sub_matrix = (tensor.chip(l1, 2)).chip(l2, 2);
                for (int orb1 = 0; orb1 < orb_dim; orb1++) {
                     for (int orb2 = 0; orb2 < orb_dim; orb2++) {
-                         //Eigen::Tensor<int, 1> slice = a.slice(offsets, extents);
                          result.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(orb1, orb2) =
                               sub_matrix(orb1, orb2);
                     }
                }
           }
      }
-     std::cout << result.block(8 * leg_dim, 8 * leg_dim, orb_dim, orb_dim) << std::endl;
+     return result;
 }
 
 void BseqSolver::build_matrix_shuffle_map() {
