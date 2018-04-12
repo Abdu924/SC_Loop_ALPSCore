@@ -111,11 +111,11 @@ void BseqSolver::build_matrix_shuffle_map() {
 // Block diagonalization will be introduced as an option at a later stage. (maybe :) )
 // The matrix format is given in Boehnke's PhD thesis.
 void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
-     extended_local_leg_type temp_g2_data;
-     temp_g2_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
-                         [per_site_orbital_size][per_site_orbital_size]
-                         [n_legendre][n_legendre][N_boson]);
-     g2_h5_archive["G2_LEGENDRE"] >> temp_g2_data;
+     boost::multi_array<double, 8>  real_temp_g2_data;
+     real_temp_g2_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
+                              [per_site_orbital_size][per_site_orbital_size]
+                              [n_legendre][n_legendre][N_boson][2]);
+     g2_h5_archive["G2_LEGENDRE"] >> real_temp_g2_data;
      g2_data_ = Eigen::Tensor<std::complex<double>, 4>(per_site_orbital_size * per_site_orbital_size,
                                                        per_site_orbital_size * per_site_orbital_size,
                                                        n_legendre,n_legendre);
@@ -130,7 +130,10 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
                                    line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
                                    col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
                                    g2_data_(line_idx, col_idx, l1, l2) =
-                                        -temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq] / beta;
+                                        -std::complex<double>(
+                                             real_temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq][0],
+                                             real_temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq][1])
+                                        / beta;
                               }
                          }
                     }
