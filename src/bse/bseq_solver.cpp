@@ -29,49 +29,52 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           read_local_bubble(bubble_h5_archive);
           read_local_g2(g2_h5_archive);
           subtract_disconnected_part(g2_h5_archive);
-          Eigen::MatrixXcd flat_view = get_flattened_representation(g2_data_);
-
-          const string archive_name("test_flat.h5");
-          alps::hdf5::archive test_output(archive_name, "a");
-          std::stringstream site_path;
-          std::string h5_group_name("/test_flat");
-          site_path << h5_group_name + "/data";
-
-          boost::multi_array<std::complex<double>, 2>  temp_flat_data;
-          temp_flat_data.resize(boost::extents[flat_view.rows()][flat_view.rows()]);
-          for (int i = 0; i < flat_view.rows(); i++) {
-               for (int j = 0; j < flat_view.rows(); j++) {
-                    temp_flat_data[i][j] = flat_view(i, j);
-               }
-          }
-                               
-          test_output[site_path.str()] << temp_flat_data;
-
-          std::stringstream site_path2;
-          std::string h5_group_name2("/test_g2");
-          site_path2 << h5_group_name2 + "/data";
-
-
-          
-          
-          boost::multi_array<std::complex<double>, 4>  temp_g2_data;
-          temp_g2_data.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
-                              [per_site_orbital_size * per_site_orbital_size][n_legendre][n_legendre]);
-          for (int i = 0; i < per_site_orbital_size * per_site_orbital_size; i++) {
-               for (int j = 0; j < per_site_orbital_size * per_site_orbital_size; j++) {
-                    for (int k = 0; k < n_legendre; k++) {
-                         for (int l = 0; l < n_legendre; l++) {
-                              temp_g2_data[i][j][k][l] = g2_data_(i, j, k, l);
-                         }
-                    }
-               }
-          }
-          test_output[site_path2.str()] << temp_g2_data;
-
-
-
+          Eigen::MatrixXcd flat_g2 = get_flattened_representation(g2_data_);
+          Eigen::MatrixXcd flat_bubble = get_flattened_representation(local_legendre_bubble_);
+          flat_irreducible_vertex = flat_g2.inverse() - flat_bubble.inverse();
+          // const string archive_name("test_flat.h5");
+          // alps::hdf5::archive test_output(archive_name, "a");
+          // std::stringstream site_path;
+          // std::string h5_group_name("/test_flat");
+          // site_path << h5_group_name + "/data";
+          // boost::multi_array<std::complex<double>, 2>  temp_flat_data;
+          // temp_flat_data.resize(boost::extents[flat_view.rows()][flat_view.rows()]);
+          // for (int i = 0; i < flat_view.rows(); i++) {
+          //      for (int j = 0; j < flat_view.rows(); j++) {
+          //           temp_flat_data[i][j] = flat_view(i, j);
+          //      }
+          // }                   
+          // test_output[site_path.str()] << temp_flat_data;
+          // std::stringstream site_path2;
+          // std::string h5_group_name2("/test_g2");
+          // site_path2 << h5_group_name2 + "/data";
+          // boost::multi_array<std::complex<double>, 4>  temp_g2_data;
+          // temp_g2_data.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
+          //                     [per_site_orbital_size * per_site_orbital_size][n_legendre][n_legendre]);
+          // for (int i = 0; i < per_site_orbital_size * per_site_orbital_size; i++) {
+          //      for (int j = 0; j < per_site_orbital_size * per_site_orbital_size; j++) {
+          //           for (int k = 0; k < n_legendre; k++) {
+          //                for (int l = 0; l < n_legendre; l++) {
+          //                     temp_g2_data[i][j][k][l] = g2_data_(i, j, k, l);
+          //                }
+          //           }
+          //      }
+          // }
+          // test_output[site_path2.str()] << temp_g2_data;
+     } else {
+          int vertex_size = per_site_orbital_size * per_site_orbital_size * n_legendre;
+          flat_irreducible_vertex = Eigen::MatrixXcd::Zero(vertex_size, vertex_size);
      }
-
+     MPI_Barrier(MPI_COMM_WORLD);
+     try {
+          MPI_Bcast(flat_irreducible_vertex.data(), flat_irreducible_vertex.size(), MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+     } catch(std::exception& exc){
+	  std::cerr<<exc.what()<<std::endl;
+	  //return -1;
+     } catch(...){
+	  std::cerr << "Fatal Error: Unknown Exception!\n";
+	  //return -2;
+     }
 }
 
 Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor) {
@@ -233,5 +236,30 @@ void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
      }
 }
 
+void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
+     // extended_lattice_leg_type temp_local_bubble;
+     // bubble_h5_archive["/legendre_local_bubble/site_0/data"] >> temp_local_bubble;
+     // local_legendre_bubble_ = Eigen::Tensor<std::complex<double>, 4>(per_site_orbital_size * per_site_orbital_size,
+     //                                                                 per_site_orbital_size * per_site_orbital_size,
+     //                                                                 n_legendre,n_legendre);
+     // local_legendre_bubble_.setZero();
+     // int line_idx, col_idx;
+     // for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+     //      for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+     //           for (int orb3 = 0; orb3 < per_site_orbital_size; orb3++) {
+     //                for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
+     //                     for (int l1 = 0; l1 < n_legendre; l1++) {
+     //                          for (int l2 = 0; l2 < n_legendre; l2++) {
+     //                               line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
+     //                               col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
+     //                               local_legendre_bubble_(line_idx, col_idx, l1, l2) =
+     //                                    temp_local_bubble[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq];
+     //                          }
+     //                     }
+     //                }
+     //           }
+     //      }
+     // }
+}
 
 const std::string BseqSolver::susceptibility_dump_filename = "c_susceptibility.h5";
