@@ -11,7 +11,6 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      :lattice_bs_(lattice_bs), sigma_(sigma), chemical_potential(chemical_potential),
       world_rank_(world_rank) {
      int N_max = sigma_->get_n_matsubara_freqs();
-     int N_Qmesh = parms["bseq.N_QBSEQ"];
      nb_q_points = lattice_bs_->get_nb_points_for_bseq();
      if (world_rank == 0) {
           MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -35,7 +34,7 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      tot_orbital_size = n_sites * per_site_orbital_size;
 
      std::cout << "Computing bubbles for " << bubble_dim << " fermionic frequencies, "
-               << std::endl << " q mesh based on " << N_Qmesh << " points, i.e. "
+               << std::endl << " q mesh based on " << nb_q_points << " points, i.e. "
                << nb_q_points << " q points, and " 
                << N_boson << " bosonic frequencies" << std::endl;     
      // n_matsubara is parms[N_MATSUBARA]

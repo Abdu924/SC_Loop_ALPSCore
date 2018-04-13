@@ -70,11 +70,10 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           MPI_Bcast(flat_irreducible_vertex.data(), flat_irreducible_vertex.size(), MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
      } catch(std::exception& exc){
 	  std::cerr<<exc.what()<<std::endl;
-	  //return -1;
      } catch(...){
 	  std::cerr << "Fatal Error: Unknown Exception!\n";
-	  //return -2;
      }
+     read_lattice_bubble(bubble_h5_archive);
 }
 
 Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor) {
@@ -150,9 +149,9 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
                               [per_site_orbital_size][per_site_orbital_size]
                               [n_legendre][n_legendre][N_boson][2]);
      g2_h5_archive["G2_LEGENDRE"] >> real_temp_g2_data;
-     g2_data_ = Eigen::Tensor<std::complex<double>, 4>(per_site_orbital_size * per_site_orbital_size,
-                                                       per_site_orbital_size * per_site_orbital_size,
-                                                       n_legendre,n_legendre);
+     g2_data_ = local_g2_type(per_site_orbital_size * per_site_orbital_size,
+                              per_site_orbital_size * per_site_orbital_size,
+                              n_legendre, n_legendre);
      g2_data_.setZero();
      int line_idx, col_idx;
      for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
@@ -182,7 +181,7 @@ void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) 
           temp_g1_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
           g2_h5_archive["legendre_gf_fixed/data"] >> temp_g1_data;
           local_g2_type disconnected_part;
-          disconnected_part = Eigen::Tensor<std::complex<double>, 4>(per_site_orbital_size * per_site_orbital_size,
+          disconnected_part = local_g2_type(per_site_orbital_size * per_site_orbital_size,
                                                                      per_site_orbital_size * per_site_orbital_size,
                                                                      n_legendre,n_legendre);
           disconnected_part.setZero();
@@ -213,7 +212,7 @@ void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) 
 void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
      extended_local_leg_type temp_local_bubble;
      bubble_h5_archive["/legendre_local_bubble/site_0/data"] >> temp_local_bubble;
-     local_legendre_bubble_ = Eigen::Tensor<std::complex<double>, 4>(per_site_orbital_size * per_site_orbital_size,
+     local_legendre_bubble_ = local_g2_type(per_site_orbital_size * per_site_orbital_size,
                                                                      per_site_orbital_size * per_site_orbital_size,
                                                                      n_legendre,n_legendre);
      local_legendre_bubble_.setZero();
@@ -237,29 +236,35 @@ void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
 }
 
 void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
-     // extended_lattice_leg_type temp_local_bubble;
-     // bubble_h5_archive["/legendre_local_bubble/site_0/data"] >> temp_local_bubble;
-     // local_legendre_bubble_ = Eigen::Tensor<std::complex<double>, 4>(per_site_orbital_size * per_site_orbital_size,
-     //                                                                 per_site_orbital_size * per_site_orbital_size,
-     //                                                                 n_legendre,n_legendre);
-     // local_legendre_bubble_.setZero();
-     // int line_idx, col_idx;
-     // for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
-     //      for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
-     //           for (int orb3 = 0; orb3 < per_site_orbital_size; orb3++) {
-     //                for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
-     //                     for (int l1 = 0; l1 < n_legendre; l1++) {
-     //                          for (int l2 = 0; l2 < n_legendre; l2++) {
-     //                               line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
-     //                               col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
-     //                               local_legendre_bubble_(line_idx, col_idx, l1, l2) =
-     //                                    temp_local_bubble[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq];
-     //                          }
-     //                     }
-     //                }
-     //           }
-     //      }
-     // }
+     extended_lattice_leg_type temp_lattice_bubble;
+     bubble_h5_archive["/legendre_lattice_bubble/site_0/data"] >> temp_lattice_bubble;
+     lattice_legendre_bubble_ = lattice_g2_type(
+           per_site_orbital_size * per_site_orbital_size,
+           per_site_orbital_size * per_site_orbital_size, n_legendre,n_legendre, nb_q_points_per_proc);
+     lattice_legendre_bubble_.setZero();
+     int line_idx, col_idx;
+
+     for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
+          int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
+          if (world_q_index >= nb_q_points)
+               continue;
+          for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+               for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+                    for (int orb3 = 0; orb3 < per_site_orbital_size; orb3++) {
+                         for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
+                              for (int l1 = 0; l1 < n_legendre; l1++) {
+                                   for (int l2 = 0; l2 < n_legendre; l2++) {
+                                        line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
+                                        col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
+                                        lattice_legendre_bubble_(line_idx, col_idx, l1, l2, q_index) =
+                                             temp_lattice_bubble[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq][q_index];
+                                   }
+                              }
+                         }
+                    }
+               }
+          }
+     }
 }
 
 const std::string BseqSolver::susceptibility_dump_filename = "c_susceptibility.h5";

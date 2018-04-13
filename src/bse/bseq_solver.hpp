@@ -27,7 +27,7 @@ typedef boost::multi_array<std::complex<double>, 4> local_leg_type;
 typedef boost::multi_array<std::complex<double>, 3> g1_type;
 
 typedef boost::multi_array<std::complex<double>, 7> extended_local_leg_type;
-typedef boost::multi_array<std::complex<double>, 7> extended_lattice_leg_type;
+typedef boost::multi_array<std::complex<double>, 8> extended_lattice_leg_type;
 
 typedef boost::bimap<std::pair<int, int>, int> bm_type;
 typedef bm_type::value_type triplet_type;
