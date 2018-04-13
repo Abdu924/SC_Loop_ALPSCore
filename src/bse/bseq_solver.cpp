@@ -30,7 +30,48 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           read_local_g2(g2_h5_archive);
           subtract_disconnected_part(g2_h5_archive);
           Eigen::MatrixXcd flat_view = get_flattened_representation(g2_data_);
+
+          const string archive_name("test_flat.h5");
+          alps::hdf5::archive test_output(archive_name, "a");
+          std::stringstream site_path;
+          std::string h5_group_name("/test_flat");
+          site_path << h5_group_name + "/data";
+
+          boost::multi_array<std::complex<double>, 2>  temp_flat_data;
+          temp_flat_data.resize(boost::extents[flat_view.rows()][flat_view.rows()]);
+          for (int i = 0; i < flat_view.rows(); i++) {
+               for (int j = 0; j < flat_view.rows(); j++) {
+                    temp_flat_data[i][j] = flat_view(i, j);
+               }
+          }
+                               
+          test_output[site_path.str()] << temp_flat_data;
+
+          std::stringstream site_path2;
+          std::string h5_group_name2("/test_g2");
+          site_path2 << h5_group_name2 + "/data";
+
+
+          
+          
+          boost::multi_array<std::complex<double>, 4>  temp_g2_data;
+          temp_g2_data.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
+                              [per_site_orbital_size * per_site_orbital_size][n_legendre][n_legendre]);
+          for (int i = 0; i < per_site_orbital_size * per_site_orbital_size; i++) {
+               for (int j = 0; j < per_site_orbital_size * per_site_orbital_size; j++) {
+                    for (int k = 0; k < n_legendre; k++) {
+                         for (int l = 0; l < n_legendre; l++) {
+                              temp_g2_data[i][j][k][l] = g2_data_(i, j, k, l);
+                         }
+                    }
+               }
+          }
+          test_output[site_path2.str()] << temp_g2_data;
+
+
+
      }
+
 }
 
 Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor) {
