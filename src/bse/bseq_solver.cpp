@@ -108,44 +108,82 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                     int world_q_index = q_index + nb_q_points_per_proc * proc_index;
                     if (world_q_index >= nb_q_points)
                          continue;
-                    cout << "receive world_q_index... " << world_q_index << endl;
-                    local_g2_type temp_world_lattice_chi = world_lattice_chi_.chip(world_q_index, 4);
-                    local_g2_type temp_lattice_chi = lattice_chi_.chip(q_index, 4);
+                    local_g2_type temp_world_lattice_chi(world_lattice_chi_.dimensions()[0],
+                                                         world_lattice_chi_.dimensions()[1],
+                                                         world_lattice_chi_.dimensions()[2],
+                                                         world_lattice_chi_.dimensions()[3]);
+                    temp_world_lattice_chi.setZero();
                     MPI_Recv(temp_world_lattice_chi.data(),
-                             temp_lattice_chi.size(),
+                             temp_world_lattice_chi.size(),
                              MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    //world_lattice_chi_[q_index].setZero();
-        	    // MPI_Recv(world_lattice_chi_[world_q_index].data(),
-                    //          lattice_chi_[q_index].size(),
-                    //          MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    cout << " ...DONE" << endl;
+                    world_lattice_chi_.chip(world_q_index, 4) = temp_world_lattice_chi;
                }
           }
      } else {
           for (size_t q_index = 0; q_index < nb_q_points; q_index++) {
                int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
                if (world_q_index < nb_q_points) {
-                    cout << "send world_q_index... " << world_q_index << endl;
                     local_g2_type temp_lattice_chi = lattice_chi_.chip(q_index, 4);
                     MPI_Send(temp_lattice_chi.data(),
                              temp_lattice_chi.size(),
                              MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);
-                    cout << " ...DONE" << endl;
                } else {
                     continue;
                }
           }
      }
      if (world_rank_ == 0) {
-          for (size_t q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
-               cout << "send/receive world_q_index... " << q_index << " (proc 0)" << endl;
-               local_g2_type temp_world_lattice_chi = world_lattice_chi_.chip(q_index, 4);
-               temp_world_lattice_chi = lattice_chi_.chip(q_index, 4);
-               //world_lattice_chi_[q_index] = lattice_chi_[q_index];
-               cout << "DONE " << endl;
-          }
+          world_lattice_chi_ = lattice_chi_;
      }
+     dump_susceptibility(parms);
 }
+
+void BseqSolver::dump_susceptibility(const alps::params& parms) {
+     if (world_rank_ == 0) {
+          const string archive_name = parms["bseq.inversion.filename"].as<string>();
+          alps::hdf5::archive bseq_output(archive_name, "a");
+          std::string h5_group_name("/lattice_chi");
+          boost::multi_array<std::complex<double>, 5> temp_lattice_chi;
+          temp_lattice_chi.resize(boost::extents
+                                  [world_lattice_chi_.dimensions()[0]]
+                                  [world_lattice_chi_.dimensions()[1]]
+                                  [world_lattice_chi_.dimensions()[2]]
+                                  [world_lattice_chi_.dimensions()[3]]
+                                  [world_lattice_chi_.dimensions()[4]]);
+          for (int site_index = 0; site_index < n_sites; site_index++) {
+               std::stringstream site_path;
+               site_path << h5_group_name + "/site_" +
+                    boost::lexical_cast<std::string>(site_index) + "/data";
+               for (int orb1 = 0; orb1 < world_lattice_chi_.dimensions()[0]; orb1++) {
+                    for (int orb2 = 0; orb2 < world_lattice_chi_.dimensions()[1]; orb2++) {
+                         for (int l1 = 0; l1 < world_lattice_chi_.dimensions()[2]; l1++) {
+                              for (int l2 = 0; l2 < world_lattice_chi_.dimensions()[3]; l2++) {
+                                   for (int q_index = 0; q_index < nb_q_points; q_index++) {
+                                        temp_lattice_chi[orb1][orb2][l1][l2][q_index] =
+                                             world_lattice_chi_(orb1, orb2, l1, l2, q_index);
+                                   }
+                              }
+                         }
+                    }
+               }
+               bseq_output[site_path.str()] << temp_lattice_chi;
+          }
+          // q point list
+          h5_group_name = "/lattice_chi/q_point_list";
+          std::vector<std::complex<double>> temp_data;
+          temp_data.resize(nb_q_points);
+          Eigen::VectorXd q_point;
+          for (int q_index = 0; q_index < nb_q_points; q_index++) {
+               q_point = lattice_bs_->get_q_point(q_index);
+               temp_data[q_index] = std::complex<double>(q_point(0), q_point(1));
+          }
+          bseq_output[h5_group_name] = temp_data;
+          // Close file
+	  bseq_output.close();
+     }
+     MPI_Barrier(MPI_COMM_WORLD);
+}
+
 
 Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor) {
      assert(tensor.dimension(0) = tensor.dimension(1));
@@ -172,18 +210,22 @@ local_g2_type BseqSolver::get_multidim_representation(const Eigen::Ref<Eigen::Ma
      local_g2_type result(per_site_orbital_size * per_site_orbital_size,
                           per_site_orbital_size * per_site_orbital_size,
                           n_legendre,n_legendre);
+     std::complex<double> tot_check(0.0);
      result.setZero();
      assert(per_site_orbital_size * per_site_orbital_size * n_legendre = flat_data.rows());
      int orb_dim = per_site_orbital_size;
      for (int l1 = 0; l1 < n_legendre; l1++) {
           for (int l2 = 0; l2 < n_legendre; l2++) {
-               Eigen::Tensor<std::complex<double>, 2> sub_matrix = (result.chip(l1, 2)).chip(l2, 2);
+               Eigen::Tensor<std::complex<double>, 2> sub_matrix(orb_dim, orb_dim);
+               sub_matrix.setZero();
                for (int orb1 = 0; orb1 < orb_dim; orb1++) {
                     for (int orb2 = 0; orb2 < orb_dim; orb2++) {
                          sub_matrix(orb1, orb2) =
                               flat_data.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(orb1, orb2);
+                         tot_check += std::abs(flat_data.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(orb1, orb2));
                     }
                }
+               (result.chip(l1, 2)).chip(l2, 2) = sub_matrix;
           }
      }
      return result;
@@ -392,5 +434,3 @@ void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
           }
      }
 }
-
-const std::string BseqSolver::susceptibility_dump_filename = "c_susceptibility.h5";

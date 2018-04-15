@@ -117,6 +117,6 @@ void define_parameters(alps::params &parameters) {
           .define<std::string>("bseq.bubbles.filename", "Name of the file for writing/reading bubbles")
           .define<int >("bseq.inversion.n_bosonic_freq", 1, "Number of bosonic frequencies for the bubbles")
           .define<int >("bseq.inversion.n_legendre", 20, "Number of legendre polynomials for the bubbles")
-          
+          .define<std::string>("bseq.inversion.filename", "Name of the file for writing the susceptibility output")
 	  ;
 }
