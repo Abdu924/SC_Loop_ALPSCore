@@ -54,6 +54,9 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           {
                boost::timer::auto_cpu_timer bubble_calc;
                flat_irreducible_vertex = flat_g2.inverse() - flat_bubble.inverse();
+               cout << "flat_g2(0, 0, 0, 0, 0) " << flat_g2(0, 0) << endl;
+               cout << "flat_bubble(0, 0, 0, 0, 0) " << flat_bubble(0, 0) << endl;
+               cout << "flat_irreducible_vertex(0, 0, 0, 0, 0) " << flat_irreducible_vertex(0, 0) << endl;
                cout << "Get irreducible vertex (inversion): ";
           }
      } else {
@@ -98,7 +101,15 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                                                     (get_flattened_representation(temp_lattice_bubble)).inverse()).inverse();
                //local_g2_type temp_lattice_chi = lattice_chi_.chip(q_index, 4);
                //temp_lattice_chi = get_multidim_representation(flat_lattice_chi);
+               cout << "flat_irreducible_vertex(0, 0, 0, 0, 0) " << flat_irreducible_vertex(0, 0) << endl;
+               cout << "get_flattened_representation(temp_lattice_bubble)(0, 3, 0, 0, 0) " <<
+                    get_flattened_representation(temp_lattice_bubble)(0, 3) << endl;
+
+               cout << "flat_lattice_chi(0, 0, 0, 0, 0) " << flat_lattice_chi(0, 0) << endl;
+               cout << "flat_lattice_chi(0, 3, 0, 0, 0) " << flat_lattice_chi(0, 3) << endl;
                lattice_chi_.chip(q_index, 4) = get_multidim_representation(flat_lattice_chi);
+               cout << "lattice_chi_(0, 0, 0, 0, 0) " << lattice_chi_(0, 0, 0, 0, 0) << endl;
+               cout << "lattice_chi_(0, 3, 0, 0, 0) " << lattice_chi_(0, 3, 0, 0, 0) << endl;
           }
           cout << "Invert lattice BSE";
      }
@@ -136,6 +147,7 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           for (size_t q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                world_lattice_chi_.chip(q_index, 4) = lattice_chi_.chip(q_index, 4);
           }
+          cout << "world_lattice_chi_(0, 3, 0, 0, 0) " << world_lattice_chi_(0, 3, 0, 0, 0) << endl;
      }
      dump_susceptibility(parms);
 }
@@ -212,10 +224,9 @@ local_g2_type BseqSolver::get_multidim_representation(const Eigen::Ref<Eigen::Ma
      local_g2_type result(per_site_orbital_size * per_site_orbital_size,
                           per_site_orbital_size * per_site_orbital_size,
                           n_legendre,n_legendre);
-     std::complex<double> tot_check(0.0);
      result.setZero();
      assert(per_site_orbital_size * per_site_orbital_size * n_legendre = flat_data.rows());
-     int orb_dim = per_site_orbital_size;
+     int orb_dim = per_site_orbital_size * per_site_orbital_size;
      for (int l1 = 0; l1 < n_legendre; l1++) {
           for (int l2 = 0; l2 < n_legendre; l2++) {
                Eigen::Tensor<std::complex<double>, 2> sub_matrix(orb_dim, orb_dim);
@@ -224,7 +235,6 @@ local_g2_type BseqSolver::get_multidim_representation(const Eigen::Ref<Eigen::Ma
                     for (int orb2 = 0; orb2 < orb_dim; orb2++) {
                          sub_matrix(orb1, orb2) =
                               flat_data.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(orb1, orb2);
-                         tot_check += std::abs(flat_data.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(orb1, orb2));
                     }
                }
                (result.chip(l1, 2)).chip(l2, 2) = sub_matrix;
