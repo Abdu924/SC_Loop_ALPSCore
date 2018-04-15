@@ -60,7 +60,7 @@ private:
      boost::multi_array<complex<double> , 4> fixed_legendre_gf_;
      local_g2_type g2_data_;
      local_g2_type local_legendre_bubble_;
-     lattice_g2_type lattice_chi_;
+     std::vector<local_g2_type> lattice_chi_;
      std::vector<local_g2_type> world_lattice_chi_;
      // local_leg_type irr_vertex_;
      lattice_g2_type lattice_legendre_bubble_;

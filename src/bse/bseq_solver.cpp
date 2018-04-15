@@ -88,44 +88,65 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                     world_lattice_chi_[q_index].setZero();
                }
           }
-          lattice_chi_.resize(per_site_orbital_size * per_site_orbital_size,
-                              per_site_orbital_size * per_site_orbital_size,
-                              n_legendre,n_legendre, nb_q_points_per_proc);
+          lattice_chi_.clear();
+          lattice_chi_.resize(nb_q_points_per_proc);
+          for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
+               int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
+               if (world_q_index >= nb_q_points)
+                    continue;                    
+               lattice_chi_[q_index] = local_g2_type(
+                    per_site_orbital_size * per_site_orbital_size,
+                    per_site_orbital_size * per_site_orbital_size,
+                    n_legendre,n_legendre);
+               lattice_chi_[q_index].setZero();
+          }
           for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
                if (world_q_index >= nb_q_points)
                     continue;
                local_g2_type temp_lattice_bubble = lattice_legendre_bubble_.chip(q_index, 4);
-               local_g2_type sub_tensor = lattice_chi_.chip(q_index, 4);
                Eigen::MatrixXcd flat_lattice_chi = (flat_irreducible_vertex +
                                                     (get_flattened_representation(temp_lattice_bubble)).inverse()).inverse();
-               sub_tensor = get_multidim_representation(flat_lattice_chi);
+               lattice_chi_[q_index] = get_multidim_representation(flat_lattice_chi);
           }
           cout << "Invert lattice BSE";
      }
-     // for (size_t q_index = 0; q_index < nb_q_points; q_index++) {
-     //      if (world_rank_ == 0) {
-     //           for (int proc_index = 1; proc_index < world_size; proc_index++) {
-     //                int world_q_index = q_index + nb_q_points_per_proc * proc_index;
-     //                if (world_q_index >= nb_q_points)
-     //                     continue;                    
-     //    	    MPI_Recv(
-     //    		 world_k_resolved_occupation_matrices
-     //    		 [proc_index * n_points_per_proc + k_index].data(),
-     //    		 k_resolved_occupation_matrices[k_index].size(),
-     //    		 MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-     //           }
-     //      } else {
-     //           MPI_Send(k_resolved_occupation_matrices[k_index].data(),
-     //    		k_resolved_occupation_matrices[k_index].size(),
-     //    		MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
-     //      }
-     //      if (world_rank_ == 0) {
-     //           world_k_resolved_occupation_matrices[k_index] =
-     //    	    k_resolved_occupation_matrices[k_index];
-     //      }
-     // }
+     if (world_rank_ == 0) {
+          for (int proc_index = 1; proc_index < world_size; proc_index++) {
+               for (size_t q_index = 0; q_index < nb_q_points; q_index++) {
+                    int world_q_index = q_index + nb_q_points_per_proc * proc_index;
+                    if (world_q_index >= nb_q_points)
+                         continue;
+                    cout << "receive world_q_index... " << world_q_index << endl;
+        	    MPI_Recv(world_lattice_chi_[world_q_index].data(),
+                             lattice_chi_[q_index].size(),
+                             MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    cout << " ...DONE" << endl;
+               }
+          }
+     } else {
+          for (size_t q_index = 0; q_index < nb_q_points; q_index++) {
+               int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
+               if (world_q_index < nb_q_points) {
+                    cout << "send world_q_index... " << world_q_index << endl;
+                    MPI_Send(lattice_chi_[q_index].data(),
+                             lattice_chi_[q_index].size(),
+                             MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);
+                    cout << " ...DONE" << endl;
+               } else {
+                    continue;
+               }
+          }
+     }
+     if (world_rank_ == 0) {
+          for (size_t q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
+               cout << "send/receive world_q_index... " << q_index << " (proc 0)" << endl;
+               world_lattice_chi_[q_index] = lattice_chi_[q_index];
+               cout << "DONE " << endl;
+          }
+     }
 }
+
 
 Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor) {
      assert(tensor.dimension(0) = tensor.dimension(1));
