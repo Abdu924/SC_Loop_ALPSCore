@@ -64,6 +64,7 @@ private:
      lattice_g2_type lattice_legendre_bubble_;
      Eigen::MatrixXcd flat_irreducible_vertex;
 
+     void dump_for_check();
      void read_local_g2(alps::hdf5::archive &g2_h5_archive);
      void read_local_bubble(alps::hdf5::archive &bubble_h5_archive);
      void read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive);

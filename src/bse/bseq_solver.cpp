@@ -26,6 +26,8 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      }
      MPI_Bcast(&world_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
      MPI_Bcast(&nb_q_points_per_proc, 1, MPI_INT, 0, MPI_COMM_WORLD);
+     // build correspondence map between orbitals, rows and columns, in order
+     // to go from the excitonic convention to the usual susceptibility convention
      build_matrix_shuffle_map();
      if (world_rank_ == 0) {
           {
@@ -45,45 +47,17 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           }
           Eigen::MatrixXcd flat_g2 = get_flattened_representation(g2_data_);
           Eigen::MatrixXcd flat_bubble = get_flattened_representation(local_legendre_bubble_);
+          // helper function for checks
+          if (false)
+               dump_for_check();
           {
                boost::timer::auto_cpu_timer bubble_calc;
                flat_irreducible_vertex = flat_g2.inverse() - flat_bubble.inverse();
                cout << "Get irreducible vertex (inversion): ";
           }
-          // DUMP FOR check
-          if (false) {
-               const string archive_name("test_flat.h5");
-               alps::hdf5::archive test_output(archive_name, "a");
-               std::stringstream site_path;
-               std::string h5_group_name("/test_flat");
-               site_path << h5_group_name + "/data";
-               boost::multi_array<std::complex<double>, 2>  temp_flat_data;
-               temp_flat_data.resize(boost::extents[flat_g2.rows()][flat_g2.rows()]);
-               for (int i = 0; i < flat_g2.rows(); i++) {
-                    for (int j = 0; j < flat_g2.rows(); j++) {
-                         temp_flat_data[i][j] = flat_g2(i, j);
-                    }
-               }                   
-               test_output[site_path.str()] << temp_flat_data;
-               std::stringstream site_path2;
-               std::string h5_group_name2("/test_g2");
-               site_path2 << h5_group_name2 + "/data";
-               boost::multi_array<std::complex<double>, 4>  temp_g2_data;
-               temp_g2_data.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
-                                   [per_site_orbital_size * per_site_orbital_size][n_legendre][n_legendre]);
-               for (int i = 0; i < per_site_orbital_size * per_site_orbital_size; i++) {
-                    for (int j = 0; j < per_site_orbital_size * per_site_orbital_size; j++) {
-                         for (int k = 0; k < n_legendre; k++) {
-                              for (int l = 0; l < n_legendre; l++) {
-                                   temp_g2_data[i][j][k][l] = g2_data_(i, j, k, l);
-                              }
-                         }
-                    }
-               }
-               test_output[site_path2.str()] << temp_g2_data;
-          }
-          // END DUMP
+          
      } else {
+          // resize target objects before mpi broadcast
           int vertex_size = per_site_orbital_size * per_site_orbital_size * n_legendre;
           flat_irreducible_vertex = Eigen::MatrixXcd::Zero(vertex_size, vertex_size);
      }
@@ -98,15 +72,22 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      {
           boost::timer::auto_cpu_timer bubble_calc;
           read_lattice_bubble(bubble_h5_archive);
+          cout << "read lattice bubble";
+     }
+     {
+          boost::timer::auto_cpu_timer inverse_calc;
           for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
                if (world_q_index >= nb_q_points)
                     continue;
+               local_g2_type temp_lattice_bubble = lattice_legendre_bubble_.chip(q_index, 4);
+               Eigen::MatrixXcd flat_lattice_chi = (flat_irreducible_vertex +
+                                                    (get_flattened_representation(temp_lattice_bubble)).inverse()).inverse();
           }
           cout << "read lattice bubble";
      }
-}
-
+ }
+     
 Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor) {
      assert(tensor.dimension(0) = tensor.dimension(1));
      assert(tensor.dimension(2) = tensor.dimension(3));
@@ -126,6 +107,40 @@ Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor)
           }
      }
      return result;
+}
+
+void BseqSolver::dump_for_check() {
+     // DUMP FOR check
+     const string archive_name("test_flat.h5");
+     alps::hdf5::archive test_output(archive_name, "a");
+     std::stringstream site_path;
+     std::string h5_group_name("/test_flat");
+     site_path << h5_group_name + "/data";
+     boost::multi_array<std::complex<double>, 2>  temp_flat_data;
+     Eigen::MatrixXcd flat_g2 = get_flattened_representation(g2_data_);
+     temp_flat_data.resize(boost::extents[flat_g2.rows()][flat_g2.rows()]);
+     for (int i = 0; i < flat_g2.rows(); i++) {
+          for (int j = 0; j < flat_g2.rows(); j++) {
+               temp_flat_data[i][j] = flat_g2(i, j);
+          }
+     }                   
+     test_output[site_path.str()] << temp_flat_data;
+     std::stringstream site_path2;
+     std::string h5_group_name2("/test_g2");
+     site_path2 << h5_group_name2 + "/data";
+     boost::multi_array<std::complex<double>, 4>  temp_g2_data;
+     temp_g2_data.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
+                         [per_site_orbital_size * per_site_orbital_size][n_legendre][n_legendre]);
+     for (int i = 0; i < per_site_orbital_size * per_site_orbital_size; i++) {
+          for (int j = 0; j < per_site_orbital_size * per_site_orbital_size; j++) {
+               for (int k = 0; k < n_legendre; k++) {
+                    for (int l = 0; l < n_legendre; l++) {
+                         temp_g2_data[i][j][k][l] = g2_data_(i, j, k, l);
+                    }
+               }
+          }
+     }
+     test_output[site_path2.str()] << temp_g2_data;
 }
 
 void BseqSolver::build_matrix_shuffle_map() {
@@ -245,8 +260,8 @@ void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
      extended_local_leg_type temp_local_bubble;
      bubble_h5_archive["/legendre_local_bubble/site_0/data"] >> temp_local_bubble;
      local_legendre_bubble_ = local_g2_type(per_site_orbital_size * per_site_orbital_size,
-                                                                     per_site_orbital_size * per_site_orbital_size,
-                                                                     n_legendre,n_legendre);
+                                            per_site_orbital_size * per_site_orbital_size,
+                                            n_legendre,n_legendre);
      local_legendre_bubble_.setZero();
      int line_idx, col_idx;
      for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
@@ -271,8 +286,8 @@ void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
      extended_lattice_leg_type temp_lattice_bubble;
      bubble_h5_archive["/legendre_lattice_bubble/site_0/data"] >> temp_lattice_bubble;
      lattice_legendre_bubble_ = lattice_g2_type(
-           per_site_orbital_size * per_site_orbital_size,
-           per_site_orbital_size * per_site_orbital_size, n_legendre,n_legendre, nb_q_points_per_proc);
+          per_site_orbital_size * per_site_orbital_size,
+          per_site_orbital_size * per_site_orbital_size, n_legendre,n_legendre, nb_q_points_per_proc);
      lattice_legendre_bubble_.setZero();
      int line_idx, col_idx;
      for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
