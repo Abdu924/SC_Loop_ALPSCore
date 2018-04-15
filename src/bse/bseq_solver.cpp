@@ -8,7 +8,8 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                        int in_current_bose_freq,
                        const alps::params& parms, int world_rank)
      : lattice_bs_(lattice_bs), current_bose_freq(in_current_bose_freq),
-       world_rank_(world_rank) {
+       world_rank_(world_rank)
+{
      nb_q_points = lattice_bs_->get_nb_points_for_bseq();
      per_site_orbital_size = lattice_bs_->get_orbital_size();
      n_legendre = parms["bseq.inversion.n_legendre"];
@@ -55,7 +56,6 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                flat_irreducible_vertex = flat_g2.inverse() - flat_bubble.inverse();
                cout << "Get irreducible vertex (inversion): ";
           }
-          
      } else {
           // resize target objects before mpi broadcast
           int vertex_size = per_site_orbital_size * per_site_orbital_size * n_legendre;
@@ -76,18 +76,57 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      }
      {
           boost::timer::auto_cpu_timer inverse_calc;
+          if (world_rank_ == 0)
+          {
+               world_lattice_chi_.clear();
+               world_lattice_chi_.resize(nb_q_points);
+               for (int q_index = 0; q_index < nb_q_points; q_index++) {
+                    world_lattice_chi_[q_index] = local_g2_type(
+                         per_site_orbital_size * per_site_orbital_size,
+                         per_site_orbital_size * per_site_orbital_size,
+                         n_legendre,n_legendre);
+                    world_lattice_chi_[q_index].setZero();
+               }
+          }
+          lattice_chi_.resize(per_site_orbital_size * per_site_orbital_size,
+                              per_site_orbital_size * per_site_orbital_size,
+                              n_legendre,n_legendre, nb_q_points_per_proc);
           for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
                if (world_q_index >= nb_q_points)
                     continue;
                local_g2_type temp_lattice_bubble = lattice_legendre_bubble_.chip(q_index, 4);
+               local_g2_type sub_tensor = lattice_chi_.chip(q_index, 4);
                Eigen::MatrixXcd flat_lattice_chi = (flat_irreducible_vertex +
                                                     (get_flattened_representation(temp_lattice_bubble)).inverse()).inverse();
+               sub_tensor = get_multidim_representation(flat_lattice_chi);
           }
-          cout << "read lattice bubble";
+          cout << "Invert lattice BSE";
      }
- }
-     
+     // for (size_t q_index = 0; q_index < nb_q_points; q_index++) {
+     //      if (world_rank_ == 0) {
+     //           for (int proc_index = 1; proc_index < world_size; proc_index++) {
+     //                int world_q_index = q_index + nb_q_points_per_proc * proc_index;
+     //                if (world_q_index >= nb_q_points)
+     //                     continue;                    
+     //    	    MPI_Recv(
+     //    		 world_k_resolved_occupation_matrices
+     //    		 [proc_index * n_points_per_proc + k_index].data(),
+     //    		 k_resolved_occupation_matrices[k_index].size(),
+     //    		 MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+     //           }
+     //      } else {
+     //           MPI_Send(k_resolved_occupation_matrices[k_index].data(),
+     //    		k_resolved_occupation_matrices[k_index].size(),
+     //    		MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
+     //      }
+     //      if (world_rank_ == 0) {
+     //           world_k_resolved_occupation_matrices[k_index] =
+     //    	    k_resolved_occupation_matrices[k_index];
+     //      }
+     // }
+}
+
 Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor) {
      assert(tensor.dimension(0) = tensor.dimension(1));
      assert(tensor.dimension(2) = tensor.dimension(3));
@@ -102,6 +141,27 @@ Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor)
                     for (int orb2 = 0; orb2 < orb_dim; orb2++) {
                          result.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(orb1, orb2) =
                               sub_matrix(orb1, orb2);
+                    }
+               }
+          }
+     }
+     return result;
+}
+
+local_g2_type BseqSolver::get_multidim_representation(const Eigen::Ref<Eigen::MatrixXcd> flat_data) {
+     local_g2_type result(per_site_orbital_size * per_site_orbital_size,
+                          per_site_orbital_size * per_site_orbital_size,
+                          n_legendre,n_legendre);
+     result.setZero();
+     assert(per_site_orbital_size * per_site_orbital_size * n_legendre = flat_data.rows());
+     int orb_dim = per_site_orbital_size;
+     for (int l1 = 0; l1 < n_legendre; l1++) {
+          for (int l2 = 0; l2 < n_legendre; l2++) {
+               Eigen::Tensor<std::complex<double>, 2> sub_matrix = (result.chip(l1, 2)).chip(l2, 2);
+               for (int orb1 = 0; orb1 < orb_dim; orb1++) {
+                    for (int orb2 = 0; orb2 < orb_dim; orb2++) {
+                         sub_matrix(orb1, orb2) =
+                              flat_data.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(orb1, orb2);
                     }
                }
           }

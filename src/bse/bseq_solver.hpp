@@ -60,6 +60,8 @@ private:
      boost::multi_array<complex<double> , 4> fixed_legendre_gf_;
      local_g2_type g2_data_;
      local_g2_type local_legendre_bubble_;
+     lattice_g2_type lattice_chi_;
+     std::vector<local_g2_type> world_lattice_chi_;
      // local_leg_type irr_vertex_;
      lattice_g2_type lattice_legendre_bubble_;
      Eigen::MatrixXcd flat_irreducible_vertex;
@@ -69,6 +71,7 @@ private:
      void read_local_bubble(alps::hdf5::archive &bubble_h5_archive);
      void read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive);
      Eigen::MatrixXcd get_flattened_representation(local_g2_type& tensor);
+     local_g2_type get_multidim_representation(const Eigen::Ref<Eigen::MatrixXcd> flat_data);
      void build_matrix_shuffle_map();
      void subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive);
           
