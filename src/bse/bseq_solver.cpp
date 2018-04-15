@@ -11,8 +11,10 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
        world_rank_(world_rank) {
      nb_q_points = lattice_bs_->get_nb_points_for_bseq();
      per_site_orbital_size = lattice_bs_->get_orbital_size();
-     n_legendre = parms["measurement.G2.n_legendre"];
-     N_boson = parms["measurement.G2.n_bosonic_freq"];
+     n_legendre = parms["bseq.inversion.n_legendre"];
+     N_boson = parms["bseq.inversion.n_bosonic_freq"];
+     assert (N_boson <= parms["bseq.bubbles.n_bosonic_freq"]);
+     assert (N_boson <= parms["measurement.G2.n_bosonic_freq"]);
      beta = parms["model.beta"];
      n_sites = 1;
      if (world_rank_ == 0) {
@@ -26,41 +28,61 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      MPI_Bcast(&nb_q_points_per_proc, 1, MPI_INT, 0, MPI_COMM_WORLD);
      build_matrix_shuffle_map();
      if (world_rank_ == 0) {
-          read_local_bubble(bubble_h5_archive);
-          read_local_g2(g2_h5_archive);
-          subtract_disconnected_part(g2_h5_archive);
+          {
+               boost::timer::auto_cpu_timer bubble_calc;
+               read_local_bubble(bubble_h5_archive);
+               cout << "Local bubble read: ";
+          }
+          {
+               boost::timer::auto_cpu_timer bubble_calc;
+               read_local_g2(g2_h5_archive);
+               cout << "Local G2 read: ";
+          }
+          {
+               boost::timer::auto_cpu_timer bubble_calc;
+               subtract_disconnected_part(g2_h5_archive);
+               cout << "subtract disc: ";
+          }
           Eigen::MatrixXcd flat_g2 = get_flattened_representation(g2_data_);
           Eigen::MatrixXcd flat_bubble = get_flattened_representation(local_legendre_bubble_);
-          flat_irreducible_vertex = flat_g2.inverse() - flat_bubble.inverse();
-          // const string archive_name("test_flat.h5");
-          // alps::hdf5::archive test_output(archive_name, "a");
-          // std::stringstream site_path;
-          // std::string h5_group_name("/test_flat");
-          // site_path << h5_group_name + "/data";
-          // boost::multi_array<std::complex<double>, 2>  temp_flat_data;
-          // temp_flat_data.resize(boost::extents[flat_view.rows()][flat_view.rows()]);
-          // for (int i = 0; i < flat_view.rows(); i++) {
-          //      for (int j = 0; j < flat_view.rows(); j++) {
-          //           temp_flat_data[i][j] = flat_view(i, j);
-          //      }
-          // }                   
-          // test_output[site_path.str()] << temp_flat_data;
-          // std::stringstream site_path2;
-          // std::string h5_group_name2("/test_g2");
-          // site_path2 << h5_group_name2 + "/data";
-          // boost::multi_array<std::complex<double>, 4>  temp_g2_data;
-          // temp_g2_data.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
-          //                     [per_site_orbital_size * per_site_orbital_size][n_legendre][n_legendre]);
-          // for (int i = 0; i < per_site_orbital_size * per_site_orbital_size; i++) {
-          //      for (int j = 0; j < per_site_orbital_size * per_site_orbital_size; j++) {
-          //           for (int k = 0; k < n_legendre; k++) {
-          //                for (int l = 0; l < n_legendre; l++) {
-          //                     temp_g2_data[i][j][k][l] = g2_data_(i, j, k, l);
-          //                }
-          //           }
-          //      }
-          // }
-          // test_output[site_path2.str()] << temp_g2_data;
+          {
+               boost::timer::auto_cpu_timer bubble_calc;
+               flat_irreducible_vertex = flat_g2.inverse() - flat_bubble.inverse();
+               cout << "Get irreducible vertex (inversion): ";
+          }
+          // DUMP FOR check
+          if (false) {
+               const string archive_name("test_flat.h5");
+               alps::hdf5::archive test_output(archive_name, "a");
+               std::stringstream site_path;
+               std::string h5_group_name("/test_flat");
+               site_path << h5_group_name + "/data";
+               boost::multi_array<std::complex<double>, 2>  temp_flat_data;
+               temp_flat_data.resize(boost::extents[flat_g2.rows()][flat_g2.rows()]);
+               for (int i = 0; i < flat_g2.rows(); i++) {
+                    for (int j = 0; j < flat_g2.rows(); j++) {
+                         temp_flat_data[i][j] = flat_g2(i, j);
+                    }
+               }                   
+               test_output[site_path.str()] << temp_flat_data;
+               std::stringstream site_path2;
+               std::string h5_group_name2("/test_g2");
+               site_path2 << h5_group_name2 + "/data";
+               boost::multi_array<std::complex<double>, 4>  temp_g2_data;
+               temp_g2_data.resize(boost::extents[per_site_orbital_size * per_site_orbital_size]
+                                   [per_site_orbital_size * per_site_orbital_size][n_legendre][n_legendre]);
+               for (int i = 0; i < per_site_orbital_size * per_site_orbital_size; i++) {
+                    for (int j = 0; j < per_site_orbital_size * per_site_orbital_size; j++) {
+                         for (int k = 0; k < n_legendre; k++) {
+                              for (int l = 0; l < n_legendre; l++) {
+                                   temp_g2_data[i][j][k][l] = g2_data_(i, j, k, l);
+                              }
+                         }
+                    }
+               }
+               test_output[site_path2.str()] << temp_g2_data;
+          }
+          // END DUMP
      } else {
           int vertex_size = per_site_orbital_size * per_site_orbital_size * n_legendre;
           flat_irreducible_vertex = Eigen::MatrixXcd::Zero(vertex_size, vertex_size);
@@ -73,7 +95,16 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      } catch(...){
 	  std::cerr << "Fatal Error: Unknown Exception!\n";
      }
-     read_lattice_bubble(bubble_h5_archive);
+     {
+          boost::timer::auto_cpu_timer bubble_calc;
+          read_lattice_bubble(bubble_h5_archive);
+          for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
+               int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
+               if (world_q_index >= nb_q_points)
+                    continue;
+          }
+          cout << "read lattice bubble";
+     }
 }
 
 Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor) {
@@ -178,12 +209,13 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
 void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) {
      if (current_bose_freq == 0) {
           g1_type temp_g1_data;
-          temp_g1_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
+          //temp_g1_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
           g2_h5_archive["legendre_gf_fixed/data"] >> temp_g1_data;
+          assert(n_legendre <= temp_g1_data.shape()[2]);
           local_g2_type disconnected_part;
           disconnected_part = local_g2_type(per_site_orbital_size * per_site_orbital_size,
-                                                                     per_site_orbital_size * per_site_orbital_size,
-                                                                     n_legendre,n_legendre);
+                                            per_site_orbital_size * per_site_orbital_size,
+                                            n_legendre,n_legendre);
           disconnected_part.setZero();
           int line_idx, col_idx;
           for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
@@ -243,7 +275,6 @@ void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
            per_site_orbital_size * per_site_orbital_size, n_legendre,n_legendre, nb_q_points_per_proc);
      lattice_legendre_bubble_.setZero();
      int line_idx, col_idx;
-
      for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
           int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
           if (world_q_index >= nb_q_points)

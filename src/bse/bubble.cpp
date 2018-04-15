@@ -21,7 +21,9 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      }
      MPI_Bcast(&world_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
      MPI_Bcast(&nb_q_points_per_proc, 1, MPI_INT, 0, MPI_COMM_WORLD);
-     N_boson = parms["measurement.G2.n_bosonic_freq"];
+     N_boson = parms["bseq.bubbles.n_bosonic_freq"];
+     n_legendre = parms["bseq.bubbles.n_legendre"];
+     assert(n_legendre <= parms["measurement.G2.n_legendre"]);
      dump_matsubara = parms["bseq.bubbles.dump_matsubara"];
      dump_legendre = parms["bseq.bubbles.dump_legendre"];
      bubble_dim = parms.exists("bseq.N_NU_BSEQ") ? parms["bseq.N_NU_BSEQ"] : N_max - N_boson;
@@ -40,7 +42,6 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      // n_matsubara is parms[N_MATSUBARA]
      // FIXME check if this is consistent with N_max... 
      int n_matsubara = parms["N_MATSUBARA"];
-     n_legendre = parms["measurement.G2.n_legendre"];
      legendre_trans_.reset(new LegendreTransformer(bubble_dim, n_legendre));
      raw_full_gf.resize(boost::extents
                         [per_site_orbital_size][per_site_orbital_size][N_max]);
