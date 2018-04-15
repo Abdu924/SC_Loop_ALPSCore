@@ -78,28 +78,17 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           boost::timer::auto_cpu_timer inverse_calc;
           if (world_rank_ == 0)
           {
-               world_lattice_chi_.clear();
-               world_lattice_chi_.resize(nb_q_points);
-               for (int q_index = 0; q_index < nb_q_points; q_index++) {
-                    world_lattice_chi_[q_index] = local_g2_type(
-                         per_site_orbital_size * per_site_orbital_size,
-                         per_site_orbital_size * per_site_orbital_size,
-                         n_legendre,n_legendre);
-                    world_lattice_chi_[q_index].setZero();
-               }
-          }
-          lattice_chi_.clear();
-          lattice_chi_.resize(nb_q_points_per_proc);
-          for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
-               int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
-               if (world_q_index >= nb_q_points)
-                    continue;                    
-               lattice_chi_[q_index] = local_g2_type(
+               world_lattice_chi_ = lattice_g2_type(
                     per_site_orbital_size * per_site_orbital_size,
                     per_site_orbital_size * per_site_orbital_size,
-                    n_legendre,n_legendre);
-               lattice_chi_[q_index].setZero();
+                    n_legendre, n_legendre, nb_q_points);
+                    world_lattice_chi_.setZero();
           }
+          lattice_chi_ = lattice_g2_type(
+               per_site_orbital_size * per_site_orbital_size,
+               per_site_orbital_size * per_site_orbital_size,
+               n_legendre, n_legendre, nb_q_points_per_proc);
+          lattice_chi_.setZero();
           for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
                if (world_q_index >= nb_q_points)
@@ -107,7 +96,9 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                local_g2_type temp_lattice_bubble = lattice_legendre_bubble_.chip(q_index, 4);
                Eigen::MatrixXcd flat_lattice_chi = (flat_irreducible_vertex +
                                                     (get_flattened_representation(temp_lattice_bubble)).inverse()).inverse();
-               lattice_chi_[q_index] = get_multidim_representation(flat_lattice_chi);
+               //local_g2_type temp_lattice_chi = lattice_chi_.chip(q_index, 4);
+               //temp_lattice_chi = get_multidim_representation(flat_lattice_chi);
+               lattice_chi_.chip(q_index, 4) = get_multidim_representation(flat_lattice_chi);
           }
           cout << "Invert lattice BSE";
      }
@@ -118,9 +109,15 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                     if (world_q_index >= nb_q_points)
                          continue;
                     cout << "receive world_q_index... " << world_q_index << endl;
-        	    MPI_Recv(world_lattice_chi_[world_q_index].data(),
-                             lattice_chi_[q_index].size(),
+                    local_g2_type temp_world_lattice_chi = world_lattice_chi_.chip(world_q_index, 4);
+                    local_g2_type temp_lattice_chi = lattice_chi_.chip(q_index, 4);
+                    MPI_Recv(temp_world_lattice_chi.data(),
+                             temp_lattice_chi.size(),
                              MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    //world_lattice_chi_[q_index].setZero();
+        	    // MPI_Recv(world_lattice_chi_[world_q_index].data(),
+                    //          lattice_chi_[q_index].size(),
+                    //          MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                     cout << " ...DONE" << endl;
                }
           }
@@ -129,8 +126,9 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
                if (world_q_index < nb_q_points) {
                     cout << "send world_q_index... " << world_q_index << endl;
-                    MPI_Send(lattice_chi_[q_index].data(),
-                             lattice_chi_[q_index].size(),
+                    local_g2_type temp_lattice_chi = lattice_chi_.chip(q_index, 4);
+                    MPI_Send(temp_lattice_chi.data(),
+                             temp_lattice_chi.size(),
                              MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);
                     cout << " ...DONE" << endl;
                } else {
@@ -141,12 +139,13 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      if (world_rank_ == 0) {
           for (size_t q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                cout << "send/receive world_q_index... " << q_index << " (proc 0)" << endl;
-               world_lattice_chi_[q_index] = lattice_chi_[q_index];
+               local_g2_type temp_world_lattice_chi = world_lattice_chi_.chip(q_index, 4);
+               temp_world_lattice_chi = lattice_chi_.chip(q_index, 4);
+               //world_lattice_chi_[q_index] = lattice_chi_[q_index];
                cout << "DONE " << endl;
           }
      }
 }
-
 
 Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor) {
      assert(tensor.dimension(0) = tensor.dimension(1));
