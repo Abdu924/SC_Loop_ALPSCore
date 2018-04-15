@@ -133,7 +133,9 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           }
      }
      if (world_rank_ == 0) {
-          world_lattice_chi_ = lattice_chi_;
+          for (size_t q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
+               world_lattice_chi_.chip(q_index, 4) = lattice_chi_.chip(q_index, 4);
+          }
      }
      dump_susceptibility(parms);
 }
