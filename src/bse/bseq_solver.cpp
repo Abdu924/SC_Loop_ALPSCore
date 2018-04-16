@@ -41,19 +41,111 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                read_local_g2(g2_h5_archive);
                cout << "Local G2 read: ";
           }
-          {
+          if (current_bose_freq == 0) {
                boost::timer::auto_cpu_timer bubble_calc;
                subtract_disconnected_part(g2_h5_archive);
-               cout << "subtract disc: ";
+               cout << "subtract disconnect: ";
           }
+          cout << "test value " << beta * real(g2_data_(0,0, 2, 2)) << endl;
           Eigen::MatrixXcd flat_g2 = get_flattened_representation(g2_data_);
+          cout << "test value " << beta * real(flat_g2(2 * 16, 2 * 16)) << endl;
           Eigen::MatrixXcd flat_bubble = get_flattened_representation(local_legendre_bubble_);
+          local_g2_type retour = get_multidim_representation(flat_g2);
+          Eigen::MatrixXcd reretour = get_flattened_representation(retour);
+          cout << "consistency " << (flat_g2 - reretour).cwiseAbs().sum() << endl;
+          cout << "flat_g2 "  << " abs som "  << flat_g2.cwiseAbs().sum() << endl;
+          cout << "flat_g2 det " << abs(flat_g2.determinant()) << endl;
+          // for (int i = 0; i < n_legendre; i++) {
+          //      for (int j = 0; j < n_legendre; j++) {
+          //           cout << "flat_g2 block " << i << ", " << j << " det " <<
+          //                flat_g2.block(i*per_site_orbital_size, j*per_site_orbital_size,
+          //                              n_legendre, n_legendre).determinant() << endl;
+          //      }
+          // }
+          cout << "flat_g2 h5 mimck" << endl;
+          for (int i = 0; i < n_legendre; i++) {
+               for (int j = 0; j < n_legendre; j++) {
+                    cout << beta * real(flat_g2.block(i * per_site_orbital_size*per_site_orbital_size,
+                                                      j * per_site_orbital_size*per_site_orbital_size,
+                                                      per_site_orbital_size*per_site_orbital_size,
+                                                      per_site_orbital_size*per_site_orbital_size)(0,0)) << " ";
+               }
+               cout << endl;
+          }
+          cout << "flat_g2 h5 mimck dets" << endl;
+          for (int i = 0; i < n_legendre; i++) {
+               for (int j = 0; j < n_legendre; j++) {
+                    cout << abs(flat_g2.block(i * per_site_orbital_size*per_site_orbital_size,
+                                          j * per_site_orbital_size*per_site_orbital_size,
+                                          per_site_orbital_size*per_site_orbital_size,
+                                              per_site_orbital_size*per_site_orbital_size).determinant()) << " ";
+               }
+               cout << endl;
+          }
+
+          cout << "flat_bubble h5 mimck" << endl;
+          for (int i = 0; i < n_legendre; i++) {
+               for (int j = 0; j < n_legendre; j++) {
+                    cout << beta * real(flat_bubble.block(i * per_site_orbital_size*per_site_orbital_size,
+                                                      j * per_site_orbital_size*per_site_orbital_size,
+                                                      per_site_orbital_size*per_site_orbital_size,
+                                                      per_site_orbital_size*per_site_orbital_size)(0,0)) << " ";
+               }
+               cout << endl;
+          }
+          cout << "flat_bubble h5 mimck dets" << endl;
+          for (int i = 0; i < n_legendre; i++) {
+               for (int j = 0; j < n_legendre; j++) {
+                    cout << abs(flat_bubble.block(i * per_site_orbital_size*per_site_orbital_size,
+                                          j * per_site_orbital_size*per_site_orbital_size,
+                                          per_site_orbital_size*per_site_orbital_size,
+                                              per_site_orbital_size*per_site_orbital_size).determinant()) << " ";
+               }
+               cout << endl;
+          }
+
+          
           // helper function for checks
           if (false)
                dump_for_check();
           {
                boost::timer::auto_cpu_timer bubble_calc;
                flat_irreducible_vertex = flat_g2.inverse() - flat_bubble.inverse();
+               for (int i = 0; i < 4; i++) {
+                    for (int j = 0; j < 4; j++) {
+                         Eigen::array<int, 4> offsets = {4 * i, 4 * j, 0, 0};
+                         Eigen::array<int, 4> extents = {4, 4, n_legendre, n_legendre};
+                         local_g2_type slice = g2_data_.slice(offsets, extents);
+                         Eigen::MatrixXcd flat_slice = get_flattened_representation(slice);
+                         cout << "block " << i << ", " << j << ", abs som "  << flat_slice.cwiseAbs().sum() << endl;
+                         cout << "flat_slice block " << i << ", " << j << " det "  << flat_slice.determinant() << endl;
+                         
+                    }
+               }
+               for (int i = 0; i < 2; i++) {
+                    for (int j = 0; j < 2; j++) {
+                         Eigen::array<int, 4> offsets = {8 * i, 8 * j, 0, 0};
+                         Eigen::array<int, 4> extents = {8, 8, n_legendre, n_legendre};
+                         local_g2_type slice = g2_data_.slice(offsets, extents);
+                         Eigen::MatrixXcd flat_slice = get_flattened_representation(slice);
+                         cout << "block " << i << ", " << j << ", abs som "  << flat_slice.cwiseAbs().sum() << endl;
+                         cout << "flat_slice block " << i << ", " << j << " det "  << flat_slice.determinant() << endl;
+                         cout << "flat_slice block " << i << ", " << j << " inv sum "  <<
+                              flat_slice.inverse().cwiseAbs().sum() << endl;
+                    }
+               }
+               cout << "flat_slice global "<< " det "  <<
+                    flat_g2.inverse().inverse().cwiseAbs().sum() << endl;
+
+               
+
+               
+
+               cout << "flat_g2 row 8 " << flat_g2.row(8).segment(8, 4) << endl;
+               cout << "flat_g2 row 9 " << flat_g2.row(9).segment(8, 4) << endl;
+               cout << "flat_g2 row 10 " << flat_g2.row(10).segment(8, 4) << endl;
+               cout << "flat_g2 row 11 " << (flat_g2.row(11)).segment(8, 4) << endl;
+               cout << "flat_bubble det " << flat_bubble.determinant() << endl;
                cout << "flat_g2(0, 0, 0, 0, 0) " << flat_g2(0, 0) << endl;
                cout << "flat_bubble(0, 0, 0, 0, 0) " << flat_bubble(0, 0) << endl;
                cout << "flat_irreducible_vertex(0, 0, 0, 0, 0) " << flat_irreducible_vertex(0, 0) << endl;

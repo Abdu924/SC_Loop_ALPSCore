@@ -144,7 +144,7 @@ int main(int argc, const char* argv[]) {
                alps::hdf5::archive g2_archive(input_file, "r");
                const string bubble_file = parms["bseq.bubbles.filename"].as<string>();
                alps::hdf5::archive bubble_archive(bubble_file, "r");
-               int current_bose_freq = 0;
+               int current_bose_freq = 1;
                boost::shared_ptr<BseqSolver> bseq_solver(
                     new BseqSolver(g2_archive, bubble_archive, bare_band,
                                    current_bose_freq, parms, world_rank));

@@ -1,7 +1,7 @@
 # SC_Loop
 Implementation of self-consistent DMFT condition
 
-Using the ALPASCore framework mostly for input data format and access.
+Using the ALPSCore framework mostly for input data format and access.
 
 Using Eigen for linear algebra operations
 
@@ -11,7 +11,7 @@ Define the environment variable EIGEN3_INCLUDE_DIR containing the forlder where 
 
 cmake ../src
 
-for salomon:
+for salomon, and other clusters, in case the MPI compiler doesn't match the C++ compiler:
 
 CXX=/apps/all/icc/2017.1.132-GCC-6.3.0-2.27/compilers_and_libraries_2017.1.132/linux/bin/intel64/icc cmake ../src
 
