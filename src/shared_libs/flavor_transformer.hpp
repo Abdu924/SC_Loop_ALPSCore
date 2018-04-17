@@ -22,7 +22,10 @@ public:
 
      int get_col_from_pair(int orb1, int orb2) {return col_from_orbital_pair.left.at(std::make_pair(orb1, orb2)); }
      int get_line_from_pair(int orb1, int orb2) {return line_from_orbital_pair.left.at(std::make_pair(orb1, orb2)); }
-     
+     // bubbles already have k, l inversed and following the correct convention!!
+     int get_bubble_line_from_pair(int orb1, int orb2) {return line_from_orbital_pair.left.at(std::make_pair(orb1, orb2)); }
+     int get_bubble_col_from_pair(int orb1, int orb2) {return line_from_orbital_pair.left.at(std::make_pair(orb1, orb2)); }
+
 private:
      bm_type line_from_orbital_pair;
      bm_type col_from_orbital_pair;

@@ -124,8 +124,8 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                     for (int orb2 = 0; orb2 < local_values_.shape()[1]; orb2++) {
                          for (int orb3 = 0; orb3 < local_values_.shape()[2]; orb3++) {
                               for (int orb4 = 0; orb4 < local_values_.shape()[3]; orb4++) {
-                                   line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
-                                   col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
+                                   line_idx = flavor_trans_->get_bubble_line_from_pair(orb1, orb2);
+                                   col_idx = flavor_trans_->get_bubble_col_from_pair(orb3, orb4);
                                    for (int nf = 0; nf < local_values_.shape()[4]; nf++) {
                                         for (int nb = 0; nb < local_values_.shape()[5]; nb++) {
                                              local_values_compact[line_idx][col_idx][nf][nb] =
@@ -155,8 +155,8 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                     for (int orb2 = 0; orb2 < lattice_values_.shape()[1]; orb2++) {
                          for (int orb3 = 0; orb3 < lattice_values_.shape()[2]; orb3++) {
                               for (int orb4 = 0; orb4 < lattice_values_.shape()[3]; orb4++) {
-                                   line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
-                                   col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
+                                   line_idx = flavor_trans_->get_bubble_line_from_pair(orb1, orb2);
+                                   col_idx = flavor_trans_->get_bubble_col_from_pair(orb3, orb4);
                                    for (int nf = 0; nf < lattice_values_.shape()[4]; nf++) {
                                         for (int nb = 0; nb < lattice_values_.shape()[5]; nb++) {
                                              for (int nq = 0; nq < lattice_values_.shape()[6]; nq++) {
@@ -201,8 +201,8 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                     for (int orb2 = 0; orb2 < local_legendre_values_.shape()[1]; orb2++) {
                          for (int orb3 = 0; orb3 < local_legendre_values_.shape()[2]; orb3++) {
                               for (int orb4 = 0; orb4 < local_legendre_values_.shape()[3]; orb4++) {
-                                   line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
-                                   col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
+                                   line_idx = flavor_trans_->get_bubble_line_from_pair(orb1, orb2);
+                                   col_idx = flavor_trans_->get_bubble_col_from_pair(orb3, orb4);
                                    for (int l1 = 0; l1 < local_legendre_values_.shape()[4]; l1++) {
                                         for (int l2 = 0; l2 < local_legendre_values_.shape()[5]; l2++) {
                                              for (int nb = 0; nb < local_legendre_values_.shape()[6]; nb++) {
@@ -255,8 +255,8 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                     for (int orb2 = 0; orb2 < world_lattice_legendre_values_.shape()[1]; orb2++) {
                          for (int orb3 = 0; orb3 < world_lattice_legendre_values_.shape()[2]; orb3++) {
                               for (int orb4 = 0; orb4 < world_lattice_legendre_values_.shape()[3]; orb4++) {
-                                   line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
-                                   col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
+                                   line_idx = flavor_trans_->get_bubble_line_from_pair(orb1, orb2);
+                                   col_idx = flavor_trans_->get_bubble_col_from_pair(orb3, orb4);
                                    for (int l1 = 0; l1 < world_lattice_legendre_values_.shape()[4]; l1++) {
                                         for (int l2 = 0; l2 < world_lattice_legendre_values_.shape()[5]; l2++) {
                                              for (int nb = 0; nb < world_lattice_legendre_values_.shape()[6]; nb++) {
