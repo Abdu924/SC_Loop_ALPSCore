@@ -16,6 +16,7 @@
 #include "../shared_libs/band_structure.hpp"
 #include "../shared_libs/self_energy.hpp"
 #include "../shared_libs/legendre.hpp"
+#include "../shared_libs/flavor_transformer.hpp"
 
 using namespace std;
 
@@ -59,6 +60,7 @@ private:
      boost::multi_array<complex<double> , 3> raw_full_gf;
      vector<vector<vector<Eigen::MatrixXcd> > > lattice_bubble;
      boost::shared_ptr<LegendreTransformer> legendre_trans_;
+     boost::shared_ptr<FlavorTransformer> flavor_trans_;
      
      std::vector<Eigen::MatrixXcd> get_greens_function(
 	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);

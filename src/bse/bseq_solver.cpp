@@ -29,7 +29,7 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      MPI_Bcast(&nb_q_points_per_proc, 1, MPI_INT, 0, MPI_COMM_WORLD);
      // build correspondence map between orbitals, rows and columns, in order
      // to go from the excitonic convention to the usual susceptibility convention
-     build_matrix_shuffle_map();
+     flavor_trans_.reset(new FlavorTransformer());
      if (world_rank_ == 0) {
           {
                boost::timer::auto_cpu_timer bubble_calc;
@@ -377,48 +377,6 @@ void BseqSolver::dump_for_check() {
      test_output[site_path2.str()] << temp_g2_data;
 }
 
-void BseqSolver::build_matrix_shuffle_map() {
-     std::map<int, int> corresp1, corresp2;
-     // we go from
-     // aup bdown adown bup
-     // to
-     // aup bup adown bdown
-     line_from_orbital_pair.clear();
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 0), 0));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 3), 1));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 0), 2));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 3), 3));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 2), 4));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 1), 5));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 2), 6));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 1), 7));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 2), 8));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 1), 9));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 2), 10));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 1), 11));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 0), 12));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 3), 13));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 0), 14));
-     line_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 3), 15));
-     col_from_orbital_pair.clear();
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 0), 0));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 0), 1));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 3), 2));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 3), 3));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 2), 4));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 2), 5));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 1), 6));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 1), 7));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 0), 8));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 0), 9));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(2, 3), 10));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(1, 3), 11));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 2), 12));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 2), 13));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(0, 1), 14));
-     col_from_orbital_pair.insert(triplet_type(std::pair<int, int>(3, 1), 15));     
-}
-
 // We transform to the orbital order used by J. Kunes and others (ijkl) vs (ijlk).
 // we also transform the 4-orbital indexing scheme to the 2-orbital-pair indexing scheme
 // Block diagonalization will be introduced as an option at a later stage. (maybe :) )
@@ -440,8 +398,8 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
                     for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
                          for (int l1 = 0; l1 < n_legendre; l1++) {
                               for (int l2 = 0; l2 < n_legendre; l2++) {
-                                   line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
-                                   col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
+                                   line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
+                                   col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
                                    g2_data_(line_idx, col_idx, l1, l2) =
                                         -std::complex<double>(
                                              real_temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq][0],
@@ -474,8 +432,8 @@ void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) 
                               for (int l1 = 0; l1 < n_legendre; l1++) {
                                    double sign_factor = -1.0;
                                    for (int l2 = 0; l2 < n_legendre; l2++) {
-                                        line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
-                                        col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
+                                        line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
+                                        col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
                                         disconnected_part(line_idx, col_idx, l1, l2) =
                                              temp_g1_data[orb1][orb2][l1] *
                                              temp_g1_data[orb3][orb4][l2] * sign_factor;
@@ -504,8 +462,8 @@ void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
                     for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
                          for (int l1 = 0; l1 < n_legendre; l1++) {
                               for (int l2 = 0; l2 < n_legendre; l2++) {
-                                   line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
-                                   col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
+                                   line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
+                                   col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
                                    local_legendre_bubble_(line_idx, col_idx, l1, l2) =
                                         temp_local_bubble[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq];
                               }
@@ -535,8 +493,8 @@ void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
                          for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
                               for (int l1 = 0; l1 < n_legendre; l1++) {
                                    for (int l2 = 0; l2 < n_legendre; l2++) {
-                                        line_idx = line_from_orbital_pair.left.at(std::make_pair(orb1, orb2));
-                                        col_idx = col_from_orbital_pair.left.at(std::make_pair(orb3, orb4));
+                                        line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
+                                        col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
                                         lattice_legendre_bubble_(line_idx, col_idx, l1, l2, q_index) =
                                              temp_lattice_bubble[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq][q_index];
                                    }

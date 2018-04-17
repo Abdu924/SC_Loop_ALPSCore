@@ -43,6 +43,8 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      // FIXME check if this is consistent with N_max... 
      int n_matsubara = parms["N_MATSUBARA"];
      legendre_trans_.reset(new LegendreTransformer(bubble_dim, n_legendre));
+     flavor_trans_.reset(new FlavorTransformer());
+     
      raw_full_gf.resize(boost::extents
                         [per_site_orbital_size][per_site_orbital_size][N_max]);
      h5_archive["/legendre_gf/data"] >> raw_full_gf;

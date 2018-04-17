@@ -17,6 +17,7 @@
 
 #include "../shared_libs/band_structure.hpp"
 #include "../shared_libs/legendre.hpp"
+#include "../shared_libs/flavor_transformer.hpp"
 
 using namespace std;
 
@@ -28,9 +29,6 @@ typedef boost::multi_array<std::complex<double>, 3> g1_type;
 
 typedef boost::multi_array<std::complex<double>, 7> extended_local_leg_type;
 typedef boost::multi_array<std::complex<double>, 8> extended_lattice_leg_type;
-
-typedef boost::bimap<std::pair<int, int>, int> bm_type;
-typedef bm_type::value_type triplet_type;
 
 class BseqSolver {
 
@@ -48,8 +46,6 @@ public:
 private:
      int world_rank_;
      int world_size;
-     bm_type line_from_orbital_pair;
-     bm_type col_from_orbital_pair;
      
      int nb_q_points;
      int nb_q_points_per_proc;
@@ -68,7 +64,8 @@ private:
      // local_leg_type irr_vertex_;
      lattice_g2_type lattice_legendre_bubble_;
      Eigen::MatrixXcd flat_irreducible_vertex;
-
+     boost::shared_ptr<FlavorTransformer> flavor_trans_;
+     
      void dump_for_check();
      void read_local_g2(alps::hdf5::archive &g2_h5_archive);
      void read_local_bubble(alps::hdf5::archive &bubble_h5_archive);
