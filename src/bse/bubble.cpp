@@ -192,20 +192,20 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                // Local bubble, new flavor order
                boost::multi_array<std::complex<double>, 5> local_values_compact;
                local_values_compact.resize(boost::extents
-                                           [local_values_.shape()[0] * local_values_.shape()[1]]
-                                           [local_values_.shape()[2] * local_values_.shape()[3]]
-                                           [local_values_.shape()[4]] // l1
-                                           [local_values_.shape()[5]] // l1
-                                           [local_values_.shape()[6]]); // bosonic
-               for (int orb1 = 0; orb1 < local_values_.shape()[0]; orb1++) {
-                    for (int orb2 = 0; orb2 < local_values_.shape()[1]; orb2++) {
-                         for (int orb3 = 0; orb3 < local_values_.shape()[2]; orb3++) {
-                              for (int orb4 = 0; orb4 < local_values_.shape()[3]; orb4++) {
+                                           [local_legendre_values_.shape()[0] * local_legendre_values_.shape()[1]]
+                                           [local_legendre_values_.shape()[2] * local_legendre_values_.shape()[3]]
+                                           [local_legendre_values_.shape()[4]] // l1
+                                           [local_legendre_values_.shape()[5]] // l1
+                                           [local_legendre_values_.shape()[6]]); // bosonic
+               for (int orb1 = 0; orb1 < local_legendre_values_.shape()[0]; orb1++) {
+                    for (int orb2 = 0; orb2 < local_legendre_values_.shape()[1]; orb2++) {
+                         for (int orb3 = 0; orb3 < local_legendre_values_.shape()[2]; orb3++) {
+                              for (int orb4 = 0; orb4 < local_legendre_values_.shape()[3]; orb4++) {
                                    line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
                                    col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
-                                   for (int l1 = 0; l1 < local_values_.shape()[4]; l1++) {
-                                        for (int l2 = 0; l2 < local_values_.shape()[5]; l2++) {
-                                             for (int nb = 0; nb < local_values_.shape()[6]; nb++) {
+                                   for (int l1 = 0; l1 < local_legendre_values_.shape()[4]; l1++) {
+                                        for (int l2 = 0; l2 < local_legendre_values_.shape()[5]; l2++) {
+                                             for (int nb = 0; nb < local_legendre_values_.shape()[6]; nb++) {
                                                   local_values_compact[line_idx][col_idx][l1][l2][nb] =
                                                        local_legendre_values_[orb1][orb2][orb3][orb4][l1][l2][nb];
                                              }
