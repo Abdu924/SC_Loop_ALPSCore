@@ -46,6 +46,11 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                subtract_disconnected_part(g2_h5_archive);
                cout << "subtract disconnect: ";
           }
+
+
+
+
+          
           cout << "test value " << beta * real(g2_data_(0,0, 2, 2)) << endl;
           Eigen::MatrixXcd flat_g2 = get_flattened_representation(g2_data_);
           cout << "test value " << beta * real(flat_g2(2 * 16, 2 * 16)) << endl;
@@ -164,11 +169,15 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      } catch(...){
 	  std::cerr << "Fatal Error: Unknown Exception!\n";
      }
+     
      {
           boost::timer::auto_cpu_timer bubble_calc;
           read_lattice_bubble(bubble_h5_archive);
           cout << "read lattice bubble";
      }
+}
+
+void BseqSolver::inverse_bseq() {     
      {
           boost::timer::auto_cpu_timer inverse_calc;
           if (world_rank_ == 0)
@@ -241,7 +250,6 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           }
           cout << "world_lattice_chi_(0, 3, 0, 0, 0) " << world_lattice_chi_(0, 3, 0, 0, 0) << endl;
      }
-     dump_susceptibility(parms);
 }
 
 void BseqSolver::dump_susceptibility(const alps::params& parms) {
@@ -513,7 +521,8 @@ void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
      bubble_h5_archive["/legendre_lattice_bubble/site_0/data"] >> temp_lattice_bubble;
      lattice_legendre_bubble_ = lattice_g2_type(
           per_site_orbital_size * per_site_orbital_size,
-          per_site_orbital_size * per_site_orbital_size, n_legendre,n_legendre, nb_q_points_per_proc);
+          per_site_orbital_size * per_site_orbital_size,
+          n_legendre,n_legendre, nb_q_points_per_proc);
      lattice_legendre_bubble_.setZero();
      int line_idx, col_idx;
      for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {

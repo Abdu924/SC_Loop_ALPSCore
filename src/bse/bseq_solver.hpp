@@ -41,6 +41,9 @@ public:
                 int current_bose_freq,
                 const alps::params& parms, int world_rank);
      virtual ~BseqSolver() {}
+
+     void dump_susceptibility(const alps::params& parms);
+     void inverse_bseq();
      
 private:
      int world_rank_;
@@ -67,7 +70,6 @@ private:
      Eigen::MatrixXcd flat_irreducible_vertex;
 
      void dump_for_check();
-     void dump_susceptibility(const alps::params& parms);
      void read_local_g2(alps::hdf5::archive &g2_h5_archive);
      void read_local_bubble(alps::hdf5::archive &bubble_h5_archive);
      void read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive);

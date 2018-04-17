@@ -139,8 +139,7 @@ int main(int argc, const char* argv[]) {
                local_bubble->dump_bubble_hdf5(parms);
 	  } else if (computation_type == 1) {
                // Solve BSEQ
-               boost::shared_ptr<Bandstructure> bare_band(
-                    new Bandstructure(parms, world_rank, true));
+               boost::shared_ptr<Bandstructure> bare_band(new Bandstructure(parms, world_rank, true));
                alps::hdf5::archive g2_archive(input_file, "r");
                const string bubble_file = parms["bseq.bubbles.filename"].as<string>();
                alps::hdf5::archive bubble_archive(bubble_file, "r");
@@ -148,6 +147,8 @@ int main(int argc, const char* argv[]) {
                boost::shared_ptr<BseqSolver> bseq_solver(
                     new BseqSolver(g2_archive, bubble_archive, bare_band,
                                    current_bose_freq, parms, world_rank));
+               bseq_solver->inverse_bseq();
+               bseq_solver->dump_susceptibility(parms);
           }
 	  MPI_Finalize();
 	  return 0;
