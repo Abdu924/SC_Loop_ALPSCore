@@ -143,12 +143,13 @@ int main(int argc, const char* argv[]) {
                alps::hdf5::archive g2_archive(input_file, "r");
                const string bubble_file = parms["bseq.bubbles.filename"].as<string>();
                alps::hdf5::archive bubble_archive(bubble_file, "r");
-               int current_bose_freq = 1;
+               int current_bose_freq = 0;
                boost::shared_ptr<BseqSolver> bseq_solver(
                     new BseqSolver(g2_archive, bubble_archive, bare_band,
                                    current_bose_freq, parms, world_rank));
                bseq_solver->inverse_bseq();
                bseq_solver->dump_susceptibility(parms);
+               bseq_solver->dump_vertex(parms);
           }
 	  MPI_Finalize();
 	  return 0;

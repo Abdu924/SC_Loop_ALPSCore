@@ -45,6 +45,7 @@ public:
      virtual ~BseqSolver() {}
 
      void dump_susceptibility(const alps::params& parms);
+     void dump_vertex(const alps::params& parms);
      void inverse_bseq();
      
 private:

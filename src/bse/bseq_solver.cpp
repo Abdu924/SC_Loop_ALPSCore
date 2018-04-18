@@ -300,7 +300,74 @@ void BseqSolver::dump_susceptibility(const alps::params& parms) {
      }
      MPI_Barrier(MPI_COMM_WORLD);
 }
+void BseqSolver::dump_vertex(const alps::params& parms) {
+     if (world_rank_ == 0) {
+          const string archive_name = parms["bseq.inversion.filename"].as<string>();
+          alps::hdf5::archive bseq_output(archive_name, "a");
+          std::string h5_group_name("/irr_gamma");
+          local_g2_type irr_vertex = get_multidim_representation(flat_irreducible_vertex);
+          boost::multi_array<std::complex<double>, 4> irr_vertex_array;
+          irr_vertex_array.resize(boost::extents
+                                  [irr_vertex.dimensions()[0]]
+                                  [irr_vertex.dimensions()[1]]
+                                  [irr_vertex.dimensions()[2]]
+                                  [irr_vertex.dimensions()[3]]);
+          for (int site_index = 0; site_index < n_sites; site_index++) {
+               std::stringstream site_path;
+               site_path << h5_group_name + "/site_" +
+                    boost::lexical_cast<std::string>(site_index) + "/data";
+               for (int orb1 = 0; orb1 < world_lattice_chi_.dimensions()[0]; orb1++) {
+                    for (int orb2 = 0; orb2 < world_lattice_chi_.dimensions()[1]; orb2++) {
+                         for (int l1 = 0; l1 < world_lattice_chi_.dimensions()[2]; l1++) {
+                              for (int l2 = 0; l2 < world_lattice_chi_.dimensions()[3]; l2++) {
+                                   for (int q_index = 0; q_index < nb_q_points; q_index++) {
+                                        irr_vertex_array[orb1][orb2][l1][l2] =
+                                             irr_vertex(orb1, orb2, l1, l2);
+                                   }
+                              }
+                         }
+                    }
+               }
+               bseq_output[site_path.str()] << irr_vertex_array;
+          }
 
+
+          h5_group_name = "/bubble_inv";
+          local_g2_type irr_vertex = get_multidim_representation(flat_irreducible_vertex);
+          boost::multi_array<std::complex<double>, 4> irr_vertex_array;
+          irr_vertex_array.resize(boost::extents
+                                  [irr_vertex.dimensions()[0]]
+                                  [irr_vertex.dimensions()[1]]
+                                  [irr_vertex.dimensions()[2]]
+                                  [irr_vertex.dimensions()[3]]);
+          for (int site_index = 0; site_index < n_sites; site_index++) {
+               std::stringstream site_path;
+               site_path << h5_group_name + "/site_" +
+                    boost::lexical_cast<std::string>(site_index) + "/data";
+               for (int orb1 = 0; orb1 < world_lattice_chi_.dimensions()[0]; orb1++) {
+                    for (int orb2 = 0; orb2 < world_lattice_chi_.dimensions()[1]; orb2++) {
+                         for (int l1 = 0; l1 < world_lattice_chi_.dimensions()[2]; l1++) {
+                              for (int l2 = 0; l2 < world_lattice_chi_.dimensions()[3]; l2++) {
+                                   for (int q_index = 0; q_index < nb_q_points; q_index++) {
+                                        irr_vertex_array[orb1][orb2][l1][l2] =
+                                             irr_vertex(orb1, orb2, l1, l2);
+                                   }
+                              }
+                         }
+                    }
+               }
+               bseq_output[site_path.str()] << irr_vertex_array;
+          }
+
+
+
+
+          
+          // Close file
+	  bseq_output.close();
+     }
+     MPI_Barrier(MPI_COMM_WORLD);
+}
 
 Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor) {
      assert(tensor.dimension(0) = tensor.dimension(1));
