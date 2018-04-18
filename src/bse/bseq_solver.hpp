@@ -30,6 +30,10 @@ typedef boost::multi_array<std::complex<double>, 3> g1_type;
 typedef boost::multi_array<std::complex<double>, 7> extended_local_leg_type;
 typedef boost::multi_array<std::complex<double>, 8> extended_lattice_leg_type;
 
+typedef boost::multi_array<std::complex<double>, 5> extended_local_leg_type_compact;
+typedef boost::multi_array<std::complex<double>, 6> extended_lattice_leg_type_compact;
+
+
 class BseqSolver {
 
 public:

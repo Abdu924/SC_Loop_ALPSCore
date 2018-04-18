@@ -151,6 +151,7 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                cout << "flat_g2 row 10 " << flat_g2.row(10).segment(8, 4) << endl;
                cout << "flat_g2 row 11 " << (flat_g2.row(11)).segment(8, 4) << endl;
                cout << "flat_bubble det " << flat_bubble.determinant() << endl;
+               cout << "flat_g2 det " << flat_g2.determinant() << endl;
                cout << "flat_g2(0, 0, 0, 0, 0) " << flat_g2(0, 0) << endl;
                cout << "flat_bubble(0, 0, 0, 0, 0) " << flat_bubble(0, 0) << endl;
                cout << "flat_irreducible_vertex(0, 0, 0, 0, 0) " << flat_irreducible_vertex(0, 0) << endl;
@@ -449,25 +450,18 @@ void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) 
 }
 
 void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
-     extended_local_leg_type temp_local_bubble;
-     bubble_h5_archive["/legendre_local_bubble/site_0/data"] >> temp_local_bubble;
-     local_legendre_bubble_ = local_g2_type(per_site_orbital_size * per_site_orbital_size,
-                                            per_site_orbital_size * per_site_orbital_size,
+     extended_local_leg_type_compact temp_local_bubble;
+     bubble_h5_archive["/legendre_local_bubble_compact/site_0/data"] >> temp_local_bubble;
+     local_legendre_bubble_ = local_g2_type(temp_local_bubble.shape()[0],
+                                            temp_local_bubble.shape()[1],
                                             n_legendre,n_legendre);
      local_legendre_bubble_.setZero();
-     int line_idx, col_idx;
-     for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
-          for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
-               for (int orb3 = 0; orb3 < per_site_orbital_size; orb3++) {
-                    for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
-                         for (int l1 = 0; l1 < n_legendre; l1++) {
-                              for (int l2 = 0; l2 < n_legendre; l2++) {
-                                   line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
-                                   col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
-                                   local_legendre_bubble_(line_idx, col_idx, l1, l2) =
-                                        temp_local_bubble[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq];
-                              }
-                         }
+     for (int orb1 = 0; orb1 < temp_local_bubble.shape()[0]; orb1++) {
+          for (int orb2 = 0; orb2 < temp_local_bubble.shape()[1]; orb2++) {
+               for (int l1 = 0; l1 < n_legendre; l1++) {
+                    for (int l2 = 0; l2 < n_legendre; l2++) {
+                         local_legendre_bubble_(orb1, orb2, l1, l2) =
+                              temp_local_bubble[orb1][orb2][l1][l2][current_bose_freq];
                     }
                }
           }
@@ -475,30 +469,23 @@ void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
 }
 
 void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
-     extended_lattice_leg_type temp_lattice_bubble;
-     bubble_h5_archive["/legendre_lattice_bubble/site_0/data"] >> temp_lattice_bubble;
+     extended_lattice_leg_type_compact temp_lattice_bubble;
+     bubble_h5_archive["/legendre_lattice_bubble_compact/site_0/data"] >> temp_lattice_bubble;
      lattice_legendre_bubble_ = lattice_g2_type(
-          per_site_orbital_size * per_site_orbital_size,
-          per_site_orbital_size * per_site_orbital_size,
+          temp_lattice_bubble.shape()[0],
+          temp_lattice_bubble.shape()[0],
           n_legendre,n_legendre, nb_q_points_per_proc);
      lattice_legendre_bubble_.setZero();
-     int line_idx, col_idx;
      for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
           int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
           if (world_q_index >= nb_q_points)
                continue;
           for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
                for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
-                    for (int orb3 = 0; orb3 < per_site_orbital_size; orb3++) {
-                         for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
-                              for (int l1 = 0; l1 < n_legendre; l1++) {
-                                   for (int l2 = 0; l2 < n_legendre; l2++) {
-                                        line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
-                                        col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
-                                        lattice_legendre_bubble_(line_idx, col_idx, l1, l2, q_index) =
-                                             temp_lattice_bubble[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq][q_index];
-                                   }
-                              }
+                    for (int l1 = 0; l1 < n_legendre; l1++) {
+                         for (int l2 = 0; l2 < n_legendre; l2++) {
+                              lattice_legendre_bubble_(orb1, orb2, l1, l2, q_index) =
+                                   temp_lattice_bubble[orb1][orb2][l1][l2][current_bose_freq][q_index];
                          }
                     }
                }
