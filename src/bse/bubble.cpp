@@ -69,7 +69,6 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                                            [n_legendre][n_legendre][N_boson][nb_q_points_per_proc * world_size]);
      std::fill(world_lattice_legendre_values_.origin(),
                world_lattice_legendre_values_.origin() + world_lattice_legendre_values_.num_elements(), 0.0);
-     cout << "bubble contructor OK" << endl;
 }
 
 std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point,
@@ -287,7 +286,6 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
      MPI_Barrier(MPI_COMM_WORLD);
 }
 
-
 void Bubble::compute_local_bubble() {     
      if (world_rank_ == 0)
      {
@@ -313,8 +311,6 @@ void Bubble::compute_local_bubble() {
                                                  and (hole_index_2 == 3)
                                                  and (part_index_2 == 0)
                                                  and (hole_index_1 == 1)) {
-                                                  cout << "TEST " << raw_full_gf[part_index_1][part_index_2][freq_index];
-                                                  cout << "TEST " << raw_full_gf[hole_index_1][hole_index_2][freq_index + boson_index];
                                              }
 					     local_values_[part_index_1][hole_index_2]
                                                   [part_index_2][hole_index_1][freq_index][boson_index] =
