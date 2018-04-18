@@ -34,7 +34,6 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      }
      per_site_orbital_size = sigma_->get_per_site_orbital_size();
      tot_orbital_size = n_sites * per_site_orbital_size;
-
      std::cout << "Computing bubbles for " << bubble_dim << " fermionic frequencies, "
                << std::endl << " q mesh based on " << nb_q_points << " points, i.e. "
                << nb_q_points << " q points, and " 
@@ -44,7 +43,6 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      int n_matsubara = parms["N_MATSUBARA"];
      legendre_trans_.reset(new LegendreTransformer(bubble_dim, n_legendre));
      flavor_trans_.reset(new FlavorTransformer());
-     
      raw_full_gf.resize(boost::extents
                         [per_site_orbital_size][per_site_orbital_size][N_max]);
      h5_archive["/legendre_gf/data"] >> raw_full_gf;
@@ -304,7 +302,6 @@ void Bubble::compute_local_bubble() {
 				   for (int part_index_2 = 0; part_index_2 < orbital_size;
 					part_index_2++) {
 					for (int hole_index_1 = 0; hole_index_1 < orbital_size; hole_index_1++) {
-                                             
                                              if ((boson_index == 0) and
                                                  (freq_index == 0) and
                                                  (part_index_1 == 2)
@@ -531,7 +528,6 @@ void Bubble::get_lattice_legendre_representation() {
                for(int orb2 = 0; orb2 < orbital_size; orb2++) {
                     for(int orb3 = 0; orb3 < orbital_size; orb3++) {
                          for(int orb4 = 0; orb4 < orbital_size; orb4++) {
-
                               for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                                    for (int l1 = 0; l1 < n_legendre; l1++) {
                                         for (int l2 = 0; l2 < n_legendre; l2++) {
