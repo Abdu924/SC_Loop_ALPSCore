@@ -121,10 +121,12 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                          Eigen::array<int, 4> offsets = {4 * i, 4 * j, 0, 0};
                          Eigen::array<int, 4> extents = {4, 4, n_legendre, n_legendre};
                          local_g2_type slice = g2_data_.slice(offsets, extents);
+                         cout << "SLICE 4!!!!!!!!!!!" << endl;
                          Eigen::MatrixXcd flat_slice = get_flattened_representation(slice);
                          cout << "block " << i << ", " << j << ", abs som "  << flat_slice.cwiseAbs().sum() << endl;
                          cout << "flat_slice block " << i << ", " << j << " det "  << flat_slice.determinant() << endl;
-                         
+                         cout << "flat_slice block " << i << ", " << j << endl  << flat_slice.real() << endl;
+                         cout << "flat_slice block " << i << ", " << j << endl  << flat_slice.imag() << endl;
                     }
                }
                for (int i = 0; i < 2; i++) {
@@ -146,10 +148,10 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
 
                
 
-               cout << "flat_g2 row 8 " << flat_g2.row(8).segment(8, 4) << endl;
-               cout << "flat_g2 row 9 " << flat_g2.row(9).segment(8, 4) << endl;
-               cout << "flat_g2 row 10 " << flat_g2.row(10).segment(8, 4) << endl;
-               cout << "flat_g2 row 11 " << (flat_g2.row(11)).segment(8, 4) << endl;
+               // cout << "flat_g2 row 8 " << flat_g2.row(8).segment(8, 4) << endl;
+               // cout << "flat_g2 row 9 " << flat_g2.row(9).segment(8, 4) << endl;
+               // cout << "flat_g2 row 10 " << flat_g2.row(10).segment(8, 4) << endl;
+               // cout << "flat_g2 row 11 " << (flat_g2.row(11)).segment(8, 4) << endl;
                cout << "flat_bubble det " << flat_bubble.determinant() << endl;
                cout << "flat_g2 det " << flat_g2.determinant() << endl;
                cout << "flat_g2(0, 0, 0, 0, 0) " << flat_g2(0, 0) << endl;
@@ -318,6 +320,7 @@ Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor)
                }
           }
      }
+     cout << "result.determinant " << result.determinant() << endl;
      return result;
 }
 
@@ -473,15 +476,15 @@ void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
      bubble_h5_archive["/legendre_lattice_bubble_compact/site_0/data"] >> temp_lattice_bubble;
      lattice_legendre_bubble_ = lattice_g2_type(
           temp_lattice_bubble.shape()[0],
-          temp_lattice_bubble.shape()[0],
+          temp_lattice_bubble.shape()[1],
           n_legendre,n_legendre, nb_q_points_per_proc);
      lattice_legendre_bubble_.setZero();
      for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
           int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
           if (world_q_index >= nb_q_points)
                continue;
-          for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
-               for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+          for (int orb1 = 0; orb1 < temp_lattice_bubble.shape()[0]; orb1++) {
+               for (int orb2 = 0; orb2 < temp_lattice_bubble.shape()[1]; orb2++) {
                     for (int l1 = 0; l1 < n_legendre; l1++) {
                          for (int l2 = 0; l2 < n_legendre; l2++) {
                               lattice_legendre_bubble_(orb1, orb2, l1, l2, q_index) =
