@@ -287,6 +287,7 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
      MPI_Barrier(MPI_COMM_WORLD);
 }
 
+
 void Bubble::compute_local_bubble() {     
      if (world_rank_ == 0)
      {
