@@ -221,8 +221,6 @@ void BseqSolver::inverse_bseq() {
           for (int proc_index = 1; proc_index < world_size; proc_index++) {
                for (size_t q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                     int world_q_index = q_index + nb_q_points_per_proc * proc_index;
-                    if (world_q_index >= nb_q_points)
-                         continue;
                     local_g2_type temp_world_lattice_chi(world_lattice_chi_.dimensions()[0],
                                                          world_lattice_chi_.dimensions()[1],
                                                          world_lattice_chi_.dimensions()[2],
@@ -231,14 +229,13 @@ void BseqSolver::inverse_bseq() {
                     MPI_Recv(temp_world_lattice_chi.data(),
                              temp_world_lattice_chi.size(),
                              MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    world_lattice_chi_.chip(world_q_index, 4) = temp_world_lattice_chi;
+                    if (world_q_index < nb_q_points)
+                         world_lattice_chi_.chip(world_q_index, 4) = temp_world_lattice_chi;
                }
           }
      } else {
           for (size_t q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
-               if (world_q_index >= nb_q_points)
-                    continue;
                local_g2_type temp_lattice_chi = lattice_chi_.chip(q_index, 4);
                MPI_Send(temp_lattice_chi.data(),
                         temp_lattice_chi.size(),
@@ -567,7 +564,7 @@ void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
                     for (int l1 = 0; l1 < n_legendre; l1++) {
                          for (int l2 = 0; l2 < n_legendre; l2++) {
                               lattice_legendre_bubble_(orb1, orb2, l1, l2, q_index) =
-                                   temp_lattice_bubble[orb1][orb2][l1][l2][current_bose_freq][q_index];
+                                   temp_lattice_bubble[orb1][orb2][l1][l2][current_bose_freq][world_q_index];
                          }
                     }
                }
