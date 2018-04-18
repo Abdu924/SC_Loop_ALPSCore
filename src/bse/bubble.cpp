@@ -312,8 +312,17 @@ void Bubble::compute_local_bubble() {
 				   hole_index_2++) {
 				   for (int part_index_2 = 0; part_index_2 < orbital_size;
 					part_index_2++) {
-					for (int hole_index_1 = 0;
-					     hole_index_1 < orbital_size; hole_index_1++) {
+					for (int hole_index_1 = 0; hole_index_1 < orbital_size; hole_index_1++) {
+                                             
+                                             if ((boson_index == 0) and
+                                                 (freq_index == 0) and
+                                                 (part_index_1 == 2)
+                                                 and (hole_index_2 == 3)
+                                                 and (part_index_2 == 0)
+                                                 and (hole_index_1 == 1)) {
+                                                  cout << "TEST " << raw_full_gf[part_index_1][part_index_2][freq_index];
+                                                  cout << "TEST " << raw_full_gf[hole_index_1][hole_index_2][freq_index + boson_index];
+                                             }
 					     local_values_[part_index_1][hole_index_2]
                                                   [part_index_2][hole_index_1][freq_index][boson_index] =
 						  raw_full_gf[part_index_1][part_index_2][freq_index]
