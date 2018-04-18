@@ -46,70 +46,10 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                subtract_disconnected_part(g2_h5_archive);
                cout << "subtract disconnect: ";
           }
-
-
-
-
-          
-          cout << "test value " << beta * real(g2_data_(0,0, 2, 2)) << endl;
           Eigen::MatrixXcd flat_g2 = get_flattened_representation(g2_data_);
-          cout << "test value " << beta * real(flat_g2(2 * 16, 2 * 16)) << endl;
           Eigen::MatrixXcd flat_bubble = get_flattened_representation(local_legendre_bubble_);
           local_g2_type retour = get_multidim_representation(flat_g2);
-          Eigen::MatrixXcd reretour = get_flattened_representation(retour);
-          cout << "consistency " << (flat_g2 - reretour).cwiseAbs().sum() << endl;
-          cout << "flat_g2 "  << " abs som "  << flat_g2.cwiseAbs().sum() << endl;
-          cout << "flat_g2 det " << abs(flat_g2.determinant()) << endl;
-          // for (int i = 0; i < n_legendre; i++) {
-          //      for (int j = 0; j < n_legendre; j++) {
-          //           cout << "flat_g2 block " << i << ", " << j << " det " <<
-          //                flat_g2.block(i*per_site_orbital_size, j*per_site_orbital_size,
-          //                              n_legendre, n_legendre).determinant() << endl;
-          //      }
-          // }
-          cout << "flat_g2 h5 mimck" << endl;
-          for (int i = 0; i < n_legendre; i++) {
-               for (int j = 0; j < n_legendre; j++) {
-                    cout << beta * real(flat_g2.block(i * per_site_orbital_size*per_site_orbital_size,
-                                                      j * per_site_orbital_size*per_site_orbital_size,
-                                                      per_site_orbital_size*per_site_orbital_size,
-                                                      per_site_orbital_size*per_site_orbital_size)(0,0)) << " ";
-               }
-               cout << endl;
-          }
-          cout << "flat_g2 h5 mimck dets" << endl;
-          for (int i = 0; i < n_legendre; i++) {
-               for (int j = 0; j < n_legendre; j++) {
-                    cout << abs(flat_g2.block(i * per_site_orbital_size*per_site_orbital_size,
-                                          j * per_site_orbital_size*per_site_orbital_size,
-                                          per_site_orbital_size*per_site_orbital_size,
-                                              per_site_orbital_size*per_site_orbital_size).determinant()) << " ";
-               }
-               cout << endl;
-          }
-
-          cout << "flat_bubble h5 mimck" << endl;
-          for (int i = 0; i < n_legendre; i++) {
-               for (int j = 0; j < n_legendre; j++) {
-                    cout << beta * real(flat_bubble.block(i * per_site_orbital_size*per_site_orbital_size,
-                                                      j * per_site_orbital_size*per_site_orbital_size,
-                                                      per_site_orbital_size*per_site_orbital_size,
-                                                      per_site_orbital_size*per_site_orbital_size)(0,0)) << " ";
-               }
-               cout << endl;
-          }
-          cout << "flat_bubble h5 mimck dets" << endl;
-          for (int i = 0; i < n_legendre; i++) {
-               for (int j = 0; j < n_legendre; j++) {
-                    cout << abs(flat_bubble.block(i * per_site_orbital_size*per_site_orbital_size,
-                                          j * per_site_orbital_size*per_site_orbital_size,
-                                          per_site_orbital_size*per_site_orbital_size,
-                                              per_site_orbital_size*per_site_orbital_size).determinant()) << " ";
-               }
-               cout << endl;
-          }
-
-          
+          Eigen::MatrixXcd reretour = get_flattened_representation(retour);          
           // helper function for checks
           if (false)
                dump_for_check();
@@ -121,12 +61,7 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                          Eigen::array<int, 4> offsets = {4 * i, 4 * j, 0, 0};
                          Eigen::array<int, 4> extents = {4, 4, n_legendre, n_legendre};
                          local_g2_type slice = g2_data_.slice(offsets, extents);
-                         cout << "SLICE 4!!!!!!!!!!!" << endl;
                          Eigen::MatrixXcd flat_slice = get_flattened_representation(slice);
-                         cout << "block " << i << ", " << j << ", abs som "  << flat_slice.cwiseAbs().sum() << endl;
-                         cout << "flat_slice block " << i << ", " << j << " det "  << flat_slice.determinant() << endl;
-                         cout << "flat_slice block " << i << ", " << j << endl  << flat_slice.real() << endl;
-                         cout << "flat_slice block " << i << ", " << j << endl  << flat_slice.imag() << endl;
                     }
                }
                for (int i = 0; i < 2; i++) {
@@ -135,28 +70,8 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                          Eigen::array<int, 4> extents = {8, 8, n_legendre, n_legendre};
                          local_g2_type slice = g2_data_.slice(offsets, extents);
                          Eigen::MatrixXcd flat_slice = get_flattened_representation(slice);
-                         cout << "block " << i << ", " << j << ", abs som "  << flat_slice.cwiseAbs().sum() << endl;
-                         cout << "flat_slice block " << i << ", " << j << " det "  << flat_slice.determinant() << endl;
-                         cout << "flat_slice block " << i << ", " << j << " inv sum "  <<
-                              flat_slice.inverse().cwiseAbs().sum() << endl;
                     }
                }
-               cout << "flat_slice global "<< " det "  <<
-                    flat_g2.inverse().inverse().cwiseAbs().sum() << endl;
-
-               
-
-               
-
-               // cout << "flat_g2 row 8 " << flat_g2.row(8).segment(8, 4) << endl;
-               // cout << "flat_g2 row 9 " << flat_g2.row(9).segment(8, 4) << endl;
-               // cout << "flat_g2 row 10 " << flat_g2.row(10).segment(8, 4) << endl;
-               // cout << "flat_g2 row 11 " << (flat_g2.row(11)).segment(8, 4) << endl;
-               cout << "flat_bubble det " << flat_bubble.determinant() << endl;
-               cout << "flat_g2 det " << flat_g2.determinant() << endl;
-               cout << "flat_g2(0, 0, 0, 0, 0) " << flat_g2(0, 0) << endl;
-               cout << "flat_bubble(0, 0, 0, 0, 0) " << flat_bubble(0, 0) << endl;
-               cout << "flat_irreducible_vertex(0, 0, 0, 0, 0) " << flat_irreducible_vertex(0, 0) << endl;
                cout << "Get irreducible vertex (inversion): ";
           }
      } else {
@@ -172,11 +87,12 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      } catch(...){
 	  std::cerr << "Fatal Error: Unknown Exception!\n";
      }
-     
      {
           boost::timer::auto_cpu_timer bubble_calc;
           read_lattice_bubble(bubble_h5_archive);
-          cout << "read lattice bubble";
+          MPI_Barrier(MPI_COMM_WORLD);
+          if (world_rank_ == 0)
+               cout << "read lattice bubble";
      }
 }
 
@@ -203,17 +119,7 @@ void BseqSolver::inverse_bseq() {
                local_g2_type temp_lattice_bubble = lattice_legendre_bubble_.chip(q_index, 4);
                Eigen::MatrixXcd flat_lattice_chi = (flat_irreducible_vertex +
                                                     (get_flattened_representation(temp_lattice_bubble)).inverse()).inverse();
-               //local_g2_type temp_lattice_chi = lattice_chi_.chip(q_index, 4);
-               //temp_lattice_chi = get_multidim_representation(flat_lattice_chi);
-               cout << "flat_irreducible_vertex(0, 0, 0, 0, 0) " << flat_irreducible_vertex(0, 0) << endl;
-               cout << "get_flattened_representation(temp_lattice_bubble)(0, 3, 0, 0, 0) " <<
-                    get_flattened_representation(temp_lattice_bubble)(0, 3) << endl;
-
-               cout << "flat_lattice_chi(0, 0, 0, 0, 0) " << flat_lattice_chi(0, 0) << endl;
-               cout << "flat_lattice_chi(0, 3, 0, 0, 0) " << flat_lattice_chi(0, 3) << endl;
                lattice_chi_.chip(q_index, 4) = get_multidim_representation(flat_lattice_chi);
-               cout << "lattice_chi_(0, 0, 0, 0, 0) " << lattice_chi_(0, 0, 0, 0, 0) << endl;
-               cout << "lattice_chi_(0, 3, 0, 0, 0) " << lattice_chi_(0, 3, 0, 0, 0) << endl;
           }
           cout << "Invert lattice BSE";
      }
@@ -246,7 +152,6 @@ void BseqSolver::inverse_bseq() {
           for (size_t q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                world_lattice_chi_.chip(q_index, 4) = lattice_chi_.chip(q_index, 4);
           }
-          cout << "world_lattice_chi_(0, 3, 0, 0, 0) " << world_lattice_chi_(0, 3, 0, 0, 0) << endl;
      }
 }
 
@@ -396,7 +301,6 @@ Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor)
                }
           }
      }
-     cout << "result.determinant " << result.determinant() << endl;
      return result;
 }
 
