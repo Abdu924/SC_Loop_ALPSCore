@@ -237,14 +237,12 @@ void BseqSolver::inverse_bseq() {
      } else {
           for (size_t q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
-               if (world_q_index < nb_q_points) {
-                    local_g2_type temp_lattice_chi = lattice_chi_.chip(q_index, 4);
-                    MPI_Send(temp_lattice_chi.data(),
-                             temp_lattice_chi.size(),
-                             MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);
-               } else {
+               if (world_q_index >= nb_q_points)
                     continue;
-               }
+               local_g2_type temp_lattice_chi = lattice_chi_.chip(q_index, 4);
+               MPI_Send(temp_lattice_chi.data(),
+                        temp_lattice_chi.size(),
+                        MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);
           }
      }
      if (world_rank_ == 0) {
@@ -392,7 +390,7 @@ Eigen::MatrixXcd BseqSolver::get_flattened_representation(local_g2_type& tensor)
      Eigen::MatrixXcd result = Eigen::MatrixXcd::Zero(flattened_dim, flattened_dim);
      for (int l1 = 0; l1 < leg_dim; l1++) {
           for (int l2 = 0; l2 < leg_dim; l2++) {
-               Eigen::Tensor<std::complex<double>, 2> sub_matrix = (tensor.chip(l1, 2)).chip(l2, 2);
+               Eigen::Tensor<std::complex<double>, 2> sub_matrix = (tensor.chip(l2, 3)).chip(l1, 2);
                for (int orb1 = 0; orb1 < orb_dim; orb1++) {
                     for (int orb2 = 0; orb2 < orb_dim; orb2++) {
                          result.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(orb1, orb2) =
@@ -422,7 +420,7 @@ local_g2_type BseqSolver::get_multidim_representation(const Eigen::Ref<Eigen::Ma
                               flat_data.block(l1 * orb_dim, l2 * orb_dim, orb_dim, orb_dim)(orb1, orb2);
                     }
                }
-               (result.chip(l1, 2)).chip(l2, 2) = sub_matrix;
+               (result.chip(l2, 3)).chip(l1, 2) = sub_matrix;
           }
      }
      return result;
