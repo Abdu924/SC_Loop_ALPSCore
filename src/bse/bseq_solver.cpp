@@ -331,15 +331,10 @@ void BseqSolver::dump_vertex(const alps::params& parms) {
                bseq_output[site_path.str()] << irr_vertex_array;
           }
 
+          Eigen::MatrixXcd flat_bubble_inv = (get_flattened_representation(local_legendre_bubble_)).inverse();
 
           h5_group_name = "/bubble_inv";
-          local_g2_type irr_vertex = get_multidim_representation(flat_irreducible_vertex);
-          boost::multi_array<std::complex<double>, 4> irr_vertex_array;
-          irr_vertex_array.resize(boost::extents
-                                  [irr_vertex.dimensions()[0]]
-                                  [irr_vertex.dimensions()[1]]
-                                  [irr_vertex.dimensions()[2]]
-                                  [irr_vertex.dimensions()[3]]);
+          irr_vertex = get_multidim_representation(flat_bubble_inv);
           for (int site_index = 0; site_index < n_sites; site_index++) {
                std::stringstream site_path;
                site_path << h5_group_name + "/site_" +
