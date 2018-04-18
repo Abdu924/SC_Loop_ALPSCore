@@ -219,7 +219,7 @@ void BseqSolver::inverse_bseq() {
      }
      if (world_rank_ == 0) {
           for (int proc_index = 1; proc_index < world_size; proc_index++) {
-               for (size_t q_index = 0; q_index < nb_q_points; q_index++) {
+               for (size_t q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                     int world_q_index = q_index + nb_q_points_per_proc * proc_index;
                     if (world_q_index >= nb_q_points)
                          continue;
@@ -235,7 +235,7 @@ void BseqSolver::inverse_bseq() {
                }
           }
      } else {
-          for (size_t q_index = 0; q_index < nb_q_points; q_index++) {
+          for (size_t q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
                if (world_q_index < nb_q_points) {
                     local_g2_type temp_lattice_chi = lattice_chi_.chip(q_index, 4);
