@@ -54,7 +54,7 @@ private:
      
      int nb_q_points;
      int nb_q_points_per_proc;
-     int N_boson;
+     //int N_boson;
      int current_bose_freq;
      int n_legendre;
      int n_sites;

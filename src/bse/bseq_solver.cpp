@@ -13,9 +13,6 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
      nb_q_points = lattice_bs_->get_nb_points_for_bseq();
      per_site_orbital_size = lattice_bs_->get_orbital_size();
      n_legendre = parms["bseq.inversion.n_legendre"];
-     N_boson = parms["bseq.inversion.n_bosonic_freq"];
-     assert (N_boson <= parms["bseq.bubbles.n_bosonic_freq"]);
-     assert (N_boson <= parms["measurement.G2.n_bosonic_freq"]);
      beta = parms["model.beta"];
      n_sites = 1;
      if (world_rank_ == 0) {
@@ -159,7 +156,7 @@ void BseqSolver::dump_susceptibility(const alps::params& parms) {
      if (world_rank_ == 0) {
           const string archive_name = parms["bseq.inversion.filename"].as<string>();
           alps::hdf5::archive bseq_output(archive_name, "a");
-          std::string h5_group_name("/lattice_chi");
+          std::string h5_group_name("/lattice_chi/");
           boost::multi_array<std::complex<double>, 5> temp_lattice_chi;
           temp_lattice_chi.resize(boost::extents
                                   [world_lattice_chi_.dimensions()[0]]
@@ -170,7 +167,8 @@ void BseqSolver::dump_susceptibility(const alps::params& parms) {
           for (int site_index = 0; site_index < n_sites; site_index++) {
                std::stringstream site_path;
                site_path << h5_group_name + "/site_" +
-                    boost::lexical_cast<std::string>(site_index) + "/data";
+                    boost::lexical_cast<std::string>(site_index) +
+                    "/bose_" + boost::lexical_cast<std::string>(current_bose_freq) +  "/data";
                for (int orb1 = 0; orb1 < world_lattice_chi_.dimensions()[0]; orb1++) {
                     for (int orb2 = 0; orb2 < world_lattice_chi_.dimensions()[1]; orb2++) {
                          for (int l1 = 0; l1 < world_lattice_chi_.dimensions()[2]; l1++) {
@@ -367,9 +365,9 @@ void BseqSolver::dump_for_check() {
 // The matrix format is given in Boehnke's PhD thesis.
 void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
      boost::multi_array<double, 8>  real_temp_g2_data;
-     real_temp_g2_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
-                              [per_site_orbital_size][per_site_orbital_size]
-                              [n_legendre][n_legendre][N_boson][2]);
+     // real_temp_g2_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
+     //                          [per_site_orbital_size][per_site_orbital_size]
+     //                          [n_legendre][n_legendre][N_boson][2]);
      g2_h5_archive["G2_LEGENDRE"] >> real_temp_g2_data;
      g2_data_ = local_g2_type(per_site_orbital_size * per_site_orbital_size,
                               per_site_orbital_size * per_site_orbital_size,
