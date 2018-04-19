@@ -154,6 +154,7 @@ void BseqSolver::inverse_bseq() {
 
 void BseqSolver::dump_susceptibility(const alps::params& parms) {
      if (world_rank_ == 0) {
+          cout << "dump lattice_chi" << endl;
           const string archive_name = parms["bseq.inversion.filename"].as<string>();
           alps::hdf5::archive bseq_output(archive_name, "a");
           std::string h5_group_name("/lattice_chi/");
@@ -183,16 +184,17 @@ void BseqSolver::dump_susceptibility(const alps::params& parms) {
                }
                bseq_output[site_path.str()] << temp_lattice_chi;
           }
-          // q point list
-          h5_group_name = "/lattice_chi/q_point_list";
-          std::vector<std::complex<double>> temp_data;
-          temp_data.resize(nb_q_points);
-          Eigen::VectorXd q_point;
-          for (int q_index = 0; q_index < nb_q_points; q_index++) {
-               q_point = lattice_bs_->get_q_point(q_index);
-               temp_data[q_index] = std::complex<double>(q_point(0), q_point(1));
-          }
-          bseq_output[h5_group_name] = temp_data;
+          
+          // // q point list
+          // h5_group_name = "/lattice_chi/q_point_list";
+          // std::vector<std::complex<double>> temp_data;
+          // temp_data.resize(nb_q_points);
+          // Eigen::VectorXd q_point;
+          // for (int q_index = 0; q_index < nb_q_points; q_index++) {
+          //      q_point = lattice_bs_->get_q_point(q_index);
+          //      temp_data[q_index] = std::complex<double>(q_point(0), q_point(1));
+          // }
+          // bseq_output[h5_group_name] = temp_data;
           // Close file
 	  bseq_output.close();
      }

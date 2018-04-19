@@ -153,7 +153,7 @@ int main(int argc, const char* argv[]) {
                                         current_bose_freq, parms, world_rank));
                     bseq_solver->inverse_bseq();
                     bseq_solver->dump_susceptibility(parms);
-                    //MPI_Barrier(MPI_COMM_WORLD);                    
+                    //MPI_Barrier(MPI_COMM_WORLD);
                }
                //bseq_solver->dump_vertex(parms);
           }
