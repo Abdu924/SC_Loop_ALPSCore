@@ -433,8 +433,12 @@ void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) 
 }
 
 void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
-     extended_local_leg_type_compact temp_local_bubble;
-     bubble_h5_archive["/legendre_local_bubble_compact/site_0/data"] >> temp_local_bubble;
+     local_leg_type temp_local_bubble;
+     std::string root_name("/legendre_local_bubble_compact");
+     std::stringstream bose_path;
+     bose_path << root_name + "/site_0" + "/bose_" +
+          boost::lexical_cast<std::string>(current_bose_freq) + "/data";     
+     bubble_h5_archive[bose_path.str()] >> temp_local_bubble;
      local_legendre_bubble_ = local_g2_type(temp_local_bubble.shape()[0],
                                             temp_local_bubble.shape()[1],
                                             n_legendre,n_legendre);
@@ -444,7 +448,7 @@ void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
                for (int l1 = 0; l1 < n_legendre; l1++) {
                     for (int l2 = 0; l2 < n_legendre; l2++) {
                          local_legendre_bubble_(orb1, orb2, l1, l2) =
-                              temp_local_bubble[orb1][orb2][l1][l2][current_bose_freq];
+                              temp_local_bubble[orb1][orb2][l1][l2];
                     }
                }
           }
@@ -452,8 +456,12 @@ void BseqSolver::read_local_bubble(alps::hdf5::archive &bubble_h5_archive) {
 }
 
 void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
-     extended_lattice_leg_type_compact temp_lattice_bubble;
-     bubble_h5_archive["/legendre_lattice_bubble_compact/site_0/data"] >> temp_lattice_bubble;
+     lattice_leg_type temp_lattice_bubble;
+     std::string root_name("/legendre_lattice_bubble_compact");
+     std::stringstream bose_path;
+     bose_path << root_name + "/site_0" + "/bose_" +
+          boost::lexical_cast<std::string>(current_bose_freq) + "/data";
+     bubble_h5_archive[bose_path.str()] >> temp_lattice_bubble;
      lattice_legendre_bubble_ = lattice_g2_type(
           temp_lattice_bubble.shape()[0],
           temp_lattice_bubble.shape()[1],
@@ -468,7 +476,7 @@ void BseqSolver::read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive) {
                     for (int l1 = 0; l1 < n_legendre; l1++) {
                          for (int l2 = 0; l2 < n_legendre; l2++) {
                               lattice_legendre_bubble_(orb1, orb2, l1, l2, q_index) =
-                                   temp_lattice_bubble[orb1][orb2][l1][l2][current_bose_freq][world_q_index];
+                                   temp_lattice_bubble[orb1][orb2][l1][l2][world_q_index];
                          }
                     }
                }

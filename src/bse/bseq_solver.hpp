@@ -25,6 +25,7 @@ typedef Eigen::Tensor<std::complex<double>, 4> local_g2_type;
 typedef Eigen::Tensor<std::complex<double>, 5> lattice_g2_type;
 
 typedef boost::multi_array<std::complex<double>, 4> local_leg_type;
+typedef boost::multi_array<std::complex<double>, 5> lattice_leg_type;
 typedef boost::multi_array<std::complex<double>, 3> g1_type;
 
 typedef boost::multi_array<std::complex<double>, 7> extended_local_leg_type;
@@ -54,7 +55,6 @@ private:
      
      int nb_q_points;
      int nb_q_points_per_proc;
-     //int N_boson;
      int current_bose_freq;
      int n_legendre;
      int n_sites;
@@ -66,7 +66,6 @@ private:
      local_g2_type local_legendre_bubble_;
      lattice_g2_type lattice_chi_;
      lattice_g2_type world_lattice_chi_;
-     // local_leg_type irr_vertex_;
      lattice_g2_type lattice_legendre_bubble_;
      Eigen::MatrixXcd flat_irreducible_vertex;
      boost::shared_ptr<FlavorTransformer> flavor_trans_;

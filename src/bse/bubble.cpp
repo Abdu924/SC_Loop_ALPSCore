@@ -94,9 +94,8 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
           const string archive_name = parms["bseq.bubbles.filename"].as<string>();
           alps::hdf5::archive bubble_output(archive_name, "a");
           if (dump_matsubara == 1) {
-               std::string h5_group_name("/local_bubble");
                // // Lattice bubble          
-               std::string h5_group_name_2("/lattice_bubble");
+               std::string h5_group_name("/lattice_bubble_compact");
                // Lattice bubble, new flavor order
                boost::multi_array<std::complex<double>, 4> lattice_values_compact;
                lattice_values_compact.resize(boost::extents
@@ -123,10 +122,9 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                               }
                          }
                     }
-                    h5_group_name_2 = "/lattice_bubble_compact";
                     for (int site_index = 0; site_index < n_sites; site_index++) {
                          std::stringstream site_path;
-                         site_path << h5_group_name_2 + "/site_" +
+                         site_path << h5_group_name + "/site_" +
                               boost::lexical_cast<std::string>(site_index) + "/bose_" +
                               boost::lexical_cast<std::string>(nb) + "/data";
                          bubble_output[site_path.str()] << lattice_values_compact;
@@ -135,7 +133,7 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
           }
           if (dump_legendre == 1) {          
                // Local bubble Legendre
-               std::string h5_group_name("/legendre_local_bubble");
+               std::string h5_group_name("/legendre_local_bubble_compact");
                boost::multi_array<std::complex<double>, 4> local_values_compact;
                local_values_compact.resize(boost::extents
                                            [local_legendre_values_.shape()[0] * local_legendre_values_.shape()[1]]
@@ -161,7 +159,6 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                                    }
                               }
                          }
-                         h5_group_name = "/legendre_local_bubble_compact";
                          for (int site_index = 0; site_index < n_sites; site_index++) {
                               std::stringstream site_path;
                               site_path << h5_group_name + "/site_" +
@@ -170,7 +167,7 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                               bubble_output[site_path.str()] << local_values_compact;
                          }
                     }
-               std::string h5_group_name_2("/legendre_lattice_bubble");
+               std::string h5_group_name_2("/legendre_lattice_bubble_compact");
                // Lattice bubble, new flavor order
                boost::multi_array<std::complex<double>, 5> lattice_values_compact;
                lattice_values_compact.resize(boost::extents
@@ -198,7 +195,6 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                               }
                          }
                     }
-                    h5_group_name_2 = "/legendre_lattice_bubble_compact";
                     for (int site_index = 0; site_index < n_sites; site_index++) {
                          std::stringstream site_path;
                          site_path << h5_group_name_2 + "/site_" +
