@@ -177,8 +177,16 @@ int main(int argc, const char* argv[]) {
 			 new DMFTModel(bare_band, self_energy, parms, old_chemical_potential,
                                        compute_bubble, world_rank));
 		    boost::timer::auto_cpu_timer mu_calc;
-		    tie(newton_success, new_chemical_potential, density, new_dn_dmu) =
-			 dmft_model->get_mu_from_density(old_chemical_potential);
+                    // if we are in the self-consistency test, find the new chemical potential
+                    if (computation_type == 0) {
+                         tie(newton_success, new_chemical_potential, density, new_dn_dmu) =
+                              dmft_model->get_mu_from_density(old_chemical_potential);
+                    } else {
+                         // in the bubble computation, keep the chemical potential as is
+                         newton_success = 1;
+                         new_chemical_potential = old_chemical_potential;
+                         tie(density, new_dn_dmu) = dmft_model->get_particle_density(new_chemical_potential, true);
+                    }
 		    if (newton_success == 0) {
 			 tie(bisec_success, new_chemical_potential, density) =
 			      dmft_model->get_mu_from_density_bisec(old_chemical_potential, dn_dmu);
