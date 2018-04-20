@@ -209,6 +209,7 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                          }
                     }
                }
+               
                h5_group_name = "/legendre_local_bubble_compact";
                for (int site_index = 0; site_index < n_sites; site_index++) {
                     std::stringstream site_path;
