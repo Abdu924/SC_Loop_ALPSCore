@@ -427,13 +427,11 @@ void Bubble::get_lattice_legendre_representation() {
      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat(bubble_dim, bubble_dim),
           tmp_mat_leg(n_legendre, n_legendre), tmp_mpi_mat(n_legendre, n_legendre);
      for (int boson_index = 0; boson_index < N_boson; boson_index++) {
-          std::cout << "boson freq " << boson_index << std::endl;               
           boost::timer::auto_cpu_timer lattice_bubble_leg;
           for (int q_index = 0; q_index < nb_q_points_per_proc; q_index++) {
                int world_q_index = q_index + nb_q_points_per_proc * world_rank_;
                if (world_q_index >= nb_q_points)
                     continue;
-               std::cout << "world_q_index " << world_q_index << std::endl;
                for(int orb1 = 0; orb1 < orbital_size; orb1++) {
                     for(int orb2 = 0; orb2 < orbital_size; orb2++) {
                          for(int orb3 = 0; orb3 < orbital_size; orb3++) {
@@ -455,7 +453,7 @@ void Bubble::get_lattice_legendre_representation() {
                     }
                }
           }
-          std::cout << "Time for boson freq " << boson_index << ": " << std::endl;
+          std::cout << "Time for lattice legendre rep, boson freq " << boson_index << ": " << std::endl;
      }
      // MPI_Barrier(MPI_COMM_WORLD);     
      // Gather all results
