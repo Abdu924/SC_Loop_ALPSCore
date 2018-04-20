@@ -35,8 +35,8 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      per_site_orbital_size = sigma_->get_per_site_orbital_size();
      tot_orbital_size = n_sites * per_site_orbital_size;
      std::cout << "Computing bubbles for " << bubble_dim << " fermionic frequencies, "
-               << std::endl << " q mesh based on " << nb_q_points << " points, i.e. "
-               << nb_q_points << " q points, and " 
+               << std::endl << " q mesh based on " << parms["bseq.N_QBSEQ"] << " points on each axis, i.e. "
+               << nb_q_points << " irreducible q points, and " 
                << N_boson << " bosonic frequencies" << std::endl;     
      // n_matsubara is parms[N_MATSUBARA]
      // FIXME check if this is consistent with N_max... 

@@ -184,7 +184,6 @@ void BseqSolver::dump_susceptibility(const alps::params& parms) {
                }
                bseq_output[site_path.str()] << temp_lattice_chi;
           }
-          
           // // q point list
           // h5_group_name = "/lattice_chi/q_point_list";
           // std::vector<std::complex<double>> temp_data;
@@ -230,9 +229,7 @@ void BseqSolver::dump_vertex(const alps::params& parms) {
                }
                bseq_output[site_path.str()] << irr_vertex_array;
           }
-
           Eigen::MatrixXcd flat_bubble_inv = (get_flattened_representation(local_legendre_bubble_)).inverse();
-
           h5_group_name = "/bubble_inv";
           irr_vertex = get_multidim_representation(flat_bubble_inv);
           for (int site_index = 0; site_index < n_sites; site_index++) {
@@ -253,9 +250,7 @@ void BseqSolver::dump_vertex(const alps::params& parms) {
                }
                bseq_output[site_path.str()] << irr_vertex_array;
           }
-
           Eigen::MatrixXcd flat_bubble_inv_2 = (get_flattened_representation(g2_data_)).inverse();
-
           h5_group_name = "/chi_loc_inv";
           local_g2_type irr_vertex_2 = get_multidim_representation(flat_bubble_inv_2);
           for (int site_index = 0; site_index < n_sites; site_index++) {
@@ -275,8 +270,7 @@ void BseqSolver::dump_vertex(const alps::params& parms) {
                     }
                }
                bseq_output[site_path.str()] << irr_vertex_array;
-          }
-          
+          }          
           // Close file
 	  bseq_output.close();
      }
