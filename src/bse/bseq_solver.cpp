@@ -157,7 +157,7 @@ void BseqSolver::dump_susceptibility(const alps::params& parms) {
           cout << "dump lattice_chi" << endl;
           const string archive_name = parms["bseq.inversion.filename"].as<string>();
           alps::hdf5::archive bseq_output(archive_name, "a");
-          std::string h5_group_name("/lattice_chi/");
+          std::string h5_group_name("/lattice_chi");
           boost::multi_array<std::complex<double>, 5> temp_lattice_chi;
           temp_lattice_chi.resize(boost::extents
                                   [world_lattice_chi_.dimensions()[0]]
