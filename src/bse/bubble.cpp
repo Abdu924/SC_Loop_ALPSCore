@@ -53,7 +53,8 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      local_legendre_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                                    [per_site_orbital_size][per_site_orbital_size]
                                    [n_legendre][n_legendre][N_boson]);
-     std::fill(local_legendre_values_.origin(), local_legendre_values_.origin() + local_legendre_values_.num_elements(), 0.0);
+     std::fill(local_legendre_values_.origin(),
+               local_legendre_values_.origin() + local_legendre_values_.num_elements(), 0.0);
      lattice_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                             [per_site_orbital_size][per_site_orbital_size]
                             [bubble_dim][N_boson][nb_q_points]);
@@ -61,7 +62,8 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      lattice_legendre_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                                      [per_site_orbital_size][per_site_orbital_size]
                                      [n_legendre][n_legendre][N_boson][nb_q_points_per_proc]);
-     std::fill(lattice_legendre_values_.origin(), lattice_legendre_values_.origin() + lattice_legendre_values_.num_elements(), 0.0);
+     std::fill(lattice_legendre_values_.origin(),
+               lattice_legendre_values_.origin() + lattice_legendre_values_.num_elements(), 0.0);
      world_lattice_legendre_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                                            [per_site_orbital_size][per_site_orbital_size]
                                            [n_legendre][n_legendre][N_boson][nb_q_points_per_proc * world_size]);
@@ -171,8 +173,10 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                // Lattice bubble, new flavor order
                boost::multi_array<std::complex<double>, 5> lattice_values_compact;
                lattice_values_compact.resize(boost::extents
-                                             [world_lattice_legendre_values_.shape()[0] * world_lattice_legendre_values_.shape()[1]]
-                                             [world_lattice_legendre_values_.shape()[2] * world_lattice_legendre_values_.shape()[3]]
+                                             [world_lattice_legendre_values_.shape()[0] *
+                                              world_lattice_legendre_values_.shape()[1]]
+                                             [world_lattice_legendre_values_.shape()[2] *
+                                              world_lattice_legendre_values_.shape()[3]]
                                              [world_lattice_legendre_values_.shape()[4]] // l1
                                              [world_lattice_legendre_values_.shape()[5]]  // l2
                                              [nb_q_points]);               // q index
