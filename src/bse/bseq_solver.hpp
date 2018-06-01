@@ -70,7 +70,6 @@ private:
      Eigen::MatrixXcd flat_irreducible_vertex;
      boost::shared_ptr<FlavorTransformer> flavor_trans_;
      
-     void dump_for_check();
      void read_local_g2(alps::hdf5::archive &g2_h5_archive);
      void read_local_bubble(alps::hdf5::archive &bubble_h5_archive);
      void read_lattice_bubble(alps::hdf5::archive &bubble_h5_archive);
