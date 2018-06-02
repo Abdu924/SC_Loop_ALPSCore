@@ -142,7 +142,7 @@ int main(int argc, const char* argv[]) {
 	  boost::shared_ptr<Chemicalpotential> chempot(
 	       new Chemicalpotential(parms, from_alps3, world_rank));
 	  // Compute hybridization function
-	  if ((computation_type == 0) || (computation_type == 4)) {
+	  if (computation_type == 0) {
 	       alps::hdf5::archive h5_archive(input_file, "r");
 	       boost::shared_ptr<Bandstructure> bare_band(
 		    new Bandstructure(parms, world_rank, true));
@@ -178,15 +178,8 @@ int main(int argc, const char* argv[]) {
                                        compute_bubble, world_rank));
 		    boost::timer::auto_cpu_timer mu_calc;
                     // if we are in the self-consistency test, find the new chemical potential
-                    if (computation_type == 0) {
-                         tie(newton_success, new_chemical_potential, density, new_dn_dmu) =
-                              dmft_model->get_mu_from_density(old_chemical_potential);
-                    } else {
-                         // in the bubble computation, keep the chemical potential as is
-                         newton_success = 1;
-                         new_chemical_potential = old_chemical_potential;
-                         tie(density, new_dn_dmu) = dmft_model->get_particle_density(new_chemical_potential, true);
-                    }
+                    tie(newton_success, new_chemical_potential, density, new_dn_dmu) =
+                         dmft_model->get_mu_from_density(old_chemical_potential);
 		    if (newton_success == 0) {
 			 tie(bisec_success, new_chemical_potential, density) =
 			      dmft_model->get_mu_from_density_bisec(old_chemical_potential, dn_dmu);
