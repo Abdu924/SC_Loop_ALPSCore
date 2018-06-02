@@ -273,6 +273,7 @@ Eigen::MatrixXcd Bubble::get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd
           tmp_mat_leg(n_legendre, n_legendre);
      tmp_mat_neg = Eigen::MatrixXcd::Zero(bubble_dim, bubble_dim);
      // The negative freq contribution
+     // FIX
      tmp_mat_neg = matsu_data.conjugate();
      tmp_mat_leg = Tnl.adjoint() * (matsu_data * Tnl) +
           Tnl_neg.adjoint() * (tmp_mat_neg * Tnl_neg);
@@ -280,7 +281,7 @@ Eigen::MatrixXcd Bubble::get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd
 }
 
 void Bubble::get_local_legendre_representation() {
-     // NOte: only rank 0 has knowledge of the local bubble!
+     // Note: only rank 0 has knowledge of the local bubble!
      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat(bubble_dim, bubble_dim),
           tmp_mat_leg(n_legendre, n_legendre);
      const	int orbital_size = per_site_orbital_size;
