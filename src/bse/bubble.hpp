@@ -35,8 +35,10 @@ public:
      virtual ~Bubble() {}
 
      boost::multi_array<std::complex<double>, 6> local_values_;
+     boost::multi_array<std::complex<double>, 6> neg_local_values_;
      boost::multi_array<std::complex<double>, 7> local_legendre_values_;
      boost::multi_array<std::complex<double>, 7> lattice_values_;
+     boost::multi_array<std::complex<double>, 7> neg_lattice_values_;
      boost::multi_array<std::complex<double>, 8> lattice_legendre_values_;
      boost::multi_array<std::complex<double>, 8> world_lattice_legendre_values_;
      
@@ -64,5 +66,6 @@ private:
      
      std::vector<Eigen::MatrixXcd> get_greens_function(
 	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);
-     Eigen::MatrixXcd get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd> matsu_data);
+     Eigen::MatrixXcd get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd> matsu_data,
+                                                  Eigen::Ref<Eigen::MatrixXcd> neg_matsu_data);
 };
