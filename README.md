@@ -9,6 +9,8 @@ Install instructions:
 
 Define the environment variable EIGEN3_INCLUDE_DIR containing the forlder where Eigen is to be found.
 
+mkdir build && cd build
+
 cmake ../src
 
 for salomon, and other clusters, in case the MPI compiler doesn't match the C++ compiler:
