@@ -101,6 +101,7 @@ std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::Vect
      return output;
 }
 
+
 void Bubble::dump_bubble_hdf5(const alps::params& parms) {
      if (world_rank_ == 0) {
           int line_idx, col_idx;
