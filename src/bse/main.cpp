@@ -103,6 +103,7 @@ int main(int argc, const char* argv[]) {
 	       new Chemicalpotential(parms, from_alps3, world_rank));
 	  // Compute bubbles
 	  if (computation_type == 0) {
+               std::cout << "A0" << std::endl;
                alps::hdf5::archive h5_archive(input_file, "r");
                boost::shared_ptr<Bandstructure> bare_band(
                     new Bandstructure(parms, world_rank, true));
@@ -129,6 +130,7 @@ int main(int argc, const char* argv[]) {
                }
                MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
                MPI_Bcast(&chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+               std::cout << "A1" << std::endl;
                boost::shared_ptr<Bubble> local_bubble(
                     new Bubble(h5_archive, bare_band, self_energy, parms,
                                     chemical_potential, world_rank));
