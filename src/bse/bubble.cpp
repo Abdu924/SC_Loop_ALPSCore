@@ -49,11 +49,15 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      local_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                           [per_site_orbital_size][per_site_orbital_size]
                           [bubble_dim][N_boson]);
+     std::cout << "B" << std::endl;
      neg_local_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                           [per_site_orbital_size][per_site_orbital_size]
                           [bubble_dim][N_boson]);
+     std::cout << "C" << std::endl;
      std::fill(local_values_.origin(), local_values_.origin() + local_values_.num_elements(), 0.0);
+     std::cout << "D" << std::endl;
      std::fill(neg_local_values_.origin(), neg_local_values_.origin() + neg_local_values_.num_elements(), 0.0);
+     std::cout << "E" << std::endl;
      local_legendre_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                                    [per_site_orbital_size][per_site_orbital_size]
                                    [n_legendre][n_legendre][N_boson]);
@@ -63,10 +67,13 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                             [per_site_orbital_size][per_site_orbital_size]
                             [bubble_dim][N_boson][nb_q_points]);
      std::fill(lattice_values_.origin(), lattice_values_.origin() + lattice_values_.num_elements(), 0.0);
+     std::cout << "F" << std::endl;
      neg_lattice_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                             [per_site_orbital_size][per_site_orbital_size]
                             [bubble_dim][N_boson][nb_q_points]);
+     std::cout << "G" << std::endl;
      std::fill(neg_lattice_values_.origin(), neg_lattice_values_.origin() + neg_lattice_values_.num_elements(), 0.0);
+     std::cout << "H" << std::endl;
      lattice_legendre_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                                      [per_site_orbital_size][per_site_orbital_size]
                                      [n_legendre][n_legendre][N_boson][nb_q_points_per_proc]);
