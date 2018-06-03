@@ -77,7 +77,6 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                                            [n_legendre][n_legendre][N_boson][nb_q_points_per_proc * world_size]);
      std::fill(world_lattice_legendre_values_.origin(),
                world_lattice_legendre_values_.origin() + world_lattice_legendre_values_.num_elements(), 0.0);
-     std::cout << " constructor OK" << std::endl;
 }
 
 std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point,
@@ -312,6 +311,7 @@ void Bubble::compute_local_bubble() {
 		    }  // site_index
 	       } // freq_index
 	  } // boson
+          std::cout << "before get_local_legendre_representation" << std::endl;
           get_local_legendre_representation();
           std::cout << "local bubble time : " << std::endl;
      } // world_rank_

@@ -132,9 +132,11 @@ int main(int argc, const char* argv[]) {
                boost::shared_ptr<Bubble> local_bubble(
                     new Bubble(h5_archive, bare_band, self_energy, parms,
                                     chemical_potential, world_rank));
-
+               std::cout << "A" << std::endl;
                h5_archive.close();
+               std::cout << "B" << std::endl;
                local_bubble->compute_local_bubble();
+               std::cout << "C" << std::endl;
                local_bubble->compute_lattice_bubble();
                local_bubble->dump_bubble_hdf5(parms);
 	  } else if (computation_type == 1) {
