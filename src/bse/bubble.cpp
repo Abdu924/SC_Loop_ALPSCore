@@ -77,6 +77,7 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                                            [n_legendre][n_legendre][N_boson][nb_q_points_per_proc * world_size]);
      std::fill(world_lattice_legendre_values_.origin(),
                world_lattice_legendre_values_.origin() + world_lattice_legendre_values_.num_elements(), 0.0);
+     std::cout << " constructor OK" << std::endl;
 }
 
 std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point,
