@@ -140,6 +140,41 @@ void Bubble::dump_bubble_hdf5(const alps::params& parms) {
                          bubble_output[site_path.str()] << lattice_values_compact;
                     }
                }
+               h5_group_name = "/neg_lattice_bubble_compact";
+               // Lattice bubble, new flavor order
+               boost::multi_array<std::complex<double>, 4> neg_lattice_values_compact;
+               neg_lattice_values_compact.resize(boost::extents
+                                             [neg_lattice_values_.shape()[0] * neg_lattice_values_.shape()[1]]
+                                             [neg_lattice_values_.shape()[2] * neg_lattice_values_.shape()[3]]
+                                             [neg_lattice_values_.shape()[4]] // fermionic matsu, diagonal
+                                             [neg_lattice_values_.shape()[6]]);  // q index
+               for (int nb = 0; nb < neg_lattice_values_.shape()[5]; nb++) {
+                    std::fill(neg_lattice_values_compact.origin(),
+                              neg_lattice_values_compact.origin() + neg_lattice_values_compact.num_elements(), 0.0);
+                    for (int orb1 = 0; orb1 < neg_lattice_values_.shape()[0]; orb1++) {
+                         for (int orb2 = 0; orb2 < neg_lattice_values_.shape()[1]; orb2++) {
+                              for (int orb3 = 0; orb3 < neg_lattice_values_.shape()[2]; orb3++) {
+                                   for (int orb4 = 0; orb4 < neg_lattice_values_.shape()[3]; orb4++) {
+                                        line_idx = flavor_trans_->get_bubble_line_from_pair(orb1, orb2);
+                                        col_idx = flavor_trans_->get_bubble_col_from_pair(orb3, orb4);
+                                        for (int nf = 0; nf < neg_lattice_values_.shape()[4]; nf++) {
+                                             for (int nq = 0; nq < neg_lattice_values_.shape()[6]; nq++) {
+                                                  neg_lattice_values_compact[line_idx][col_idx][nf][nq] =
+                                                       neg_lattice_values_[orb1][orb2][orb3][orb4][nf][nb][nq];
+                                             }
+                                        }
+                                   }
+                              }
+                         }
+                    }
+                    for (int site_index = 0; site_index < n_sites; site_index++) {
+                         std::stringstream site_path;
+                         site_path << h5_group_name + "/site_" +
+                              boost::lexical_cast<std::string>(site_index) + "/bose_" +
+                              boost::lexical_cast<std::string>(nb) + "/data";
+                         bubble_output[site_path.str()] << neg_lattice_values_compact;
+                    }
+               }
           }
           if (dump_legendre == 1) {          
                // Local bubble Legendre
