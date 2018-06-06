@@ -81,15 +81,16 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
 
 std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point,
                                                           int boson_index) {
+     size_t N_max = sigma_->get_n_matsubara_freqs();
      std::vector<Eigen::MatrixXcd> output;
      output.clear();
-     output.resize(bubble_dim);
+     output.resize(N_max);
      Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
-     for (size_t freq_index = 0; freq_index < bubble_dim; freq_index++) {
+     for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
 	  Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
 	       (tot_orbital_size, chemical_potential +
-		sigma_->get_matsubara_frequency(freq_index + boson_index));
-	  Eigen::MatrixXcd self_E = sigma_->values_[freq_index + boson_index];
+		sigma_->get_matsubara_frequency(freq_index));
+	  Eigen::MatrixXcd self_E = sigma_->values_[freq_index];
 	  inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
 	  inverse_gf.diagonal() += mu_plus_iomega;
 	  output[freq_index] = inverse_gf.inverse();
@@ -406,7 +407,7 @@ void Bubble::compute_lattice_bubble() {
 		    continue;
 	       } else {
 		    Eigen::VectorXd k_point = lattice_bs_->get_k_point(k_index);
-		    gf_k = get_greens_function(k_point, 0);
+		    gf_k = get_greens_function(k_point, boson_index);
 		    for(int q_index = 0; q_index < nb_q_points; q_index++) {
 			 Eigen::VectorXd k_plus_q_point = lattice_bs_->get_k_plus_q_point(k_index, q_index);
 			 gf_kq = get_greens_function(k_plus_q_point, boson_index);
