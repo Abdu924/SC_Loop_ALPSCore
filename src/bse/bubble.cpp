@@ -38,9 +38,6 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                << std::endl << " q mesh based on " << parms["bseq.N_QBSEQ"] << " points on each axis, i.e. "
                << nb_q_points << " irreducible q points, and " 
                << N_boson << " bosonic frequencies" << std::endl;     
-     // n_matsubara is parms[N_MATSUBARA]
-     // FIXME check if this is consistent with N_max... 
-     int n_matsubara = parms["N_MATSUBARA"];
      legendre_trans_.reset(new LegendreTransformer(bubble_dim, n_legendre));
      flavor_trans_.reset(new FlavorTransformer());
      raw_full_gf.resize(boost::extents
