@@ -79,8 +79,7 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      MPI_Barrier(MPI_COMM_WORLD);
 }
 
-std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point,
-                                                          int boson_index) {
+std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point) {
      size_t N_max = sigma_->get_n_matsubara_freqs();
      std::vector<Eigen::MatrixXcd> output;
      output.clear();
@@ -407,10 +406,10 @@ void Bubble::compute_lattice_bubble() {
 		    continue;
 	       } else {
 		    Eigen::VectorXd k_point = lattice_bs_->get_k_point(k_index);
-		    gf_k = get_greens_function(k_point, boson_index);
+		    gf_k = get_greens_function(k_point);
 		    for(int q_index = 0; q_index < nb_q_points; q_index++) {
 			 Eigen::VectorXd k_plus_q_point = lattice_bs_->get_k_plus_q_point(k_index, q_index);
-			 gf_kq = get_greens_function(k_plus_q_point, boson_index);
+			 gf_kq = get_greens_function(k_plus_q_point);
 			 for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
 			      for(size_t site_index = 0; site_index < n_sites;
 				  site_index++) {

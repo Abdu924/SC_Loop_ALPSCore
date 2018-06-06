@@ -64,8 +64,7 @@ private:
      boost::shared_ptr<LegendreTransformer> legendre_trans_;
      boost::shared_ptr<FlavorTransformer> flavor_trans_;
      
-     std::vector<Eigen::MatrixXcd> get_greens_function(
-	  Eigen::Ref<Eigen::VectorXd> k_point, int boson_index);
+     std::vector<Eigen::MatrixXcd> get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point);
      Eigen::MatrixXcd get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd> matsu_data,
                                                   Eigen::Ref<Eigen::MatrixXcd> neg_matsu_data);
 };
