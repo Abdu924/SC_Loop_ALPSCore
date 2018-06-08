@@ -73,6 +73,8 @@ protected:
      std::vector<Eigen::MatrixXcd> hoppings_;
      Eigen::VectorXd weights_;
      int orbital_size_;
+     int per_site_orbital_size;
+     int n_space_sites;
      std::vector<Eigen::VectorXd> bare_dos;
      std::vector<Eigen::VectorXd> world_bare_dos;
      // Number of direct space cells linked by finite

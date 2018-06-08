@@ -7,12 +7,14 @@
 using namespace std;
 
 Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool verbose)
-     :world_rank_(world_rank) {
+     :world_rank_(world_rank) {     
      std::vector<Eigen::MatrixXcd> world_dispersion_;
      Eigen::VectorXd world_weights_;
      std::vector<Eigen::VectorXd> world_k_lattice_;
      int N_Qmesh = static_cast<int>(parms["bseq.N_QBSEQ"]);
      double max_qmesh = static_cast<double>(parms["bseq.MAX_QBSEQ"]);
+     n_space_sites = static_cast<int>(parms["model.space_sites"]);
+     per_site_orbital_size = static_cast<int>(parms["N_ORBITALS"]);
      generate_bseq_lattice(N_Qmesh, max_qmesh);
      if (world_rank == 0) {
 	  int n_k_points;
@@ -225,13 +227,27 @@ Eigen::MatrixXcd Bandstructure::get_local_hoppings() {
 }
 
 Eigen::MatrixXcd Bandstructure::get_V_matrix(int direction_index) {
+     // TODO the management of the hoppings needs to be
+     // completely reviewed. THere is no need for an explicit listing
+     // of all values like this. The hopping, and the symmetry should be listed
+     // as they are in the equations in the papers, and that should be enough.
+     // It will allow us to get rig of the below stuff...
      // direction_index: 1 is +x
      // 2 is -x
      // 3 is +y
      // 4 is -y
      Eigen::MatrixXcd m = hoppings_[direction_index];
-     for (int line_idx = 0; line_idx < orbital_size_; line_idx++) {
-	  m(line_idx, line_idx) = 0.5 * m(line_idx, line_idx);
+     if (n_space_sites == 1) {
+          for (int line_idx = 0; line_idx < orbital_size_; line_idx++) {
+               m(line_idx, line_idx) = 0.5 * m(line_idx, line_idx);
+          }
+     } else if (n_space_sites == 2) {
+          for (int line_idx = 0; line_idx < orbital_size_; line_idx++) {
+               m(line_idx, line_idx) = 0.5 * m(line_idx, per_site_orbital_size + line_idx);
+          }
+     } else {
+          cerr << "ERROR: Bandstructure: number of sites is not supported" << endl;
+          throw runtime_error("number of sites is not supported !");
      }
      return m;
 }
@@ -406,8 +422,7 @@ void Bandstructure::init_world_containers(int n_points) {
 
 void Bandstructure::check_flavor_dim_consistency(const alps::params& parms,
 						 int dimension) {
-     int n_sites = parms["model.space_sites"];
-     int n_flavors = static_cast<int>(parms["N_ORBITALS"]) * n_sites;
+     int n_flavors = per_site_orbital_size * n_space_sites;
      if(dimension != n_flavors) {
 	  cerr << "ERROR: Bandstructure: FLAVORS from parameter file "
 	       "differs from the number of bands available in DISPFILE = "

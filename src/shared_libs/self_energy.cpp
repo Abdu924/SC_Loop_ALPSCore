@@ -27,11 +27,12 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
 // The initial version, able to read sigma from txt or hdf5,
 // -- compliant with the output format of the mix procedure.
 Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
-		       alps::hdf5::archive h5_archive, string h5_group_name,
+		       int ref_site_index, alps::hdf5::archive h5_archive, string h5_group_name,
 		       bool verbose)
      :GfBase(parms, world_rank), is_alps3(false), is_analytic_tail(true) {
      basic_init(parms, verbose);
      read_input_sigma(parms, h5_archive, h5_group_name);
+     symmetrize_sites(ref_site_index);
      if (verbose) {
 	  display_asymptotics();
      }
@@ -301,14 +302,18 @@ void Selfenergy::symmetrize_sites(int ref_site_index) {
 						   ref_site_index * per_site_orbital_size,
 						   per_site_orbital_size,
 						   per_site_orbital_size);
-		    qmc_tail[freq_index].block(site_index * per_site_orbital_size,
-					       site_index * per_site_orbital_size,
-					       per_site_orbital_size,
-					       per_site_orbital_size) =
-			 qmc_tail[freq_index].block(ref_site_index * per_site_orbital_size,
-						    ref_site_index * per_site_orbital_size,
-						    per_site_orbital_size,
-						    per_site_orbital_size);
+                    // there is no qmc_tail initialization in case we are just reading
+                    // an existing sigma
+                    if (qmc_tail.size() > 0) {
+                         qmc_tail[freq_index].block(site_index * per_site_orbital_size,
+                                                    site_index * per_site_orbital_size,
+                                                    per_site_orbital_size,
+                                                    per_site_orbital_size) =
+                              qmc_tail[freq_index].block(ref_site_index * per_site_orbital_size,
+                                                         ref_site_index * per_site_orbital_size,
+                                                         per_site_orbital_size,
+                                                         per_site_orbital_size);
+                    }
 	       }
 	  }
      }
@@ -317,7 +322,9 @@ void Selfenergy::symmetrize_sites(int ref_site_index) {
      Sigma_1_ = Sigma_1_.cwiseProduct(site_symmetry_matrix);
      for (int freq_index = 0; freq_index < n_matsubara; freq_index++) {
 	  values_[freq_index] = values_[freq_index].cwiseProduct(site_symmetry_matrix);
-	  qmc_tail[freq_index] = qmc_tail[freq_index].cwiseProduct(site_symmetry_matrix);
+          if (qmc_tail.size() > 0) {                              
+               qmc_tail[freq_index] = qmc_tail[freq_index].cwiseProduct(site_symmetry_matrix);
+          }
      }
 }
 

@@ -318,7 +318,10 @@ void GfBase::get_target_c2(int ref_site_index) {
 						   per_site_orbital_size,
 						   per_site_orbital_size);
      target_c2 -= U_matrix.transpose().cwiseProduct(ab_matrix);
-     target_c2 += bath_m1;
+     target_c2 += bath_m1.block(ref_site_index * per_site_orbital_size,
+						   ref_site_index * per_site_orbital_size,
+						   per_site_orbital_size,
+						   per_site_orbital_size);
      target_c2.diagonal() += U_matrix * density_vector;
 }
 
@@ -333,14 +336,22 @@ void GfBase::get_target_c3(int ref_site_index) {
      //std::cout << "Compute target c3 for GF" << std::endl << std::endl;
      target_c3 = Eigen::MatrixXcd::Zero(per_site_orbital_size, per_site_orbital_size);
      // Get the local hoppings
-     Eigen::MatrixXcd bath_m1 = lattice_bs_->get_local_hoppings();
+     Eigen::MatrixXcd bath_m1 = lattice_bs_->get_local_hoppings().block(ref_site_index * per_site_orbital_size,
+                                                                        ref_site_index * per_site_orbital_size,
+                                                                        per_site_orbital_size,
+                                                                        per_site_orbital_size);;
      // and fix the diagonal elements (chempot includes atomic level energy:
      // it is -epsilon + mu...)
      for(int line_idx = 0; line_idx < per_site_orbital_size; ++line_idx)
 	  bath_m1(line_idx, line_idx) = -(*chempot_)[line_idx];
-     Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix();
+     Eigen::MatrixXcd V_matrix = lattice_bs_->get_V_matrix().block(ref_site_index * per_site_orbital_size,
+                                                                   ref_site_index * per_site_orbital_size,
+                                                                   per_site_orbital_size,
+                                                                   per_site_orbital_size);
      Eigen::MatrixXcd bath_m2 = bath_m1 * bath_m1.adjoint() +
 	  8.0 * (V_matrix * V_matrix.adjoint() + V_matrix.adjoint() * V_matrix);
+     cout << "V_matrix " << endl << V_matrix << endl;
+     cout << "bath_m2 " << endl << bath_m2 << endl;
      target_c3 += bath_m2;
      Eigen::MatrixXcd U_matrix = interaction_matrix.block(ref_site_index * per_site_orbital_size,
 							  ref_site_index * per_site_orbital_size,
@@ -361,9 +372,12 @@ void GfBase::get_target_c3(int ref_site_index) {
      }
      for (int row_index = 0; row_index < per_site_orbital_size; row_index++) {
 	  temp.row(row_index) += density_vector.transpose() * U_matrix;
-     }     
+     }
+     cout << "bath_m1.cwiseProduct(temp) " << endl << bath_m1.cwiseProduct(temp) << endl;
      target_c3 += bath_m1.cwiseProduct(temp);
+     cout << "U_matrix.cwiseProduct(ab_matrix)) " << endl << U_matrix.cwiseProduct(ab_matrix) << endl;
      target_c3 -= (bath_m1 * (U_matrix.cwiseProduct(ab_matrix)).transpose());
+     cout << "bath_m1 " << endl << bath_m1 << endl;
      target_c3 -= (bath_m1.transpose() * ((U_matrix.transpose()).cwiseProduct(ab_matrix))).transpose();
      Eigen::MatrixXcd factor_3 =
 	  -U_matrix.cwiseProduct((ab_matrix.transpose()).cwiseProduct(temp));

@@ -155,8 +155,9 @@ int main(int argc, const char* argv[]) {
 			 std::cout << "Using Matsubara for SC LOOP " << std::endl << std::endl;
 		    }
 	       }
+               int ref_site_index = 0;
 	       boost::shared_ptr<Selfenergy> self_energy(
-		    new Selfenergy(parms, world_rank, h5_archive, h5_group_name, true));
+		    new Selfenergy(parms, world_rank, ref_site_index, h5_archive, h5_group_name, true));
 	       h5_archive.close();
 	       {
 		    boost::timer::auto_cpu_timer all_loop;
@@ -245,7 +246,7 @@ int main(int argc, const char* argv[]) {
 		    string old_h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
 			 Selfenergy::legendre_self_energy_name : Selfenergy::matsubara_self_energy_name;
 		    boost::shared_ptr<Selfenergy>
-			 old_self_energy(new Selfenergy(parms, world_rank, h5_archive,
+			 old_self_energy(new Selfenergy(parms, world_rank, ref_site_index, h5_archive,
 							old_h5_group_name, verbose));
 		    boost::shared_ptr<Selfenergy> qmc_self_energy;
 		    boost::shared_ptr<Selfenergy> legendre_qmc_self_energy;

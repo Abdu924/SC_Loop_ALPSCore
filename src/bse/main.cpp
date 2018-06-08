@@ -117,8 +117,9 @@ int main(int argc, const char* argv[]) {
 	       }
 	       // TODO: self-energy for non interacting case, RPA. Below, constructor for sigma=0
                // boost::shared_ptr<Selfenergy> self_energy(new Selfenergy(parms, world_rank, true));
+               int ref_site_index = 0;
                boost::shared_ptr<Selfenergy> self_energy(
-		    new Selfenergy(parms, world_rank, h5_archive, h5_group_name, true));
+		    new Selfenergy(parms, world_rank, ref_site_index, h5_archive, h5_group_name, true));
                if (world_rank == 0) {
                     //FIXME TODO
                     // HERE Horrible bug fix in order to align crystal
