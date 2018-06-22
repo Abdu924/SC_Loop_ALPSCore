@@ -107,8 +107,11 @@ void define_parameters(alps::params &parameters) {
 	  .define<int >("measurement.G1.n_tau", 1800, "number of pts for G(tau).")
 	  .define<std::string>("measurement.nn_corr.def",
 			       "definition of density-density correlation functions.")
-	  .define<int >("bseq.N_QBSEQ", 1, "number of q points for lattice bubble calculation")
-	  .define<double >("bseq.MAX_QBSEQ", 0.5, "max value of q coord for lattice bubble calculation")
+	  .define<int >("bseq.N_QBSEQ", 11, "number of q points on one side of the square, for lattice bubble calculation")
+	  .define<double >("bseq.MAX_QBSEQ", 0.5, "length of the side of the square, where the q points are defined")
+          .define<double >("bseq.MIN_XBSEQ", 0., "min value of x axis q coord for lattice bubble calculation")
+          .define<double >("bseq.MIN_YBSEQ", 0., "min value of y axis q coord for lattice bubble calculation")
+          .define<int >("bseq.AXIS", 0., "min value of q coord for lattice bubble calculation")
 	  .define<int >("bseq.N_NU_BSEQ", 0, "number of fermionic frequencies for bubble calculation")
           .define<int >("bseq.bubbles.dump_matsubara", 0, "save Matsubara bubbles to hdf5")
           .define<int >("bseq.bubbles.dump_legendre", 0, "save Legendre bubbles to hdf5")

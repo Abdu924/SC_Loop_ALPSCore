@@ -12,10 +12,12 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      Eigen::VectorXd world_weights_;
      std::vector<Eigen::VectorXd> world_k_lattice_;
      int N_Qmesh = static_cast<int>(parms["bseq.N_QBSEQ"]);
-     double max_qmesh = static_cast<double>(parms["bseq.MAX_QBSEQ"]);
+     double len_qmesh = static_cast<double>(parms["bseq.MAX_QBSEQ"]);
+     double min_xq_mesh = static_cast<double>(parms["bseq.MIN_XBSEQ"]);
+     double min_yq_mesh = static_cast<double>(parms["bseq.MIN_YBSEQ"]);     
      n_space_sites = static_cast<int>(parms["model.space_sites"]);
      per_site_orbital_size = static_cast<int>(parms["N_ORBITALS"]);
-     generate_bseq_lattice(N_Qmesh, max_qmesh);
+     generate_bseq_lattice(N_Qmesh, min_xq_mesh, min_yq_mesh, len_qmesh);
      if (world_rank == 0) {
 	  int n_k_points;
 	  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -144,12 +146,13 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 	       MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 }
 
-void Bandstructure::generate_bseq_lattice(int n_q_mesh, double max_q_mesh) {
+
+void Bandstructure::generate_bseq_lattice(int n_q_mesh, double min_xq_mesh, double min_yq_mesh, double len_q_mesh) {
      secondary_q_lattice_.clear();
      for (int k1 = 0; k1 < n_q_mesh; ++k1) {
-	  for (int k2 = 0; k2 <= k1; ++k2) {	       
-	       double kx(max_q_mesh * double(k1) / (n_q_mesh - 1));
-	       double ky(max_q_mesh * double(k2) / (n_q_mesh - 1));
+	  for (int k2 = 0; k2 <= k1; ++k2) {
+	       double kx(min_xq_mesh + len_q_mesh * double(k1) / (n_q_mesh - 1));
+	       double ky(min_yq_mesh + len_q_mesh * double(k2) / (n_q_mesh - 1));
 	       double kz(0.0);
 	       secondary_q_lattice_.push_back(
 		    (Eigen::VectorXd(3) << kx, ky, kz).finished());
