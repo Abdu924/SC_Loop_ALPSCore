@@ -14,10 +14,11 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      int N_Qmesh = static_cast<int>(parms["bseq.N_QBSEQ"]);
      double len_qmesh = static_cast<double>(parms["bseq.MAX_QBSEQ"]);
      double min_xq_mesh = static_cast<double>(parms["bseq.MIN_XBSEQ"]);
-     double min_yq_mesh = static_cast<double>(parms["bseq.MIN_YBSEQ"]);     
+     double min_yq_mesh = static_cast<double>(parms["bseq.MIN_YBSEQ"]);
+     int irr_direction = static_cast<int>(parms["bseq.IRR_DIRECTION"]);
      n_space_sites = static_cast<int>(parms["model.space_sites"]);
      per_site_orbital_size = static_cast<int>(parms["N_ORBITALS"]);
-     generate_bseq_lattice(N_Qmesh, min_xq_mesh, min_yq_mesh, len_qmesh);
+     generate_bseq_lattice(N_Qmesh, min_xq_mesh, min_yq_mesh, len_qmesh, irr_direction);
      if (world_rank == 0) {
 	  int n_k_points;
 	  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -147,16 +148,29 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 }
 
 
-void Bandstructure::generate_bseq_lattice(int n_q_mesh, double min_xq_mesh, double min_yq_mesh, double len_q_mesh) {
+void Bandstructure::generate_bseq_lattice(int n_q_mesh, double min_xq_mesh, double min_yq_mesh,
+                                          double len_q_mesh, int irr_direction) {
      secondary_q_lattice_.clear();
-     for (int k1 = 0; k1 < n_q_mesh; ++k1) {
-	  for (int k2 = 0; k2 <= k1; ++k2) {
-	       double kx(min_xq_mesh + len_q_mesh * double(k1) / (n_q_mesh - 1));
-	       double ky(min_yq_mesh + len_q_mesh * double(k2) / (n_q_mesh - 1));
-	       double kz(0.0);
-	       secondary_q_lattice_.push_back(
-		    (Eigen::VectorXd(3) << kx, ky, kz).finished());
-	  }
+     if (irr_direction == 0) {
+          for (int k1 = 0; k1 < n_q_mesh; ++k1) {
+               for (int k2 = 0; k2 <= k1; ++k2) {
+                    double kx(min_xq_mesh + len_q_mesh * double(k1) / (n_q_mesh - 1));
+                    double ky(min_yq_mesh + len_q_mesh * double(k2) / (n_q_mesh - 1));
+                    double kz(0.0);
+                    secondary_q_lattice_.push_back(
+                         (Eigen::VectorXd(3) << kx, ky, kz).finished());
+               }
+          }
+     } else {
+          for (int k2 = 0; k2 < n_q_mesh; ++k2) {
+               for (int k1 = 0; k1 <= k2; ++k1) {
+                    double kx(min_xq_mesh + len_q_mesh * double(k1) / (n_q_mesh - 1));
+                    double ky(min_yq_mesh + len_q_mesh * double(k2) / (n_q_mesh - 1));
+                    double kz(0.0);
+                    secondary_q_lattice_.push_back(
+                         (Eigen::VectorXd(3) << kx, ky, kz).finished());
+               }
+          }          
      }
 }
 

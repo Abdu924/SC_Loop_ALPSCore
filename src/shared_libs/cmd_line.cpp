@@ -111,6 +111,7 @@ void define_parameters(alps::params &parameters) {
 	  .define<double >("bseq.MAX_QBSEQ", 0.5, "length of the side of the square, where the q points are defined")
           .define<double >("bseq.MIN_XBSEQ", 0., "min value of x axis q coord for lattice bubble calculation")
           .define<double >("bseq.MIN_YBSEQ", 0., "min value of y axis q coord for lattice bubble calculation")
+          .define<int >("bseq.IRR_DIRECTION", 0., "direction of the irreducible wedge: 0 is x, 1 is y")
           .define<int >("bseq.AXIS", 0., "min value of q coord for lattice bubble calculation")
 	  .define<int >("bseq.N_NU_BSEQ", 0, "number of fermionic frequencies for bubble calculation")
           .define<int >("bseq.bubbles.dump_matsubara", 0, "save Matsubara bubbles to hdf5")

@@ -61,7 +61,8 @@ protected:
 						   Eigen::Ref<Eigen::VectorXd> weights,
 						   bool verbose=false);
      int read_nb_k_points(const alps::params& parms, bool verbose=false);
-     void generate_bseq_lattice(int n_q_mesh, double min_xq_mesh, double min_yq_mesh, double len_q_mesh);
+     void generate_bseq_lattice(int n_q_mesh, double min_xq_mesh, double min_yq_mesh,
+                                double len_q_mesh, int irr_direction);
      // The average of the dispersion over the k lattice.
      Eigen::MatrixXcd epsilon_bar;
      Eigen::MatrixXcd epsilon_squared_bar;
