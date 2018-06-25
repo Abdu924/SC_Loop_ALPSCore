@@ -146,7 +146,6 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 	       MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 }
 
-
 void Bandstructure::generate_bseq_lattice(int n_q_mesh, double min_xq_mesh, double min_yq_mesh, double len_q_mesh) {
      secondary_q_lattice_.clear();
      for (int k1 = 0; k1 < n_q_mesh; ++k1) {

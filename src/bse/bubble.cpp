@@ -4,12 +4,12 @@ using namespace std;
 typedef boost::multi_array_types::index_range range;
 
 Bubble::Bubble(alps::hdf5::archive &h5_archive,
-                         boost::shared_ptr<Bandstructure> const &lattice_bs,
-                         boost::shared_ptr<Selfenergy> const &sigma,
-                         const alps::params& parms, complex<double> chemical_potential,
-                         int world_rank)
+               boost::shared_ptr<Bandstructure> const &lattice_bs,
+               boost::shared_ptr<Selfenergy> const &sigma,
+               const alps::params& parms, complex<double> chemical_potential,
+               int world_rank, bool is_rpa)
      :lattice_bs_(lattice_bs), sigma_(sigma), chemical_potential(chemical_potential),
-      world_rank_(world_rank) {
+      world_rank_(world_rank), is_rpa(is_rpa) {
      int N_max = sigma_->get_n_matsubara_freqs();
      nb_q_points = lattice_bs_->get_nb_points_for_bseq();
      if (world_rank == 0) {
@@ -27,6 +27,7 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      dump_matsubara = parms["bseq.bubbles.dump_matsubara"];
      dump_legendre = parms["bseq.bubbles.dump_legendre"];
      bubble_dim = parms.exists("bseq.N_NU_BSEQ") ? parms["bseq.N_NU_BSEQ"] : N_max - N_boson;
+     assert (bubble_dim + N_boson <= N_max);
      n_sites = sigma_->get_n_sites();
      if (n_sites > 1) {
           cout << "More than 1 site - not supported . " << endl;
@@ -42,7 +43,10 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      flavor_trans_.reset(new FlavorTransformer());
      raw_full_gf.resize(boost::extents
                         [per_site_orbital_size][per_site_orbital_size][N_max]);
-     h5_archive["/legendre_gf/data"] >> raw_full_gf;
+     if (is_rpa) {
+     } else {
+          h5_archive["/legendre_gf/data"] >> raw_full_gf;
+     }
      local_values_.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
                           [per_site_orbital_size][per_site_orbital_size]
                           [bubble_dim][N_boson]);
