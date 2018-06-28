@@ -84,31 +84,54 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
 }
 
 std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point,
-                                                          int boson_index, bool real_freq) {
+                                                          int boson_index, bool real_freq, bool negative_freq) {
      size_t N_max = sigma_->get_n_matsubara_freqs();
      std::vector<Eigen::MatrixXcd> output;
      output.clear();
      output.resize(N_max);
-     Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
-     for (size_t freq_index = 0; freq_index < N_max - boson_index; freq_index++) {
-	  Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
-	       (tot_orbital_size, chemical_potential +
-		sigma_->get_matsubara_frequency(freq_index + boson_index));
-	  Eigen::MatrixXcd self_E = sigma_->values_[freq_index + boson_index];
-	  inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
-	  inverse_gf.diagonal() += mu_plus_iomega;
-	  output[freq_index] = inverse_gf.inverse();
-     }
-     // These values should never be used, but we just initialize them for safety
-     for (size_t freq_index = N_max -boson_index; freq_index < N_max; freq_index++) {
-	  Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
-	       (tot_orbital_size, chemical_potential +
-		sigma_->get_matsubara_frequency(freq_index));
-	  Eigen::MatrixXcd self_E = sigma_->values_[freq_index];
-	  inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
-	  inverse_gf.diagonal() += mu_plus_iomega;
-	  output[freq_index] = inverse_gf.inverse();
-     }
+     if (negative_freq == false) {
+          Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
+          for (size_t freq_index = 0; freq_index < N_max - boson_index; freq_index++) {
+               Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
+                    (tot_orbital_size, chemical_potential +
+                     sigma_->get_matsubara_frequency(freq_index + boson_index));
+               Eigen::MatrixXcd self_E = sigma_->values_[freq_index + boson_index];
+               inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
+               inverse_gf.diagonal() += mu_plus_iomega;
+               output[freq_index] = inverse_gf.inverse();
+          }
+          // These values should never be used, but we just initialize them for safety
+          for (size_t freq_index = N_max -boson_index; freq_index < N_max; freq_index++) {
+               Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
+                    (tot_orbital_size, chemical_potential +
+                     sigma_->get_matsubara_frequency(freq_index));
+               Eigen::MatrixXcd self_E = sigma_->values_[freq_index];
+               inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
+               inverse_gf.diagonal() += mu_plus_iomega;
+               output[freq_index] = inverse_gf.inverse();
+          }
+     } else {
+          Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
+          for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+               Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
+                    (tot_orbital_size, chemical_potential +
+                     sigma_->get_matsubara_frequency(freq_index + boson_index));
+               Eigen::MatrixXcd self_E = sigma_->values_[freq_index + boson_index];
+               inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
+               inverse_gf.diagonal() += mu_plus_iomega;
+               output[freq_index] = inverse_gf.inverse();
+          }
+          // These values should never be used, but we just initialize them for safety
+          for (size_t freq_index = N_max -boson_index; freq_index < N_max; freq_index++) {
+               Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
+                    (tot_orbital_size, chemical_potential +
+                     sigma_->get_matsubara_frequency(freq_index));
+               Eigen::MatrixXcd self_E = sigma_->values_[freq_index];
+               inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
+               inverse_gf.diagonal() += mu_plus_iomega;
+               output[freq_index] = inverse_gf.inverse();
+          }
+     }          
      return output;
 }
 
@@ -391,7 +414,7 @@ void Bubble::compute_lattice_bubble() {
      int new_j(0);
      std::vector<std::vector<Eigen::MatrixXcd> > partial_sum;
      std::vector<std::vector<Eigen::MatrixXcd> > neg_partial_sum;
-     std::vector<Eigen::MatrixXcd> gf_kq, gf_k;
+     std::vector<Eigen::MatrixXcd> neg_gf_kq, gf_kq, gf_k;
      int block_size = per_site_orbital_size * per_site_orbital_size;
      for (int boson_index = 0; boson_index < N_boson; boson_index++) {
 	  boost::timer::auto_cpu_timer boson_calc; 
@@ -422,6 +445,7 @@ void Bubble::compute_lattice_bubble() {
 		    for(int q_index = 0; q_index < nb_q_points; q_index++) {
 			 Eigen::VectorXd k_plus_q_point = lattice_bs_->get_k_plus_q_point(k_index, q_index);
 			 gf_kq = get_greens_function(k_plus_q_point, boson_index, is_rpa);
+			 neg_gf_kq = get_greens_function(k_plus_q_point, boson_index, is_rpa, true);                         
 			 for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
 			      for(size_t site_index = 0; site_index < n_sites;
 				  site_index++) {
