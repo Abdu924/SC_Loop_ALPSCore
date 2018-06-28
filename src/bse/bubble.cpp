@@ -300,9 +300,9 @@ void Bubble::compute_local_bubble() {
                                                   (-freq_index + boson_index > 0) ?
                                                   // transpose conjugate for neg freq
 						  std::conj(raw_full_gf[part_index_2][part_index_1][freq_index])
-                                                  * raw_full_gf[hole_index_1][hole_index_2][freq_index + boson_index]
+                                                  * raw_full_gf[hole_index_1][hole_index_2][-freq_index + boson_index]
                                                   : std::conj(raw_full_gf[part_index_2][part_index_1][freq_index])
-                                                  * std::conj(raw_full_gf[hole_index_2][hole_index_1][freq_index + boson_index]);
+                                                  * std::conj(raw_full_gf[hole_index_2][hole_index_1][freq_index - boson_index]);
 					} // hole_index_1
 				   }  // part_index_2
 			      }  // hole_index_2
