@@ -83,13 +83,24 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
      MPI_Barrier(MPI_COMM_WORLD);
 }
 
-std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point) {
+std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point,
+                                                          int boson_index, bool real_freq) {
      size_t N_max = sigma_->get_n_matsubara_freqs();
      std::vector<Eigen::MatrixXcd> output;
      output.clear();
      output.resize(N_max);
      Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
-     for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+     for (size_t freq_index = 0; freq_index < N_max - boson_index; freq_index++) {
+	  Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
+	       (tot_orbital_size, chemical_potential +
+		sigma_->get_matsubara_frequency(freq_index + boson_index));
+	  Eigen::MatrixXcd self_E = sigma_->values_[freq_index + boson_index];
+	  inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
+	  inverse_gf.diagonal() += mu_plus_iomega;
+	  output[freq_index] = inverse_gf.inverse();
+     }
+     // These values should never be used, but we just initialize them for safety
+     for (size_t freq_index = N_max -boson_index; freq_index < N_max; freq_index++) {
 	  Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
 	       (tot_orbital_size, chemical_potential +
 		sigma_->get_matsubara_frequency(freq_index));
@@ -380,8 +391,6 @@ void Bubble::compute_lattice_bubble() {
      int new_j(0);
      std::vector<std::vector<Eigen::MatrixXcd> > partial_sum;
      std::vector<std::vector<Eigen::MatrixXcd> > neg_partial_sum;
-     lattice_bubble.clear();
-     lattice_bubble.resize(N_boson);
      std::vector<Eigen::MatrixXcd> gf_kq, gf_k;
      int block_size = per_site_orbital_size * per_site_orbital_size;
      for (int boson_index = 0; boson_index < N_boson; boson_index++) {
@@ -400,7 +409,6 @@ void Bubble::compute_lattice_bubble() {
 						n_sites * per_site_orbital_size * per_site_orbital_size));                    
 	       }
 	  }
-	  lattice_bubble[boson_index].resize(nb_q_points);
 	  for (int k_index = k_min; k_index < k_max; k_index++) {
 	       double l_weight = lattice_bs_->get_weight(k_index);
 	       if (abs(l_weight) < 1e-6) {
@@ -413,7 +421,7 @@ void Bubble::compute_lattice_bubble() {
 		    gf_k = get_greens_function(k_point);
 		    for(int q_index = 0; q_index < nb_q_points; q_index++) {
 			 Eigen::VectorXd k_plus_q_point = lattice_bs_->get_k_plus_q_point(k_index, q_index);
-			 gf_kq = get_greens_function(k_plus_q_point);
+			 gf_kq = get_greens_function(k_plus_q_point, boson_index, is_rpa);
 			 for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
 			      for(size_t site_index = 0; site_index < n_sites;
 				  site_index++) {
@@ -442,20 +450,21 @@ void Bubble::compute_lattice_bubble() {
 								 block_index, block_index,
 								 block_size, block_size)(
 								      part_index_1, part_index_2) *
-							    gf_kq[freq_index + boson_index].block(
+							    gf_kq[freq_index].block(
 								 block_index, block_index,
 								 block_size, block_size)(
 								      hole_index_1, hole_index_2);
 						       neg_partial_sum[q_index][freq_index].block(
 							    block_index, block_index,
 							    block_size, block_size)(new_i, new_j) +=
-                                                            (freq_index + boson_index > 0) ?
+                                                            (-freq_index + boson_index > 0) ?
 							    l_weight *
+                                                            // FFFIIIIIXXXXMMMMEEE for rpa
 							    gf_k[freq_index].adjoint().block(
 								 block_index, block_index,
 								 block_size, block_size)(
 								      part_index_1, part_index_2) *
-							    gf_kq[freq_index + boson_index].block(
+							    gf_kq[freq_index].block(
 								 block_index, block_index,
 								 block_size, block_size)(
 								      hole_index_1, hole_index_2)
@@ -608,3 +617,5 @@ void Bubble::get_lattice_legendre_representation() {
           }
      }
 }
+
+const double Bubble::infinitesimal_delta = 0.0001;

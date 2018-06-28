@@ -1,5 +1,5 @@
-#ifndef TAIL_MANAGER__
-#define TAIL_MANAGER__
+#pragma once
+
 #include <Eigen/Dense>
 #include <vector>
 #include <tuple>
@@ -43,5 +43,3 @@ private:
      Eigen::VectorXcd matsubara_frequencies_;
      static const double fermi_cutoff;     
 };
-
-#endif //TAIL_MANAGER__
