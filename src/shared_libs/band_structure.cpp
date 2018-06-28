@@ -14,10 +14,11 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      int N_Qmesh = static_cast<int>(parms["bseq.N_QBSEQ"]);
      double len_qmesh = static_cast<double>(parms["bseq.MAX_QBSEQ"]);
      double min_xq_mesh = static_cast<double>(parms["bseq.MIN_XBSEQ"]);
-     double min_yq_mesh = static_cast<double>(parms["bseq.MIN_YBSEQ"]);     
+     double min_yq_mesh = static_cast<double>(parms["bseq.MIN_YBSEQ"]);
+     int irr_direction = static_cast<int>(parms["bseq.IRR_DIRECTION"]);
      n_space_sites = static_cast<int>(parms["model.space_sites"]);
      per_site_orbital_size = static_cast<int>(parms["N_ORBITALS"]);
-     generate_bseq_lattice(N_Qmesh, min_xq_mesh, min_yq_mesh, len_qmesh);
+     generate_bseq_lattice(N_Qmesh, min_xq_mesh, min_yq_mesh, len_qmesh, irr_direction);
      if (world_rank == 0) {
 	  int n_k_points;
 	  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -145,6 +146,7 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
      MPI_Bcast(epsilon_squared_bar.data(), epsilon_squared_bar.size(),
 	       MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 }
+
 
 void Bandstructure::generate_bseq_lattice(int n_q_mesh, double min_xq_mesh, double min_yq_mesh, double len_q_mesh) {
      secondary_q_lattice_.clear();
