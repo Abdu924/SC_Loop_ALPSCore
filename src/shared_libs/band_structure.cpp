@@ -148,16 +148,29 @@ Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool ver
 }
 
 
-void Bandstructure::generate_bseq_lattice(int n_q_mesh, double min_xq_mesh, double min_yq_mesh, double len_q_mesh) {
+void Bandstructure::generate_bseq_lattice(int n_q_mesh, double min_xq_mesh, double min_yq_mesh,
+                                          double len_q_mesh, int irr_direction) {
      secondary_q_lattice_.clear();
-     for (int k1 = 0; k1 < n_q_mesh; ++k1) {
-	  for (int k2 = 0; k2 <= k1; ++k2) {
-	       double kx(min_xq_mesh + len_q_mesh * double(k1) / (n_q_mesh - 1));
-	       double ky(min_yq_mesh + len_q_mesh * double(k2) / (n_q_mesh - 1));
-	       double kz(0.0);
-	       secondary_q_lattice_.push_back(
-		    (Eigen::VectorXd(3) << kx, ky, kz).finished());
-	  }
+     if (irr_direction == 0) {
+          for (int k1 = 0; k1 < n_q_mesh; ++k1) {
+               for (int k2 = 0; k2 <= k1; ++k2) {
+                    double kx(min_xq_mesh + len_q_mesh * double(k1) / (n_q_mesh - 1));
+                    double ky(min_yq_mesh + len_q_mesh * double(k2) / (n_q_mesh - 1));
+                    double kz(0.0);
+                    secondary_q_lattice_.push_back(
+                         (Eigen::VectorXd(3) << kx, ky, kz).finished());
+               }
+          }
+     } else {
+          for (int k2 = 0; k2 < n_q_mesh; ++k2) {
+               for (int k1 = 0; k1 <= k2; ++k1) {
+                    double kx(min_xq_mesh + len_q_mesh * double(k1) / (n_q_mesh - 1));
+                    double ky(min_yq_mesh + len_q_mesh * double(k2) / (n_q_mesh - 1));
+                    double kz(0.0);
+                    secondary_q_lattice_.push_back(
+                         (Eigen::VectorXd(3) << kx, ky, kz).finished());
+               }
+          }          
      }
 }
 
