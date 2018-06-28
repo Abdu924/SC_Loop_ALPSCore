@@ -297,7 +297,7 @@ void Bubble::compute_local_bubble() {
                                                   * raw_full_gf[hole_index_1][hole_index_2][freq_index + boson_index];
 					     neg_local_values_[part_index_1][hole_index_2]
                                                   [part_index_2][hole_index_1][freq_index][boson_index] =
-                                                  (freq_index + boson_index > 0) ?
+                                                  (-freq_index + boson_index > 0) ?
                                                   // transpose conjugate for neg freq
 						  std::conj(raw_full_gf[part_index_2][part_index_1][freq_index])
                                                   * raw_full_gf[hole_index_1][hole_index_2][freq_index + boson_index]
@@ -445,13 +445,13 @@ void Bubble::compute_lattice_bubble() {
 						       neg_partial_sum[q_index][freq_index].block(
 							    block_index, block_index,
 							    block_size, block_size)(new_i, new_j) +=
-                                                            (freq_index + boson_index > 0) ?
+                                                            (-freq_index + boson_index > 0) ?
 							    l_weight *
 							    gf_k[freq_index].adjoint().block(
 								 block_index, block_index,
 								 block_size, block_size)(
 								      part_index_1, part_index_2) *
-							    gf_kq[freq_index + boson_index].block(
+							    gf_kq[-freq_index + boson_index].block(
 								 block_index, block_index,
 								 block_size, block_size)(
 								      hole_index_1, hole_index_2)
@@ -460,7 +460,7 @@ void Bubble::compute_lattice_bubble() {
 								 block_index, block_index,
 								 block_size, block_size)(
 								      part_index_1, part_index_2) *
-							    gf_kq[freq_index + boson_index].adjoint().block(
+							    gf_kq[freq_index - boson_index].adjoint().block(
 								 block_index, block_index,
 								 block_size, block_size)(
 								      hole_index_1, hole_index_2);
