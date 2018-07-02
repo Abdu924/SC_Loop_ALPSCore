@@ -101,7 +101,7 @@ std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::Vect
                output[freq_index] = inverse_gf.inverse();
           }
           // These values should never be used, but we just initialize them for safety
-          for (size_t freq_index = N_max -boson_index; freq_index < N_max; freq_index++) {
+          for (size_t freq_index = N_max - boson_index; freq_index < N_max; freq_index++) {
                Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
                     (tot_orbital_size, chemical_potential +
                      sigma_->get_matsubara_frequency(freq_index));
@@ -112,21 +112,21 @@ std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::Vect
           }
      } else {
           Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
-          for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+          for (size_t freq_index = 0; freq_index < boson_index; freq_index++) {
                Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
                     (tot_orbital_size, chemical_potential +
-                     sigma_->get_matsubara_frequency(freq_index + boson_index));
-               Eigen::MatrixXcd self_E = sigma_->values_[freq_index + boson_index];
+                     sigma_->get_matsubara_frequency(-freq_index + boson_index));
+               Eigen::MatrixXcd self_E = sigma_->values_[-freq_index + boson_index];
                inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
                inverse_gf.diagonal() += mu_plus_iomega;
                output[freq_index] = inverse_gf.inverse();
           }
           // These values should never be used, but we just initialize them for safety
-          for (size_t freq_index = N_max -boson_index; freq_index < N_max; freq_index++) {
+          for (size_t freq_index = boson_index; freq_index < N_max; freq_index++) {
                Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
                     (tot_orbital_size, chemical_potential +
-                     sigma_->get_matsubara_frequency(freq_index));
-               Eigen::MatrixXcd self_E = sigma_->values_[freq_index];
+                     std::conj(sigma_->get_matsubara_frequency(freq_index - boson_index)));
+               Eigen::MatrixXcd self_E = sigma_->values_[freq_index - boson_index].conjugate();
                inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
                inverse_gf.diagonal() += mu_plus_iomega;
                output[freq_index] = inverse_gf.inverse();
@@ -445,7 +445,7 @@ void Bubble::compute_lattice_bubble() {
 		    for(int q_index = 0; q_index < nb_q_points; q_index++) {
 			 Eigen::VectorXd k_plus_q_point = lattice_bs_->get_k_plus_q_point(k_index, q_index);
 			 gf_kq = get_greens_function(k_plus_q_point, boson_index, is_rpa);
-			 neg_gf_kq = get_greens_function(k_plus_q_point, boson_index, is_rpa, true);                         
+			 neg_gf_kq = get_greens_function(k_plus_q_point, boson_index, is_rpa, true);
 			 for (int freq_index = 0; freq_index < bubble_dim; freq_index++) {
 			      for(size_t site_index = 0; site_index < n_sites;
 				  site_index++) {
@@ -481,23 +481,12 @@ void Bubble::compute_lattice_bubble() {
 						       neg_partial_sum[q_index][freq_index].block(
 							    block_index, block_index,
 							    block_size, block_size)(new_i, new_j) +=
-                                                            (-freq_index + boson_index > 0) ?
 							    l_weight *
-                                                            // FFFIIIIIXXXXMMMMEEE for rpa
 							    gf_k[freq_index].adjoint().block(
 								 block_index, block_index,
 								 block_size, block_size)(
 								      part_index_1, part_index_2) *
-							    gf_kq[freq_index].block(
-								 block_index, block_index,
-								 block_size, block_size)(
-								      hole_index_1, hole_index_2)
-                                                            : l_weight *
-							    gf_k[freq_index].adjoint().block(
-								 block_index, block_index,
-								 block_size, block_size)(
-								      part_index_1, part_index_2) *
-							    gf_kq[freq_index + boson_index].adjoint().block(
+							    neg_gf_kq[freq_index].block(
 								 block_index, block_index,
 								 block_size, block_size)(
 								      hole_index_1, hole_index_2);
