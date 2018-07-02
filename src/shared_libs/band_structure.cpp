@@ -161,7 +161,7 @@ void Bandstructure::generate_bseq_lattice(int n_q_mesh, double min_xq_mesh, doub
                          (Eigen::VectorXd(3) << kx, ky, kz).finished());
                }
           }
-     } else {
+     } else if (irr_direction == 1) {
           for (int k2 = 0; k2 < n_q_mesh; ++k2) {
                for (int k1 = 0; k1 <= k2; ++k1) {
                     double kx(min_xq_mesh + len_q_mesh * double(k1) / (n_q_mesh - 1));
@@ -171,7 +171,30 @@ void Bandstructure::generate_bseq_lattice(int n_q_mesh, double min_xq_mesh, doub
                          (Eigen::VectorXd(3) << kx, ky, kz).finished());
                }
           }          
+     } else if (irr_direction == 2) {
+          for (int k2 = 0; k2 < n_q_mesh; ++k2) {
+               double kx(0.0);
+               double ky(min_yq_mesh + len_q_mesh * double(k2) / (n_q_mesh - 1));
+               double kz(0.0);
+               secondary_q_lattice_.push_back(
+                    (Eigen::VectorXd(3) << kx, ky, kz).finished());
+          }
+          for (int k1 = 1; k1 < n_q_mesh; ++k1) {
+               double kx(min_xq_mesh + len_q_mesh * double(k1) / (n_q_mesh - 1));
+               double ky(0.5);
+               double kz(0.0);
+               secondary_q_lattice_.push_back(
+                    (Eigen::VectorXd(3) << kx, ky, kz).finished());
+          }          
+          for (int k1 = 1; k1 < n_q_mesh - 1; ++k1) {
+               double kx(min_xq_mesh + len_q_mesh * double(k1) / (n_q_mesh - 1));
+               double ky(min_xq_mesh + len_q_mesh * double(k1) / (n_q_mesh - 1));
+               double kz(0.0);
+               secondary_q_lattice_.push_back(
+                    (Eigen::VectorXd(3) << kx, ky, kz).finished());
+          }          
      }
+
 }
 
 std::vector<Eigen::MatrixXcd> Bandstructure::generate_band_from_hoppings(
