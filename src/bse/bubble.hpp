@@ -70,5 +70,5 @@ private:
      Eigen::MatrixXcd get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd> matsu_data,
                                                   Eigen::Ref<Eigen::MatrixXcd> neg_matsu_data);
 
-     static const double infinitesimal_delta;
+     static const std::complex<double> infinitesimal_delta;
 };

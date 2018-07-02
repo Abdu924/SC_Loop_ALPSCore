@@ -92,9 +92,11 @@ std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::Vect
      if (negative_freq == false) {
           Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
           for (size_t freq_index = 0; freq_index < N_max - boson_index; freq_index++) {
+               std::complex<double> matsu_freq = sigma_->get_matsubara_frequency(freq_index + boson_index);
+               if (real_freq == true)
+                    matsu_freq = std::imag(matsu_freq) +  infinitesimal_delta;
                Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
-                    (tot_orbital_size, chemical_potential +
-                     sigma_->get_matsubara_frequency(freq_index + boson_index));
+                    (tot_orbital_size, chemical_potential + matsu_freq);
                Eigen::MatrixXcd self_E = sigma_->values_[freq_index + boson_index];
                inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
                inverse_gf.diagonal() += mu_plus_iomega;
@@ -102,9 +104,11 @@ std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::Vect
           }
           // These values should never be used, but we just initialize them for safety
           for (size_t freq_index = N_max - boson_index; freq_index < N_max; freq_index++) {
+               std::complex<double> matsu_freq = sigma_->get_matsubara_frequency(freq_index);
+               if (real_freq == true)
+                    matsu_freq = std::imag(matsu_freq) +  infinitesimal_delta;
                Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
-                    (tot_orbital_size, chemical_potential +
-                     sigma_->get_matsubara_frequency(freq_index));
+                    (tot_orbital_size, chemical_potential + matsu_freq);
                Eigen::MatrixXcd self_E = sigma_->values_[freq_index];
                inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
                inverse_gf.diagonal() += mu_plus_iomega;
@@ -113,9 +117,11 @@ std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::Vect
      } else {
           Eigen::MatrixXcd inverse_gf(tot_orbital_size, tot_orbital_size);
           for (size_t freq_index = 0; freq_index < boson_index; freq_index++) {
+               std::complex<double> matsu_freq = sigma_->get_matsubara_frequency(-freq_index + boson_index);
+               if (real_freq == true)
+                    matsu_freq = std::imag(matsu_freq) +  infinitesimal_delta;
                Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
-                    (tot_orbital_size, chemical_potential +
-                     sigma_->get_matsubara_frequency(-freq_index + boson_index));
+                    (tot_orbital_size, chemical_potential + matsu_freq);
                Eigen::MatrixXcd self_E = sigma_->values_[-freq_index + boson_index];
                inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
                inverse_gf.diagonal() += mu_plus_iomega;
@@ -123,9 +129,12 @@ std::vector<Eigen::MatrixXcd> Bubble::get_greens_function(Eigen::Ref<Eigen::Vect
           }
           // These values should never be used, but we just initialize them for safety
           for (size_t freq_index = boson_index; freq_index < N_max; freq_index++) {
+               std::complex<double> matsu_freq = std::conj(sigma_->get_matsubara_frequency(freq_index - boson_index));
+               if (real_freq == true)
+                    matsu_freq = std::imag(matsu_freq) +  infinitesimal_delta;
+               // FIX ME - ARE WE SURE ABOUT THE SIGN OF THE INFINITESIMAL HERE ABOVE??
                Eigen::VectorXcd mu_plus_iomega = Eigen::VectorXcd::Constant
-                    (tot_orbital_size, chemical_potential +
-                     std::conj(sigma_->get_matsubara_frequency(freq_index - boson_index)));
+                    (tot_orbital_size, chemical_potential + matsu_freq);
                Eigen::MatrixXcd self_E = sigma_->values_[freq_index - boson_index].conjugate();
                inverse_gf = -lattice_bs_->get_k_basis_matrix(k_point) - self_E;
                inverse_gf.diagonal() += mu_plus_iomega;
@@ -631,4 +640,4 @@ void Bubble::get_lattice_legendre_representation() {
      }
 }
 
-const double Bubble::infinitesimal_delta = 0.0001;
+const std::complex<double> Bubble::infinitesimal_delta(0., 0.0001);
