@@ -41,8 +41,8 @@ public:
      BseqSolver(alps::hdf5::archive &g2_h5_archive,
                 alps::hdf5::archive &bubble_h5_archive,
                 boost::shared_ptr<Bandstructure> const &lattice_bs,
-                int current_bose_freq,
-                const alps::params& parms, int world_rank);
+                int current_bose_freq, const alps::params& parms,
+                int world_rank, int sampling_type);
      virtual ~BseqSolver() {}
 
      void dump_susceptibility(const alps::params& parms);
@@ -52,7 +52,7 @@ public:
 private:
      int world_rank_;
      int world_size;
-     
+     int sampling_type;
      int nb_q_points;
      int nb_q_points_per_proc;
      int current_bose_freq;

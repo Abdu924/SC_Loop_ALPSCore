@@ -4,10 +4,10 @@ using namespace std;
 typedef boost::multi_array_types::index_range range;
 
 Bubble::Bubble(alps::hdf5::archive &h5_archive,
-                         boost::shared_ptr<Bandstructure> const &lattice_bs,
-                         boost::shared_ptr<Selfenergy> const &sigma,
-                         const alps::params& parms, complex<double> chemical_potential,
-                         int world_rank)
+               boost::shared_ptr<Bandstructure> const &lattice_bs,
+               boost::shared_ptr<Selfenergy> const &sigma,
+               const alps::params& parms, complex<double> chemical_potential,
+               int world_rank)
      :lattice_bs_(lattice_bs), sigma_(sigma), chemical_potential(chemical_potential),
       world_rank_(world_rank) {
      int N_max = sigma_->get_n_matsubara_freqs();

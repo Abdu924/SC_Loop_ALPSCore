@@ -6,9 +6,9 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
                        alps::hdf5::archive &bubble_h5_archive,
                        boost::shared_ptr<Bandstructure> const &lattice_bs,
                        int in_current_bose_freq,
-                       const alps::params& parms, int world_rank)
+                       const alps::params& parms, int world_rank, int sampling_type)
      : lattice_bs_(lattice_bs), current_bose_freq(in_current_bose_freq),
-       world_rank_(world_rank)
+       world_rank_(world_rank), sampling_type(sampling_type)
 {
      nb_q_points = lattice_bs_->get_nb_points_for_bseq();
      per_site_orbital_size = lattice_bs_->get_orbital_size();
@@ -326,33 +326,56 @@ local_g2_type BseqSolver::get_multidim_representation(const Eigen::Ref<Eigen::Ma
 // The matrix format is given in Boehnke's PhD thesis.
 void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
      boost::multi_array<double, 8>  real_temp_g2_data;
-     // real_temp_g2_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size]
-     //                          [per_site_orbital_size][per_site_orbital_size]
-     //                          [n_legendre][n_legendre][N_boson][2]);
-     g2_h5_archive["G2_LEGENDRE"] >> real_temp_g2_data;
-     g2_data_ = local_g2_type(per_site_orbital_size * per_site_orbital_size,
-                              per_site_orbital_size * per_site_orbital_size,
-                              n_legendre, n_legendre);
-     g2_data_.setZero();
-     int line_idx, col_idx;
-     for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
-          for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
-               for (int orb3 = 0; orb3 < per_site_orbital_size; orb3++) {
-                    for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
-                         for (int l1 = 0; l1 < n_legendre; l1++) {
-                              for (int l2 = 0; l2 < n_legendre; l2++) {
-                                   line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
-                                   col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
-                                   g2_data_(line_idx, col_idx, l1, l2) =
-                                        -std::complex<double>(
-                                             real_temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq][0],
-                                             real_temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq][1])
-                                        / beta;
+     boost::multi_array<std::complex<double>, 7>  cplx_temp_g2_data;
+     if (sampling_type == 0) {
+          g2_h5_archive["G2_LEGENDRE"] >> real_temp_g2_data;     
+          g2_data_ = local_g2_type(per_site_orbital_size * per_site_orbital_size,
+                                   per_site_orbital_size * per_site_orbital_size,
+                                   n_legendre, n_legendre);
+          g2_data_.setZero();
+          int line_idx, col_idx;
+          for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+               for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+                    for (int orb3 = 0; orb3 < per_site_orbital_size; orb3++) {
+                         for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
+                              for (int l1 = 0; l1 < n_legendre; l1++) {
+                                   for (int l2 = 0; l2 < n_legendre; l2++) {
+                                        line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
+                                        col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
+                                        g2_data_(line_idx, col_idx, l1, l2) =
+                                             -std::complex<double>(
+                                                  real_temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq][0],
+                                                  real_temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq][1])
+                                             / beta;
+                                   }
                               }
                          }
                     }
                }
           }
+     } else {
+          g2_h5_archive["G2_LEGENDRE"] >> cplx_temp_g2_data;     
+          g2_data_ = local_g2_type(per_site_orbital_size * per_site_orbital_size,
+                                   per_site_orbital_size * per_site_orbital_size,
+                                   n_legendre, n_legendre);
+          g2_data_.setZero();
+          int line_idx, col_idx;
+          for (int orb1 = 0; orb1 < per_site_orbital_size; orb1++) {
+               for (int orb2 = 0; orb2 < per_site_orbital_size; orb2++) {
+                    for (int orb3 = 0; orb3 < per_site_orbital_size; orb3++) {
+                         for (int orb4 = 0; orb4 < per_site_orbital_size; orb4++) {
+                              for (int l1 = 0; l1 < n_legendre; l1++) {
+                                   for (int l2 = 0; l2 < n_legendre; l2++) {
+                                        line_idx = flavor_trans_->get_line_from_pair(orb1, orb2);
+                                        col_idx = flavor_trans_->get_col_from_pair(orb3, orb4);
+                                        g2_data_(line_idx, col_idx, l1, l2) =
+                                             -cplx_temp_g2_data[orb1][orb2][orb3][orb4][l1][l2][current_bose_freq] / beta;
+                                   }
+                              }
+                         }
+                    }
+               }
+          }          
      }
 }
 
