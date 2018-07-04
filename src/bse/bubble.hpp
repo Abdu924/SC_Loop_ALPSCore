@@ -26,7 +26,7 @@ public:
             boost::shared_ptr<Bandstructure> const &lattice_bs,
             boost::shared_ptr<Selfenergy> const &sigma,
             const alps::params& parms, complex<double> chemical_potential,
-            int world_rank);
+            int world_rank, int sampling_type);
      void dump_bubble_hdf5(const alps::params& parms);
      void compute_local_bubble();
      void get_local_legendre_representation();
@@ -45,6 +45,7 @@ public:
 private:
      int world_rank_;
      int world_size;
+     int sampling_type;     
      boost::shared_ptr<Bandstructure> lattice_bs_;
      boost::shared_ptr<Selfenergy> sigma_;
      std::complex<double> chemical_potential;
@@ -67,4 +68,7 @@ private:
      std::vector<Eigen::MatrixXcd> get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point);
      Eigen::MatrixXcd get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd> matsu_data,
                                                   Eigen::Ref<Eigen::MatrixXcd> neg_matsu_data);
+     Eigen::MatrixXcd get_shifted_legendre_representation(Eigen::Ref<Eigen::MatrixXcd> matsu_data,
+                                                          Eigen::Ref<Eigen::MatrixXcd> neg_matsu_data,
+                                                          int boson_index);
 };

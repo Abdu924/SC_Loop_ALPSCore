@@ -48,22 +48,22 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           {
                boost::timer::auto_cpu_timer bubble_calc;
                flat_irreducible_vertex = flat_g2.inverse() - flat_bubble.inverse();
-               for (int i = 0; i < 4; i++) {
-                    for (int j = 0; j < 4; j++) {
-                         Eigen::array<int, 4> offsets = {4 * i, 4 * j, 0, 0};
-                         Eigen::array<int, 4> extents = {4, 4, n_legendre, n_legendre};
-                         local_g2_type slice = g2_data_.slice(offsets, extents);
-                         Eigen::MatrixXcd flat_slice = get_flattened_representation(slice);
-                    }
-               }
-               for (int i = 0; i < 2; i++) {
-                    for (int j = 0; j < 2; j++) {
-                         Eigen::array<int, 4> offsets = {8 * i, 8 * j, 0, 0};
-                         Eigen::array<int, 4> extents = {8, 8, n_legendre, n_legendre};
-                         local_g2_type slice = g2_data_.slice(offsets, extents);
-                         Eigen::MatrixXcd flat_slice = get_flattened_representation(slice);
-                    }
-               }
+               // for (int i = 0; i < 4; i++) {
+               //      for (int j = 0; j < 4; j++) {
+               //           Eigen::array<int, 4> offsets = {4 * i, 4 * j, 0, 0};
+               //           Eigen::array<int, 4> extents = {4, 4, n_legendre, n_legendre};
+               //           local_g2_type slice = g2_data_.slice(offsets, extents);
+               //           Eigen::MatrixXcd flat_slice = get_flattened_representation(slice);
+               //      }
+               // }
+               // for (int i = 0; i < 2; i++) {
+               //      for (int j = 0; j < 2; j++) {
+               //           Eigen::array<int, 4> offsets = {8 * i, 8 * j, 0, 0};
+               //           Eigen::array<int, 4> extents = {8, 8, n_legendre, n_legendre};
+               //           local_g2_type slice = g2_data_.slice(offsets, extents);
+               //           Eigen::MatrixXcd flat_slice = get_flattened_representation(slice);
+               //      }
+               // }
                cout << "Get irreducible vertex (inversion): ";
           }
      } else {

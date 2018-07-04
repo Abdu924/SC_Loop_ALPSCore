@@ -17,6 +17,7 @@
 class LegendreTransformer {
 public:
      LegendreTransformer(int n_matsubara, int n_legendre);
+     LegendreTransformer(int n_matsubara, int n_legendre, int boson_index);
 
 private:
      const int n_matsubara_, n_legendre_;

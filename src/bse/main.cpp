@@ -102,6 +102,7 @@ int main(int argc, const char* argv[]) {
 	  boost::shared_ptr<Chemicalpotential> chempot(
 	       new Chemicalpotential(parms, from_alps3, world_rank));
 	  // Compute bubbles
+          int sampling_type = from_alps3 ? 0 : 1;               
 	  if (computation_type == 0) {
                alps::hdf5::archive h5_archive(input_file, "r");
                boost::shared_ptr<Bandstructure> bare_band(
@@ -132,14 +133,13 @@ int main(int argc, const char* argv[]) {
                MPI_Bcast(&chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
                boost::shared_ptr<Bubble> local_bubble(
                     new Bubble(h5_archive, bare_band, self_energy, parms,
-                               chemical_potential, world_rank));
+                               chemical_potential, world_rank, sampling_type));
                h5_archive.close();
                local_bubble->compute_local_bubble();
                local_bubble->compute_lattice_bubble();
                local_bubble->dump_bubble_hdf5(parms);
 	  } else if (computation_type == 1) {
                // Solve BSEQ
-               int sampling_type = from_alps3 ? 0 : 1;
                boost::shared_ptr<Bandstructure> bare_band(new Bandstructure(parms, world_rank, true));
                alps::hdf5::archive g2_archive(input_file, "r");
                const string bubble_file = parms["bseq.bubbles.filename"].as<string>();

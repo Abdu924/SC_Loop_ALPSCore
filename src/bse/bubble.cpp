@@ -7,9 +7,9 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                boost::shared_ptr<Bandstructure> const &lattice_bs,
                boost::shared_ptr<Selfenergy> const &sigma,
                const alps::params& parms, complex<double> chemical_potential,
-               int world_rank)
+               int world_rank, int sampling_type)
      :lattice_bs_(lattice_bs), sigma_(sigma), chemical_potential(chemical_potential),
-      world_rank_(world_rank) {
+      world_rank_(world_rank), sampling_type(sampling_type) {
      int N_max = sigma_->get_n_matsubara_freqs();
      nb_q_points = lattice_bs_->get_nb_points_for_bseq();
      if (world_rank == 0) {
@@ -327,6 +327,19 @@ Eigen::MatrixXcd Bubble::get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd
      return tmp_mat_leg;
 }
 
+Eigen::MatrixXcd Bubble::get_shifted_legendre_representation(Eigen::Ref<Eigen::MatrixXcd> matsu_data,
+                                                             Eigen::Ref<Eigen::MatrixXcd> neg_matsu_data,
+                                                             int boson_index) {
+     boost::shared_ptr<LegendreTransformer> shifted_legendre_trans_;
+     shifted_legendre_trans_.reset(new LegendreTransformer(bubble_dim, n_legendre, boson_index));
+     const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl(shifted_legendre_trans_->Tnl());
+     const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl_neg(shifted_legendre_trans_->Tnl_neg());
+     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat_leg(n_legendre, n_legendre);
+     tmp_mat_leg = Tnl.adjoint() * (matsu_data * Tnl) + Tnl_neg.adjoint() * (neg_matsu_data * Tnl_neg);
+     return tmp_mat_leg;
+}
+
+
 void Bubble::get_local_legendre_representation() {
      // Note: only rank 0 has knowledge of the local bubble!
      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>
@@ -346,7 +359,10 @@ void Bubble::get_local_legendre_representation() {
                                         tmp_mat(n1, n1) = local_values_[orb1][orb2][orb3][orb4][n1][boson_index];
                                         neg_tmp_mat(n1, n1) = neg_local_values_[orb1][orb2][orb3][orb4][n1][boson_index];
                                    }
-                                   tmp_mat_leg = get_legendre_representation(tmp_mat, neg_tmp_mat);
+                                   if (sampling_type == 0)
+                                        tmp_mat_leg = get_legendre_representation(tmp_mat, neg_tmp_mat);
+                                   else
+                                        tmp_mat_leg = get_shifted_legendre_representation(tmp_mat, neg_tmp_mat, boson_index);
                                    for (int l1 = 0; l1 < n_legendre; l1++) {
                                         for (int l2 = 0; l2 < n_legendre; l2++) {
                                              local_legendre_values_[orb1][orb2][orb3][orb4][l1][l2][boson_index] =
@@ -541,7 +557,10 @@ void Bubble::get_lattice_legendre_representation() {
                                         neg_tmp_mat(n1, n1) = neg_lattice_values_[orb1][orb2][orb3][orb4]
                                              [n1][boson_index][world_q_index];
                                    }
-                                   tmp_mat_leg = get_legendre_representation(tmp_mat, neg_tmp_mat);
+                                   if (sampling_type == 0)
+                                        tmp_mat_leg = get_legendre_representation(tmp_mat, neg_tmp_mat);
+                                   else
+                                        tmp_mat_leg = get_shifted_legendre_representation(tmp_mat, neg_tmp_mat, boson_index);
                                    for (int l1 = 0; l1 < n_legendre; l1++) {
                                         for (int l2 = 0; l2 < n_legendre; l2++) {
                                              lattice_legendre_values_[orb1][orb2][orb3][orb4]
