@@ -34,8 +34,17 @@ LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre, int bo
           for (int il = 0; il < n_legendre_; ++il) {
                Tnl_(im, il) = sign_tmp * ztmp * std::sqrt(2 * il + 1.0) *
                     boost::math::sph_bessel(il, 0.5 * (2 * im + boson_index + 1) * M_PI);
-               neg_tmp = -2 * im + boson_index + 1 < 0 ? std::pow(-1.0, il) : 1.0;
-               Tnl_neg_(im, il) = neg_tmp * Tnl_(im, il);
+               if (-2 * im + boson_index + 1 < 0) {
+                    neg_tmp = std::pow(-1.0, il);
+                    Tnl_neg_(im, il) = neg_tmp * std::pow(std::complex<double>(0.0, 1.0), -2 * im + boson_index + 1 + il)
+                         * std::sqrt(2 * il + 1.0) *
+                         boost::math::sph_bessel(il, 0.5 * (2 * im - boson_index - 1) * M_PI);
+               } else {
+                    neg_tmp = 1.0;
+                    Tnl_neg_(im, il) = neg_tmp * std::pow(std::complex<double>(0.0, 1.0), -2 * im + boson_index + 1 + il)
+                         * std::sqrt(2 * il + 1.0) *
+                         boost::math::sph_bessel(il, 0.5 * (-2 * im + boson_index + 1) * M_PI);
+               }
                ztmp *= std::complex<double>(0.0, 1.0);
           }
           sign_tmp *= -1;
