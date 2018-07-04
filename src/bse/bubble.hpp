@@ -63,6 +63,7 @@ private:
      boost::multi_array<complex<double> , 3> raw_full_gf;
      vector<vector<vector<Eigen::MatrixXcd> > > lattice_bubble;
      boost::shared_ptr<LegendreTransformer> legendre_trans_;
+     std::vector<boost::shared_ptr<LegendreTransformer> > shifted_legendre_trans_;
      boost::shared_ptr<FlavorTransformer> flavor_trans_;
      
      std::vector<Eigen::MatrixXcd> get_greens_function(Eigen::Ref<Eigen::VectorXd> k_point);

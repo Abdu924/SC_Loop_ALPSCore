@@ -39,6 +39,10 @@ Bubble::Bubble(alps::hdf5::archive &h5_archive,
                << nb_q_points << " irreducible q points, and " 
                << N_boson << " bosonic frequencies" << std::endl;     
      legendre_trans_.reset(new LegendreTransformer(bubble_dim, n_legendre));
+     shifted_legendre_trans_.resize(N_boson);
+     for (int boson_index = 0; boson_index < N_boson; boson_index++) {
+          shifted_legendre_trans_[boson_index].reset(new LegendreTransformer(bubble_dim, n_legendre, boson_index));
+     }
      flavor_trans_.reset(new FlavorTransformer());
      raw_full_gf.resize(boost::extents
                         [per_site_orbital_size][per_site_orbital_size][N_max]);
@@ -322,18 +326,17 @@ Eigen::MatrixXcd Bubble::get_legendre_representation(Eigen::Ref<Eigen::MatrixXcd
      const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl(legendre_trans_->Tnl());
      const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl_neg(legendre_trans_->Tnl_neg());
      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat_leg(n_legendre, n_legendre);
-     tmp_mat_leg = Tnl.adjoint() * (matsu_data * Tnl) +
-          Tnl_neg.adjoint() * (neg_matsu_data * Tnl_neg);
+     tmp_mat_leg = Tnl.adjoint() * (matsu_data * Tnl) + Tnl_neg.adjoint() * (neg_matsu_data * Tnl_neg);
      return tmp_mat_leg;
 }
 
 Eigen::MatrixXcd Bubble::get_shifted_legendre_representation(Eigen::Ref<Eigen::MatrixXcd> matsu_data,
                                                              Eigen::Ref<Eigen::MatrixXcd> neg_matsu_data,
                                                              int boson_index) {
-     boost::shared_ptr<LegendreTransformer> shifted_legendre_trans_;
-     shifted_legendre_trans_.reset(new LegendreTransformer(bubble_dim, n_legendre, boson_index));
-     const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl(shifted_legendre_trans_->Tnl());
-     const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl_neg(shifted_legendre_trans_->Tnl_neg());
+     const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl(
+          shifted_legendre_trans_[boson_index]->Tnl());
+     const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> &Tnl_neg(
+          shifted_legendre_trans_[boson_index]->Tnl_neg());
      Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> tmp_mat_leg(n_legendre, n_legendre);
      tmp_mat_leg = Tnl.adjoint() * (matsu_data * Tnl) + Tnl_neg.adjoint() * (neg_matsu_data * Tnl_neg);
      return tmp_mat_leg;
