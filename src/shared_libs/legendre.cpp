@@ -30,19 +30,29 @@ LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre, int bo
      double neg_tmp = 1.0;
      for (int im = 0; im < n_matsubara_; ++im) {
           for (int il = 0; il < n_legendre_; ++il) {
-               Tnl_(im, il) = std::pow(std::complex<double>(0.0, 1.0), 2 * im + boson_index + 1 + il)
-                         * std::sqrt(2 * il + 1.0) *
-                         boost::math::sph_bessel(il, 0.5 * (2 * im + boson_index + 1) * M_PI);
-               if (-2 * im + boson_index + 1 < 0) {
-                    neg_tmp = std::pow(-1.0, il);
-                    Tnl_neg_(im, il) = neg_tmp * std::pow(std::complex<double>(0.0, 1.0), -2 * im + boson_index + 1 + il)
-                         * std::sqrt(2 * il + 1.0) *
-                         boost::math::sph_bessel(il, 0.5 * (2 * im - boson_index - 1) * M_PI);
-               } else {
-                    Tnl_neg_(im, il) = std::pow(std::complex<double>(0.0, 1.0), -2 * im + boson_index + 1 + il)
-                         * std::sqrt(2 * il + 1.0) *
-                         boost::math::sph_bessel(il, 0.5 * (-2 * im + boson_index + 1) * M_PI);
-               }
+               int power_index = std::abs(2 * im + boson_index + 1);
+               Tnl_(im, il) = std::pow(std::complex<double>(0.0, 1.0), power_index + il)
+                    * std::sqrt(2 * il + 1.0) *
+                    boost::math::sph_bessel(il, 0.5 * power_index * M_PI);
+               int neg_power_index = std::abs(-2 * im + boson_index + 1);
+               Tnl_neg_(im, il) = std::pow(std::complex<double>(0.0, 1.0), neg_power_index + il)
+                    * std::sqrt(2 * il + 1.0) *
+                    boost::math::sph_bessel(il, 0.5 * neg_power_index * M_PI);
+               if ((-2 * im + boson_index + 1) < 0)
+                    Tnl_neg_(im, il) = std::conj(Tnl_neg_(im, il));
+               // Tnl_(im, il) = std::pow(std::complex<double>(0.0, 1.0), 2 * im + boson_index + 1 + il)
+               //           * std::sqrt(2 * il + 1.0) *
+               //           boost::math::sph_bessel(il, 0.5 * (2 * im + boson_index + 1) * M_PI);
+               // if (-2 * im + boson_index + 1 < 0) {
+               //      neg_tmp = std::pow(-1.0, il);
+               //      Tnl_neg_(im, il) = neg_tmp * std::pow(std::complex<double>(0.0, 1.0), -2 * im + boson_index + 1 + il)
+               //           * std::sqrt(2 * il + 1.0) *
+               //           boost::math::sph_bessel(il, 0.5 * (2 * im - boson_index - 1) * M_PI);
+               // } else {
+               //      Tnl_neg_(im, il) = std::pow(std::complex<double>(0.0, 1.0), -2 * im + boson_index + 1 + il)
+               //           * std::sqrt(2 * il + 1.0) *
+               //           boost::math::sph_bessel(il, 0.5 * (-2 * im + boson_index + 1) * M_PI);
+               // }
           }
      }
      sqrt_2l_1.resize(n_legendre);
