@@ -27,27 +27,23 @@ LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre):
 LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre, int boson_index):
      n_matsubara_(n_matsubara), n_legendre_(n_legendre),
      Tnl_(n_matsubara, n_legendre), Tnl_neg_(n_matsubara, n_legendre), inv_l_(n_legendre) {
-     std::complex<double> sign_tmp = std::pow(std::complex<double>(0.0, 1.0), boson_index);
      double neg_tmp = 1.0;
      for (int im = 0; im < n_matsubara_; ++im) {
-          std::complex<double> ztmp(0.0, 1.0);
           for (int il = 0; il < n_legendre_; ++il) {
-               Tnl_(im, il) = sign_tmp * ztmp * std::sqrt(2 * il + 1.0) *
-                    boost::math::sph_bessel(il, 0.5 * (2 * im + boson_index + 1) * M_PI);
+               Tnl_(im, il) = std::pow(std::complex<double>(0.0, 1.0), 2 * im + boson_index + 1 + il)
+                         * std::sqrt(2 * il + 1.0) *
+                         boost::math::sph_bessel(il, 0.5 * (2 * im + boson_index + 1) * M_PI);
                if (-2 * im + boson_index + 1 < 0) {
                     neg_tmp = std::pow(-1.0, il);
                     Tnl_neg_(im, il) = neg_tmp * std::pow(std::complex<double>(0.0, 1.0), -2 * im + boson_index + 1 + il)
                          * std::sqrt(2 * il + 1.0) *
                          boost::math::sph_bessel(il, 0.5 * (2 * im - boson_index - 1) * M_PI);
                } else {
-                    neg_tmp = 1.0;
-                    Tnl_neg_(im, il) = neg_tmp * std::pow(std::complex<double>(0.0, 1.0), -2 * im + boson_index + 1 + il)
+                    Tnl_neg_(im, il) = std::pow(std::complex<double>(0.0, 1.0), -2 * im + boson_index + 1 + il)
                          * std::sqrt(2 * il + 1.0) *
                          boost::math::sph_bessel(il, 0.5 * (-2 * im + boson_index + 1) * M_PI);
                }
-               ztmp *= std::complex<double>(0.0, 1.0);
           }
-          sign_tmp *= -1;
      }
      sqrt_2l_1.resize(n_legendre);
      sqrt_2l_1[0] = 1.0;
