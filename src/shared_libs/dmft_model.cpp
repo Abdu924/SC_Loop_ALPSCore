@@ -72,9 +72,6 @@ DMFTModel::DMFTModel(boost::shared_ptr<Bandstructure> const &lattice_bs,
      boost::shared_ptr<TailManager> temp_tail_manager(
 	  new TailManager(sigma_0, sigma_1, freqs, world_rank_));
      tail_manager = temp_tail_manager;
-
-
-
      n_sites = sigma_->get_n_sites();
      per_site_orbital_size = sigma_->get_per_site_orbital_size();
      tot_orbital_size = n_sites * per_site_orbital_size;
@@ -525,6 +522,133 @@ tuple<double, double> DMFTModel::get_particle_density(double chemical_potential,
      return tuple<double, double>(world_density, world_dn_dmu);
 }
 
+void DMFTModel::compute_lattice_gf(double chemical_potential) {
+     size_t k_min(0);
+     size_t k_max = lattice_bs_->get_lattice_size();
+     size_t orbital_size = lattice_bs_->get_orbital_size();
+     double beta = sigma_->get_beta();
+     size_t N_max = sigma_->get_n_matsubara_freqs();
+     vector<vector<Eigen::MatrixXcd> > k_resolved_gf;
+     vector<vector<Eigen::MatrixXcd> > world_k_resolved_gf;
+     occupation_matrix = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
+     world_occupation_matrix = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
+     k_resolved_gf.clear();
+     world_k_resolved_gf.clear();
+
+     Eigen::MatrixXcd from_zero_plus_to_zero_minus = Eigen::VectorXcd::Constant(
+	  orbital_size, 1.0).asDiagonal();
+     Eigen::MatrixXcd greens_function(orbital_size, orbital_size);
+     Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);
+     std::complex<double> mu = std::complex<double>(chemical_potential);
+     Eigen::VectorXcd to_add(orbital_size);
+     for (int k_index = k_min; k_index < k_max; k_index++) {
+	  double l_weight = lattice_bs_->get_weight(k_index);
+	  if (abs(l_weight) < 1e-6) {
+	       k_resolved_occupation_matrices.push_back(
+		    Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+               vector<Eigen::MatrixXcd> temp_gf;
+               for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+                    temp_gf.push_back(Eigen::MatrixXcd::Zero(orbital_size, orbital_size));
+               }
+               k_resolved_gf.push_back(temp_gf);
+	       if (world_rank_ == 0) {
+		    cout << "skipping k point" << endl;
+	       }
+	       continue;
+	  }
+          vector<Eigen::MatrixXcd> temp_gf;
+	  for (size_t freq_index = 0; freq_index < N_max; freq_index++) {
+	       to_add = Eigen::VectorXcd::Constant
+		    (orbital_size, mu + sigma_->get_matsubara_frequency(freq_index));		  
+	       inverse_gf = - lattice_bs_->dispersion_[k_index] - sigma_->values_[freq_index];
+	       inverse_gf.diagonal() += to_add;
+	       greens_function = inverse_gf.inverse();
+               temp_gf.push_back(greens_function);
+	       // the hermitian conjugate is added below
+	       // to account for negative frequencies,
+	       // since our target is the sum over Matsubara freqs.
+	  }
+          k_resolved_gf.push_back(temp_gf);
+     }
+     // now initialize the world matrix
+     // and scatter the data
+     int world_size = lattice_bs_->get_world_size();
+     int n_points_per_proc = lattice_bs_->get_n_points_per_proc();
+     if (world_rank_ == 0){
+          world_k_resolved_gf.resize(n_points_per_proc * world_size);
+          for (int k_index = 0; k_index < world_k_resolved_gf.size(); k_index++) {
+               world_k_resolved_gf[k_index].resize(N_max);
+               for (size_t freq_index = 0; freq_index < N_max; freq_index++) {          
+                    world_k_resolved_gf[k_index][freq_index].resize(
+                         orbital_size, orbital_size);
+               }
+          }
+     }     
+     for (size_t k_index = 0; k_index < n_points_per_proc; k_index++) {
+          for (size_t freq_index = 0; freq_index < N_max; freq_index++) {          
+               if (world_rank_ == 0) {
+                    for (int proc_index = 1; proc_index < world_size; proc_index++) {
+                         MPI_Recv(
+                              world_k_resolved_gf
+                              [proc_index * n_points_per_proc + k_index][freq_index].data(),
+                              k_resolved_gf[k_index][freq_index].size(),
+                              MPI_DOUBLE_COMPLEX, proc_index, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    }
+               } else {
+                    MPI_Send(k_resolved_gf[k_index][freq_index].data(),
+                             k_resolved_gf[k_index][freq_index].size(),
+                             MPI_DOUBLE_COMPLEX, 0, 0, MPI_COMM_WORLD);	       
+               }
+               if (world_rank_ == 0) {
+                    world_k_resolved_gf[k_index][freq_index] =
+                         k_resolved_gf[k_index][freq_index];
+               }
+          }
+     }
+
+     if (world_rank_ == 0) {
+          int world_size = lattice_bs_->get_world_size();
+          int n_points_per_proc = lattice_bs_->get_n_points_per_proc();
+          int N_max = sigma_->get_n_matsubara_freqs();
+          cout << "dump lattice greens function" << endl;
+          alps::hdf5::archive lattice_gf_output(k_resolved_gf_dump_name, "a");
+          std::string h5_group_name("/lattice_gf");
+          boost::multi_array<std::complex<double>, 4> temp_lattice_gf;
+          temp_lattice_gf.resize(boost::extents
+                                  [world_k_resolved_gf.size()]
+                                  [N_max]
+                                  [orbital_size]
+                                  [orbital_size]);
+          std::stringstream site_path;
+          site_path << h5_group_name +  "/data";
+          for (int k_index = 0; k_index < world_k_resolved_gf.size(); k_index++) {
+               for (int freq_index = 0; freq_index < N_max; freq_index++) {
+                    for (int orb1 = 0; orb1 < orbital_size; orb1++) {
+                         for (int orb2 = 0; orb2 < orbital_size; orb2++) {
+                              temp_lattice_gf[k_index][freq_index][orb1][orb2] =
+                                   world_k_resolved_gf[k_index][freq_index](orb1, orb2);
+                         }
+                    }
+               }
+          }
+          lattice_gf_output[site_path.str()] << temp_lattice_gf;
+          // q point list
+          
+          // h5_group_name = "/lattice_chi/q_point_list";
+          // std::vector<std::complex<double>> temp_data;
+          // temp_data.resize(nb_q_points);
+          // Eigen::VectorXd q_point;
+          // for (int q_index = 0; q_index < nb_q_points; q_index++) {
+          //      q_point = lattice_bs_->get_q_point(q_index);
+          //      temp_data[q_index] = std::complex<double>(q_point(0), q_point(1));
+          // }
+          // bseq_output[h5_group_name] = temp_data;
+          // // Close file
+	  // bseq_output.close();
+     }
+     MPI_Barrier(MPI_COMM_WORLD);
+}
+
 void DMFTModel::compute_order_parameter() {
      order_parameters.clear();
      int n_sites = sigma_->get_n_sites();
@@ -806,6 +930,7 @@ const size_t DMFTModel::max_iter_for_bounds = 30;
 const size_t DMFTModel::max_iter_for_newton = 10;
 const double DMFTModel::e_max = 50.0;
 const std::string DMFTModel::k_resolved_occupation_dump_name = "c_nk.dmft";
+const std::string DMFTModel::k_resolved_gf_dump_name = "lattice_gf.h5";
 const std::size_t DMFTModel::output_precision = 13;
 const std::size_t DMFTModel::phi_output_precision = 4;
 const std::size_t DMFTModel::current_output_precision = 7;

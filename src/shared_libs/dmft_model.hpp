@@ -1,6 +1,15 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
+#include <boost/multi_array.hpp>
+#include <alps/hdf5.hpp>
+#include <alps/params.hpp>
+#include <alps/hdf5/archive.hpp>
+#include <alps/hdf5/complex.hpp>
+#include <alps/hdf5/multi_array.hpp>
+#include <alps/hdf5/pointer.hpp>
+#include <boost/range/algorithm.hpp>
 #include <vector>
 #include <tuple>
 #include <iostream>
@@ -30,11 +39,13 @@ public:
      tuple<int, double, double, double> get_mu_from_density(double initial_mu);
      tuple<int, double, double> get_mu_from_density_bisec(double initial_mu,
 							   double mu_increment);
+     void compute_lattice_gf(double chemical_potential);
      void display_occupation_matrix();
      void display_spin_current();
      double get_kinetic_energy();
      double get_potential_energy();
      void dump_k_resolved_occupation_matrices();
+     //void dump_k_resolved_gf();
      void scatter_occ_matrices();
      void scatter_xcurrent_matrices();
      void scatter_ycurrent_matrices();
@@ -105,5 +116,6 @@ private:
      static const std::size_t phi_dimension;
      static const std::size_t current_dimension;
      static const std::string k_resolved_occupation_dump_name;
+     static const std::string k_resolved_gf_dump_name;
 };
   

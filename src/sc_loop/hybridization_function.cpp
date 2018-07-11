@@ -635,7 +635,7 @@ void HybFunction::dump_G0_for_ctint_hdf5(alps::hdf5::archive &h5_archive) {
 	  h5_archive["/G0_lattice_CTINT"] = temp_g0;
      }
 }
- 
+
 void HybFunction::elementary_compute_delta_tau() {
      double beta = sigma_->get_beta();
      size_t N_max = sigma_->get_n_matsubara_freqs();

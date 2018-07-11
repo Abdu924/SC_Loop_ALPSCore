@@ -32,8 +32,8 @@ void init(int world_rank, int computation_type,
 	  output_file_name = "c_dump_hamilt.out";
 	  error_file_name = "error_dump.txt";
      } else if (computation_type == 3) {
-	  output_file_name = "c_debug.out";
-	  error_file_name = "error_debug.txt";
+	  output_file_name = "c_lattice_gf.out";
+	  error_file_name = "error_lattice_gf.txt";
      }
      backup_file_name = output_file_name + ".old";
      if (world_rank == 0) {
@@ -76,7 +76,7 @@ tuple<string, int, bool> handle_command_line(alps::params par) {
 	  } else if (par["action"].as<int>() == 2) {
 	       cout << "Dumping Hamiltonian" << "\n";
 	  } else if (par["action"].as<int>() == 3) {
-	       cout << "Debug mode" << "\n";
+	       cout << "Dump lattice gf" << "\n";
 	  } else {
 	       std::cout << "The requested action was not recognized" << std::endl;
 	       par["help"] = true;
@@ -316,6 +316,45 @@ int main(int argc, const char* argv[]) {
 		    new Bandstructure(parms, world_rank, true));
 	       bare_band->dump_hamilt(parms);
 	  } else if (computation_type == 3) {
+	       alps::hdf5::archive h5_archive(input_file, "r");
+	       boost::shared_ptr<Bandstructure> bare_band(
+		    new Bandstructure(parms, world_rank, true));
+	       string h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
+		    Selfenergy::legendre_self_energy_name : Selfenergy::matsubara_self_energy_name;
+	       if (world_rank == 0) {
+		    if (parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>()) {
+			 std::cout << "Using LEGENDRE for SC LOOP " << std::endl << std::endl;
+		    } else {
+			 std::cout << "Using Matsubara for SC LOOP " << std::endl << std::endl;
+		    }
+	       }
+               int ref_site_index = 0;
+	       boost::shared_ptr<Selfenergy> self_energy(
+		    new Selfenergy(parms, world_rank, ref_site_index, h5_archive, h5_group_name, true));
+	       h5_archive.close();
+               // Restrict reading to process 0, then broadcast.
+               if (world_rank == 0) {
+                    old_chemical_potential = ((*chempot)[0] + (*chempot)[2]) / 2.0;
+                    found_old_mu = 1;
+                    dn_dmu = chempot->get_dn_dmu();
+               }
+               MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
+               MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+               MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+               bool compute_bubble(false);
+               boost::shared_ptr<DMFTModel> dmft_model(
+                    new DMFTModel(bare_band, self_energy, parms, old_chemical_potential,
+                                  compute_bubble, world_rank));
+               dmft_model->compute_lattice_gf(old_chemical_potential);
+               dmft_model->set_chemical_potential(new_chemical_potential);
+               dmft_model->dump_k_resolved_occupation_matrices();
+               MPI_Barrier(MPI_COMM_WORLD);
+               if (world_rank == 0)
+               {
+                    alps::hdf5::archive w_h5_archive(input_file, "w");
+                    w_h5_archive.close();
+               }
+               MPI_Barrier(MPI_COMM_WORLD);
 	  }
 	  MPI_Finalize();
 	  return 0;
