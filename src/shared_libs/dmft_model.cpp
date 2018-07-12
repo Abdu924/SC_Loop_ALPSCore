@@ -534,7 +534,7 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
      world_occupation_matrix = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
      k_resolved_gf.clear();
      world_k_resolved_gf.clear();
-
+     cout << "A"<< endl;
      Eigen::MatrixXcd from_zero_plus_to_zero_minus = Eigen::VectorXcd::Constant(
 	  orbital_size, 1.0).asDiagonal();
      Eigen::MatrixXcd greens_function(orbital_size, orbital_size);
@@ -570,6 +570,7 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
 	  }
           k_resolved_gf.push_back(temp_gf);
      }
+     cout << "B"<< endl;
      // Initialize the world matrix
      // and scatter the data
      int world_size = lattice_bs_->get_world_size();
@@ -583,7 +584,8 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
                          orbital_size, orbital_size);
                }
           }
-     }     
+     }
+     cout << "C"<< endl;
      for (size_t k_index = 0; k_index < n_points_per_proc; k_index++) {
           for (size_t freq_index = 0; freq_index < N_max; freq_index++) {          
                if (world_rank_ == 0) {
@@ -606,6 +608,7 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
           }
      }
      // Dump the data
+     cout << "D"<< endl;
      if (world_rank_ == 0) {
           int world_size = lattice_bs_->get_world_size();
           int n_points_per_proc = lattice_bs_->get_n_points_per_proc();
@@ -645,6 +648,7 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
           // Close file
 	  lattice_gf_output.close();
      }
+     cout << "E"<< endl;
      MPI_Barrier(MPI_COMM_WORLD);
 }
 
