@@ -614,7 +614,7 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
           std::string h5_group_name("/lattice_gf");
           boost::multi_array<std::complex<double>, 4> temp_lattice_gf;
           temp_lattice_gf.resize(boost::extents
-                                  [world_k_resolved_gf.size()]
+                                  [lattice_bs_->get_nb_world_k_points()]
                                   [N_max]
                                   [orbital_size]
                                   [orbital_size]);
