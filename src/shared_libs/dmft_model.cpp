@@ -641,7 +641,7 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
           std::vector<std::complex<double>> temp_data;
           temp_data.resize(world_k_resolved_gf.size());
           Eigen::VectorXd q_point;
-          for (int k_index = 0; k_index < world_k_resolved_gf.size(); k_index++) {
+          for (int k_index = 0; k_index < lattice_bs_->get_nb_world_k_points(); k_index++) {
                std::vector<double> k_point = lattice_bs_->get_world_k_point(k_index);
                temp_data[k_index] = std::complex<double>(k_point[0], k_point[1]);
           }
