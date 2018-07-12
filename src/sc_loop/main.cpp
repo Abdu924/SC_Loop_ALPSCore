@@ -346,14 +346,6 @@ int main(int argc, const char* argv[]) {
                     new DMFTModel(bare_band, self_energy, parms, old_chemical_potential,
                                   compute_bubble, world_rank));
                dmft_model->compute_lattice_gf(old_chemical_potential);
-               dmft_model->set_chemical_potential(new_chemical_potential);
-               dmft_model->dump_k_resolved_occupation_matrices();
-               MPI_Barrier(MPI_COMM_WORLD);
-               if (world_rank == 0)
-               {
-                    alps::hdf5::archive w_h5_archive(input_file, "w");
-                    w_h5_archive.close();
-               }
                MPI_Barrier(MPI_COMM_WORLD);
 	  }
 	  MPI_Finalize();
