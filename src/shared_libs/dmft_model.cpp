@@ -570,7 +570,7 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
 	  }
           k_resolved_gf.push_back(temp_gf);
      }
-     // now initialize the world matrix
+     // Initialize the world matrix
      // and scatter the data
      int world_size = lattice_bs_->get_world_size();
      int n_points_per_proc = lattice_bs_->get_n_points_per_proc();
@@ -605,7 +605,7 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
                }
           }
      }
-
+     // Dump the data
      if (world_rank_ == 0) {
           int world_size = lattice_bs_->get_world_size();
           int n_points_per_proc = lattice_bs_->get_n_points_per_proc();
@@ -621,7 +621,7 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
                                   [orbital_size]);
           std::stringstream site_path;
           site_path << h5_group_name +  "/data";
-          for (int k_index = 0; k_index < world_k_resolved_gf.size(); k_index++) {
+          for (int k_index = 0; k_index < lattice_bs_->get_nb_world_k_points(); k_index++) {
                for (int freq_index = 0; freq_index < N_max; freq_index++) {
                     for (int orb1 = 0; orb1 < orbital_size; orb1++) {
                          for (int orb2 = 0; orb2 < orbital_size; orb2++) {
@@ -633,18 +633,17 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
           }
           lattice_gf_output[site_path.str()] << temp_lattice_gf;
           // q point list
-          
-          // h5_group_name = "/lattice_chi/q_point_list";
-          // std::vector<std::complex<double>> temp_data;
-          // temp_data.resize(nb_q_points);
-          // Eigen::VectorXd q_point;
-          // for (int q_index = 0; q_index < nb_q_points; q_index++) {
-          //      q_point = lattice_bs_->get_q_point(q_index);
-          //      temp_data[q_index] = std::complex<double>(q_point(0), q_point(1));
-          // }
-          // bseq_output[h5_group_name] = temp_data;
-          // // Close file
-	  // bseq_output.close();
+          h5_group_name = "/lattice_gf/q_point_list";
+          std::vector<std::complex<double>> temp_data;
+          temp_data.resize(world_k_resolved_gf.size());
+          Eigen::VectorXd q_point;
+          for (int k_index = 0; k_index < world_k_resolved_gf.size(); k_index++) {
+               std::vector<double> k_point = lattice_bs_->get_world_k_point(k_index);
+               temp_data[k_index] = std::complex<double>(k_point[0], k_point[1]);
+          }
+          lattice_gf_output[h5_group_name] = temp_data;
+          // Close file
+	  lattice_gf_output.close();
      }
      MPI_Barrier(MPI_COMM_WORLD);
 }

@@ -36,9 +36,11 @@ public:
      void dump_hamilt(const alps::params& parms);
      Eigen::MatrixXcd get_k_basis_matrix(Eigen::Ref<Eigen::VectorXd> k_point);
      Eigen::VectorXd get_k_point(int k_index) {return proc_k_lattice_[k_index];};
+     std::vector<double> get_world_k_point(int k_index) {return k_lattice_[k_index];};
      Eigen::VectorXd get_q_point(int q_index) {return secondary_q_lattice_[q_index];};
      Eigen::VectorXd get_k_plus_q_point(int k_index, int q_index);
      int get_nb_points_for_bseq() {return secondary_q_lattice_.size();};
+     int get_nb_world_k_points() {return k_lattice_.size();};
      // void dump_crystal_field(const alps::params& parms,
      // 			     double chemical_potential);
      virtual ~Bandstructure() {}
