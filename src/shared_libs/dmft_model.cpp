@@ -634,11 +634,10 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
           // q point list
           h5_group_name = "/lattice_gf/q_point_list";
           std::vector<std::complex<double>> temp_data;
-          temp_data.resize(world_k_resolved_gf.size());
           Eigen::VectorXd q_point;
           for (int k_index = 0; k_index < lattice_bs_->get_nb_world_k_points(); k_index++) {
                std::vector<double> k_point = lattice_bs_->get_world_k_point(k_index);
-               temp_data[k_index] = std::complex<double>(k_point[0], k_point[1]);
+               temp_data.push_back(std::complex<double>(k_point[0], k_point[1]));
           }
           lattice_gf_output[h5_group_name] = temp_data;
           // Close file
