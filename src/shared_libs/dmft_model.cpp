@@ -624,6 +624,7 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
                                   [orbital_size]);
           std::stringstream site_path;
           site_path << h5_group_name +  "/data";
+          cout << "F"<< endl;
           for (int k_index = 0; k_index < lattice_bs_->get_nb_world_k_points(); k_index++) {
                for (int freq_index = 0; freq_index < N_max; freq_index++) {
                     for (int orb1 = 0; orb1 < orbital_size; orb1++) {
@@ -644,6 +645,7 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
                std::vector<double> k_point = lattice_bs_->get_world_k_point(k_index);
                temp_data[k_index] = std::complex<double>(k_point[0], k_point[1]);
           }
+          cout << "G"<< endl;
           lattice_gf_output[h5_group_name] = temp_data;
           // Close file
 	  lattice_gf_output.close();
