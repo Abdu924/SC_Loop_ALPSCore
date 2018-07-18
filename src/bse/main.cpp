@@ -156,7 +156,7 @@ int main(int argc, const char* argv[]) {
                     bseq_solver->dump_susceptibility(parms);
                     //MPI_Barrier(MPI_COMM_WORLD);
                }
-               //bseq_solver->dump_vertex(parms);
+               bseq_solver->dump_vertex(parms);
           }
 	  MPI_Finalize();
 	  return 0;
