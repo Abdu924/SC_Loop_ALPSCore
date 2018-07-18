@@ -154,9 +154,10 @@ int main(int argc, const char* argv[]) {
                                         current_bose_freq, parms, world_rank, sampling_type));
                     bseq_solver->inverse_bseq();
                     bseq_solver->dump_susceptibility(parms);
+                    if (current_bose_freq == 0)
+                         bseq_solver->dump_vertex(parms);
                     //MPI_Barrier(MPI_COMM_WORLD);
                }
-               bseq_solver->dump_vertex(parms);
           }
 	  MPI_Finalize();
 	  return 0;
