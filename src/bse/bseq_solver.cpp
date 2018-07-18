@@ -48,22 +48,6 @@ BseqSolver::BseqSolver(alps::hdf5::archive &g2_h5_archive,
           {
                boost::timer::auto_cpu_timer bubble_calc;
                flat_irreducible_vertex = flat_g2.inverse() - flat_bubble.inverse();
-               // for (int i = 0; i < 4; i++) {
-               //      for (int j = 0; j < 4; j++) {
-               //           Eigen::array<int, 4> offsets = {4 * i, 4 * j, 0, 0};
-               //           Eigen::array<int, 4> extents = {4, 4, n_legendre, n_legendre};
-               //           local_g2_type slice = g2_data_.slice(offsets, extents);
-               //           Eigen::MatrixXcd flat_slice = get_flattened_representation(slice);
-               //      }
-               // }
-               // for (int i = 0; i < 2; i++) {
-               //      for (int j = 0; j < 2; j++) {
-               //           Eigen::array<int, 4> offsets = {8 * i, 8 * j, 0, 0};
-               //           Eigen::array<int, 4> extents = {8, 8, n_legendre, n_legendre};
-               //           local_g2_type slice = g2_data_.slice(offsets, extents);
-               //           Eigen::MatrixXcd flat_slice = get_flattened_representation(slice);
-               //      }
-               // }
                cout << "Get irreducible vertex (inversion): ";
           }
      } else {
@@ -380,9 +364,15 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
 }
 
 void BseqSolver::subtract_disconnected_part(alps::hdf5::archive &g2_h5_archive) {
+     // This representation is incorrect in the shifted Legendre case:
+     // the disconnected part below has the nature of a 2p GF
+     // but it is represented with the non shifted unitary transformation,
+     // thus, it should *not* be subtracted from the 2p GF in its shifted
+     // sampling version. This being said, the disconnected part is only
+     // subtracted for current_bose_freq == 0, in which case
+     // shifted and non shifted coincide, so we are safe here.
      if (current_bose_freq == 0) {
           g1_type temp_g1_data;
-          //temp_g1_data.resize(boost::extents[per_site_orbital_size][per_site_orbital_size][n_legendre]);
           g2_h5_archive["legendre_gf_fixed/data"] >> temp_g1_data;
           assert(n_legendre <= temp_g1_data.shape()[2]);
           local_g2_type disconnected_part;

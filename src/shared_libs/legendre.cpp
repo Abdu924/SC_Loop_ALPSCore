@@ -24,6 +24,9 @@ LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre):
 };
 
 // The shifted version
+// The easiest way to figure out what happens for negative frequencies
+// is to use the definition of T_{ol}, right below Eq. 4.5
+// in L. Behnke's PhD thesis.
 LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre, int boson_index):
      n_matsubara_(n_matsubara), n_legendre_(n_legendre),
      Tnl_(n_matsubara, n_legendre), Tnl_neg_(n_matsubara, n_legendre), inv_l_(n_legendre) {
@@ -40,19 +43,6 @@ LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre, int bo
                     boost::math::sph_bessel(il, 0.5 * neg_power_index * M_PI);
                if ((-2 * im + boson_index + 1) < 0)
                     Tnl_neg_(im, il) = std::conj(Tnl_neg_(im, il));
-               // Tnl_(im, il) = std::pow(std::complex<double>(0.0, 1.0), 2 * im + boson_index + 1 + il)
-               //           * std::sqrt(2 * il + 1.0) *
-               //           boost::math::sph_bessel(il, 0.5 * (2 * im + boson_index + 1) * M_PI);
-               // if (-2 * im + boson_index + 1 < 0) {
-               //      neg_tmp = std::pow(-1.0, il);
-               //      Tnl_neg_(im, il) = neg_tmp * std::pow(std::complex<double>(0.0, 1.0), -2 * im + boson_index + 1 + il)
-               //           * std::sqrt(2 * il + 1.0) *
-               //           boost::math::sph_bessel(il, 0.5 * (2 * im - boson_index - 1) * M_PI);
-               // } else {
-               //      Tnl_neg_(im, il) = std::pow(std::complex<double>(0.0, 1.0), -2 * im + boson_index + 1 + il)
-               //           * std::sqrt(2 * il + 1.0) *
-               //           boost::math::sph_bessel(il, 0.5 * (-2 * im + boson_index + 1) * M_PI);
-               // }
           }
      }
      sqrt_2l_1.resize(n_legendre);
@@ -62,35 +52,6 @@ LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre, int bo
           sqrt_2l_1[l] = std::sqrt(2.0 * l + 1.0);
      }
 };
-
-// LegendreTransformer::LegendreTransformer(int n_matsubara, int n_legendre, int boson_index):
-//      n_matsubara_(n_matsubara), n_legendre_(n_legendre),
-//      Tnl_(n_matsubara, n_legendre), Tnl_neg_(n_matsubara, n_legendre), inv_l_(n_legendre) {
-//      for (int im = 0; im < n_matsubara_; ++im) {
-//           for (int il = 0; il < n_legendre_; ++il) {
-//                int power_index = std::abs(2 * im + boson_index + 1);
-//                Tnl_(im, il) = std::pow(std::complex<double>(0.0, 1.0), power_index + il)
-//                     * std::sqrt(2 * il + 1.0) *
-//                     boost::math::sph_bessel(il, 0.5 * power_index * M_PI);
-//                int neg_power_index = std::abs(-2 * im + boson_index + 1);
-//                if (neg_power_index >= 0)
-//                     Tnl_neg_(im, il) = std::pow(std::complex<double>(0.0, 1.0), neg_power_index + il)
-//                          * std::sqrt(2 * il + 1.0) *
-//                          boost::math::sph_bessel(il, 0.5 * neg_power_index * M_PI);
-//                else
-//                     Tnl_neg_(im, il) = std::pow(-1.0, il) *
-//                          std::pow(std::complex<double>(0.0, 1.0), neg_power_index + il)
-//                          * std::sqrt(2 * il + 1.0) *
-//                          boost::math::sph_bessel(il, 0.5 * std::abs(neg_power_index) * M_PI);                    
-//           }
-//      }
-//      sqrt_2l_1.resize(n_legendre);
-//      sqrt_2l_1[0] = 1.0;
-//      for (int l = 1; l < n_legendre_; l++) {
-//           inv_l_[l] = 1.0 / l;
-//           sqrt_2l_1[l] = std::sqrt(2.0 * l + 1.0);
-//      }
-// };
 
 void LegendreTransformer::compute_legendre(double x, std::vector<double> &val) const {
      assert(val.size() >= n_legendre_);
