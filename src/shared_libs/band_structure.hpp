@@ -8,6 +8,11 @@
 #include <cmath>
 #include <alps/params.hpp>
 #include <tuple>
+#include <boost/multi_array.hpp>
+#include <boost/range/algorithm.hpp>
+#include <alps/hdf5/archive.hpp>
+#include <alps/hdf5/complex.hpp>
+#include <alps/hdf5/multi_array.hpp>
 
 using namespace std;
 

@@ -316,6 +316,7 @@ int main(int argc, const char* argv[]) {
 		    new Bandstructure(parms, world_rank, true));
 	       bare_band->dump_hamilt(parms);
 	  } else if (computation_type == 3) {
+               // dump lattice gf in Matsubara
 	       alps::hdf5::archive h5_archive(input_file, "r");
 	       boost::shared_ptr<Bandstructure> bare_band(
 		    new Bandstructure(parms, world_rank, true));
@@ -347,7 +348,7 @@ int main(int argc, const char* argv[]) {
                                   compute_bubble, world_rank));
                dmft_model->compute_lattice_gf(old_chemical_potential);
                MPI_Barrier(MPI_COMM_WORLD);
-	  }
+	  } 
 	  MPI_Finalize();
 	  return 0;
      }

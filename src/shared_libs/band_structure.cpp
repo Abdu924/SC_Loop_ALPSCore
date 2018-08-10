@@ -5,6 +5,7 @@
 #include "band_structure.hpp"
 
 using namespace std;
+typedef boost::multi_array_types::index_range range;
 
 Bandstructure::Bandstructure(const alps::params& parms, int world_rank, bool verbose)
      :world_rank_(world_rank) {     
@@ -561,7 +562,7 @@ void Bandstructure::display_hoppings() {
      }
 }
 
-// Consider MPI_file style I/O for this and other quantities.
+// TODO: Consider MPI_file style I/O for this and other quantities.
 void Bandstructure::dump_hamilt(const alps::params& parms) {
      if (world_rank_ == 0) {
 	  std::ofstream out;
@@ -593,6 +594,46 @@ void Bandstructure::dump_hamilt(const alps::params& parms) {
 	       }
 	  }
 	  out.close();
+          alps::hdf5::archive hamilt_output("hamilt.h5", "a");
+          std::string h5_group_name("/bare_dispersion");
+          // Lattice bubble, new flavor order
+          boost::multi_array<std::complex<double>, 3> lattice_values_compact;
+          lattice_values_compact.resize(boost::extents
+                                        [dispersion_.size()]
+                                        [dispersion_[0].rows()]
+                                        [dispersion_[0].cols()]);  // q
+                                                                   // index
+          std::fill(lattice_values_compact.origin(),
+                    lattice_values_compact.origin() + lattice_values_compact.num_elements(), 0.0);
+          for (int k_index = 0; k_index < dispersion_.size(); k_index++) {
+               for (int orb1 = 0; orb1 < dispersion_[0].rows(); orb1++) {
+                    for (int orb2 = 0; orb2 < dispersion_[0].cols(); orb2++) {
+                         lattice_values_compact[k_index][orb1][orb2] = dispersion_[k_index](orb1, orb2);
+                    }
+               }
+          }
+          int site_index(0);
+          std::stringstream site_path;
+          site_path << h5_group_name + "/site_" +
+               boost::lexical_cast<std::string>(site_index) + "/data";
+          hamilt_output[site_path.str()] << lattice_values_compact;
+          h5_group_name = "/k_lattice";
+          boost::multi_array<std::complex<double>, 2> lattice_points;
+          lattice_points.resize(boost::extents
+                                [dispersion_.size()]
+                                [3]);
+          std::fill(lattice_points.origin(),
+                    lattice_points.origin() + lattice_points.num_elements(), 0.0);
+          for (int k_index = 0; k_index < dispersion_.size(); k_index++) {
+               lattice_points[k_index][0] = k_lattice_[k_index][0];
+               lattice_points[k_index][1] = k_lattice_[k_index][1];
+               lattice_points[k_index][2] = k_lattice_[k_index][2];
+          }
+          std::stringstream site_path2;
+          site_path2 << h5_group_name + "/site_" +
+               boost::lexical_cast<std::string>(site_index) + "/data";
+          hamilt_output[site_path2.str()] << lattice_points;
+          hamilt_output.close();
      }
 }
 
