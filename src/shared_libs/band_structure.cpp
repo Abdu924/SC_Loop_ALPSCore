@@ -633,6 +633,7 @@ void Bandstructure::dump_hamilt(const alps::params& parms, double chemical_poten
           site_path2 << h5_group_name + "/site_" +
                boost::lexical_cast<std::string>(site_index) + "/data";
           hamilt_output[site_path2.str()] << lattice_points;
+          hamilt_output["/chemical_potential/data"] = chemical_potential;
           hamilt_output.close();
      }
 }
