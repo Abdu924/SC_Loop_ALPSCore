@@ -563,7 +563,7 @@ void Bandstructure::display_hoppings() {
 }
 
 // TODO: Consider MPI_file style I/O for this and other quantities.
-void Bandstructure::dump_hamilt(const alps::params& parms, chemical_potential) {
+void Bandstructure::dump_hamilt(const alps::params& parms, double chemical_potential) {
      if (world_rank_ == 0) {
 	  std::ofstream out;
 	  if (parms.exists("DISPFILE")) {
