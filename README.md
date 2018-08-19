@@ -19,7 +19,7 @@ CXX=/apps/all/icc/2017.1.132-GCC-6.3.0-2.27/compilers_and_libraries_2017.1.132/l
 
 make
 
-* On VSC:
+* On VSC, ALPSCORE compilation:
 
 ```module load intel/17  hdf5/1.8.18-SERIAL intel-mpi/2017 python/2.7 boost/1.62.0 intel-mkl/2017  cmake/3.9.6```
 
