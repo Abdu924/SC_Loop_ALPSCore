@@ -35,6 +35,7 @@ void define_parameters(alps::params &parameters) {
 	  .define<std::string>("HOPPINGFILE", "path for hopping description file")
 	  .define<std::string>("model.hopping_matrix_input_file", "path for local hopping description file")
           .define<int >("model.space_sites", 1, "Number of real space lattice sites considered")
+          .define<int>("use_sym",1," symmetrize sites when value is 1")
 	  .define<int >("model.sites", 2, "Number of orbitals (Alps3 convention)")
 	  .define<bool >("REAL_DELTA", false, "if true, we force the hybridization function to be real")
 	  .define<double>("N_ELECTRONS", "electronic density")

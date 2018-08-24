@@ -54,7 +54,7 @@ void init(int world_rank, int computation_type,
      }
 }
 
-tuple<string, int, bool> handle_command_line(alps::params par) {
+tuple<string, string, int, bool> handle_command_line(alps::params par) {
      int computation_type(-1);
      bool from_alps3(par["from_alps3"].as<bool>());
      string input_file("");
@@ -63,6 +63,9 @@ tuple<string, int, bool> handle_command_line(alps::params par) {
 	  par["help"] = true;
      } else {
 	  input_file = par["input-file"].as<string>();
+          if(par["use_sym"] == 0){
+             input_file1=("light.source1.h5").as<string.();}
+           else {input_file = par["input-file"].as<string>();}
 	  cout << "Input file is: " << input_file << "\n";
      }
      if (!par.exists("action")) {
@@ -87,7 +90,7 @@ tuple<string, int, bool> handle_command_line(alps::params par) {
      if (from_alps3) {
 	  cout << "Taking ***MATRIX RESULT*** as input format\n";
      }
-     return tuple<string, int, bool>(input_file, computation_type, from_alps3);
+     return tuple<string, string, int, bool>(input_file, input_file1, computation_type, from_alps3);
 }
 
 double extract_chemical_potential(boost::shared_ptr<Bandstructure> bare_band,
@@ -128,11 +131,11 @@ int main(int argc, const char* argv[]) {
 	  // and copy sigma to old_sigma.
 	  int computation_type;
 	  bool from_alps3(false);
-	  string tmp_file_name;
+	  string tmp_file_name, tmp_file_name1;
 	  cout << fixed << setprecision(7);
 	  alps::params parms(argc, argv);
 	  define_parameters(parms);
-	  tie(tmp_file_name, computation_type, from_alps3) = handle_command_line(parms);
+	  tie(tmp_file_name, tmp_file_name1, computation_type, from_alps3) = handle_command_line(parms);
 	  init(world_rank, computation_type, output_file_name, old_output_file_name);
 	  //if (world_rank == 0)
 	  //	  std::cout << "Parameters : " << std::endl << parms << std::endl;

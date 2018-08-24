@@ -52,6 +52,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      basic_init(parms, verbose);
      is_analytic_tail = static_cast<bool>(parms["mixing.analytic_sigma_tail"]);
      std::string symmetry_file;
+     std::string input1="light.source1.h5";
      sanity_check(parms);
      if (parms.exists("SITE_SYMMETRY")) {
 	  std::string fname = parms["SITE_SYMMETRY"];
@@ -73,7 +74,18 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      log_sigma_tails(ref_site_index);
      compute_qmc_tail(ref_site_index);
      append_qmc_tail(ref_site_index, parms);
-     symmetrize_sites(ref_site_index);
+
+     if (parms["use_sym"] == 0){
+          ref_site_index=1;
+       read_qmc_sigma(ref_site_index, input1);
+     // Smooth the noisy tail
+     feed_tail_params(ref_site_index, parms, input1);
+     compute_tail_coeffs(ref_site_index);
+     log_sigma_tails(ref_site_index);
+     compute_qmc_tail(ref_site_index);
+     append_qmc_tail(ref_site_index, parms);}
+     else {
+     symmetrize_sites(ref_site_index);}
      // precompute some matsubara frequency sums for later use
      // in the Fourier transforms.
      compute_order2_partial_sum();
