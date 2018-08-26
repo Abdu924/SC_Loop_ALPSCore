@@ -312,7 +312,7 @@ void BseqSolver::read_local_g2(alps::hdf5::archive &g2_h5_archive) {
      boost::multi_array<double, 8>  real_temp_g2_data;
      boost::multi_array<std::complex<double>, 7>  cplx_temp_g2_data;
      if (sampling_type == 0) {
-          g2_h5_archive["G2_LEGENDRE"] >> real_temp_g2_data;     
+          g2_h5_archive["G2_LEGENDRE"] >> real_temp_g2_data;
           g2_data_ = local_g2_type(per_site_orbital_size * per_site_orbital_size,
                                    per_site_orbital_size * per_site_orbital_size,
                                    n_legendre, n_legendre);
