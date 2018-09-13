@@ -76,14 +76,14 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      append_qmc_tail(ref_site_index, parms);
 
      if (parms["use_sym"] == 0){
-          ref_site_index=1;
-       read_qmc_sigma(ref_site_index, input1);
+          cur_site_index=1;
+       read_qmc_sigma(cur_site_index, input1);
      // Smooth the noisy tail
-     feed_tail_params(ref_site_index, parms, input1);
-     compute_tail_coeffs(ref_site_index);
-     log_sigma_tails(ref_site_index);
-     compute_qmc_tail(ref_site_index);
-     append_qmc_tail(ref_site_index, parms);}
+     feed_tail_params(cur_site_index, parms, input1);
+     compute_tail_coeffs(cur_site_index);
+     log_sigma_tails(cur_site_index);
+     compute_qmc_tail(cur_site_index);
+     append_qmc_tail(cur_site_index, parms);}
      else {
      symmetrize_sites(ref_site_index);}
      // precompute some matsubara frequency sums for later use
