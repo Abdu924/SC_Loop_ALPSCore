@@ -52,7 +52,7 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      basic_init(parms, verbose);
      is_analytic_tail = static_cast<bool>(parms["mixing.analytic_sigma_tail"]);
      std::string symmetry_file;
-     std::string input1="light.source1.h5";
+     std::string input1=new_archive_name+"_"+1+".h5";
      sanity_check(parms);
      if (parms.exists("SITE_SYMMETRY")) {
 	  std::string fname = parms["SITE_SYMMETRY"];
@@ -1004,3 +1004,4 @@ const size_t Selfenergy::tail_fit_length = 10;
 const std::string Selfenergy::density_density_result_name = "DENSITY_DENSITY_CORRELATION_FUNCTIONS";
 const std::string Selfenergy::matsubara_self_energy_name = "current_sigma";
 const std::string Selfenergy::legendre_self_energy_name = "current_legendre_sigma";
+const std::string Selfenergy::new_archive_name="light_source";
