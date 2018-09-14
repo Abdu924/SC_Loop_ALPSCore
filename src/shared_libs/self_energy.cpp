@@ -52,7 +52,6 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      basic_init(parms, verbose);
      is_analytic_tail = static_cast<bool>(parms["mixing.analytic_sigma_tail"]);
      std::string symmetry_file;
-     std::string input1=new_archive_name+"_"+1+".h5";
      sanity_check(parms);
      if (parms.exists("SITE_SYMMETRY")) {
 	  std::string fname = parms["SITE_SYMMETRY"];
@@ -76,14 +75,19 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      append_qmc_tail(ref_site_index, parms);
 
      if (parms["use_sym"] == 0){
-          cur_site_index=1;
-       read_qmc_sigma(cur_site_index, input1);
+          for(int cur_site_index=0; cur_site_index<n_sites; cur_site_index++)
+          { if (cur_site_index==ref_site_index) { continue;   
+
+       }  else {
+          std::string inputs1="light_source_"+boost::lexical_cast<std::string>(cur_site_index)+".h5"; 
+	  alps::hdf5::archive h5_archive(inputs1, "r");
+       read_qmc_sigma(cur_site_index, h5_archive);
      // Smooth the noisy tail
-     feed_tail_params(cur_site_index, parms, input1);
+     feed_tail_params(cur_site_index, parms, h5_archive);
      compute_tail_coeffs(cur_site_index);
      log_sigma_tails(cur_site_index);
      compute_qmc_tail(cur_site_index);
-     append_qmc_tail(cur_site_index, parms);}
+     append_qmc_tail(cur_site_index, parms);}}}
      else {
      symmetrize_sites(ref_site_index);}
      // precompute some matsubara frequency sums for later use
@@ -1004,4 +1008,4 @@ const size_t Selfenergy::tail_fit_length = 10;
 const std::string Selfenergy::density_density_result_name = "DENSITY_DENSITY_CORRELATION_FUNCTIONS";
 const std::string Selfenergy::matsubara_self_energy_name = "current_sigma";
 const std::string Selfenergy::legendre_self_energy_name = "current_legendre_sigma";
-const std::string Selfenergy::new_archive_name="light_source";
+//const std::string Selfenergy::new_archive_name="light_source";
