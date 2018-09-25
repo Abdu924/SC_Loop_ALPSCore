@@ -15,6 +15,7 @@ void define_parameters(alps::params &parameters) {
      parameters
 	  .description("hybridization expansion simulation")
 	  .define<std::string>("input-file","", "hdf5 input file with relevant data")
+          .define<std::string>("input-file_name","", "hdf5 input file with relevant data without extension .h5")
 	  .define<int >("action", "int describing the action to be performed")
 	  .define<bool>("from_alps3", false, "is the input produced by Alps3?")
 	  .define<long>("SEED", 42, "PRNG seed")
