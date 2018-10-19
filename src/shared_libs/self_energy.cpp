@@ -32,7 +32,9 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      :GfBase(parms, world_rank), is_alps3(false), is_analytic_tail(true) {
      basic_init(parms, verbose);
      read_input_sigma(parms, h5_archive, h5_group_name);
-     symmetrize_sites(ref_site_index);
+     if (parms["use_sym"] == 1){
+          symmetrize_sites(ref_site_index);
+     }
      if (verbose) {
 	  display_asymptotics();
      }
