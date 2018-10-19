@@ -75,27 +75,29 @@ Selfenergy::Selfenergy(const alps::params &parms, int world_rank,
      append_qmc_tail(ref_site_index, parms);
 
      if (parms["use_sym"] == 0){
-          for(int cur_site_index=0; cur_site_index<n_sites; cur_site_index++)
-          { if (cur_site_index==ref_site_index) { continue;   
-
-       }  else {
-          //std::string inputs1=new_archive_name+"_"+boost::lexical_cast<std::string>(cur_site_index)+".h5"; 
-        std ::string inputs1; 
-	if (parms.exists("input-file_name")) {
-          std::string fname = parms["input-file_name"];
-          inputs1 = fname+"_"+boost::lexical_cast<std::string>(cur_site_index)+".h5";}
-	 
-        alps::hdf5::archive h5_archive(inputs1, "r");
-       read_qmc_sigma(cur_site_index, h5_archive);
-     // Smooth the noisy tail
-     feed_tail_params(cur_site_index, parms, h5_archive);
-     compute_tail_coeffs(cur_site_index);
-     log_sigma_tails(cur_site_index);
-     compute_qmc_tail(cur_site_index);
-     append_qmc_tail(cur_site_index, parms);}
-      }
-       } else {
-     symmetrize_sites(ref_site_index);}
+          for(int cur_site_index=0; cur_site_index<n_sites; cur_site_index++) {
+               if (cur_site_index==ref_site_index) {
+                    continue;   
+               }  else {
+                    //std::string inputs1=new_archive_name+"_"+boost::lexical_cast<std::string>(cur_site_index)+".h5"; 
+                    std ::string inputs1;
+                    std::string s = parms["input-file"];
+                    std::string delimiter = ".";
+                    std::string token = s.substr(0, s.find(delimiter));
+                    inputs1 = token + "_" + boost::lexical_cast<std::string>(cur_site_index) + ".h5";
+                    alps::hdf5::archive h5_archive(inputs1, "r");
+                    read_qmc_sigma(cur_site_index, h5_archive);
+                    // Smooth the noisy tail
+                    feed_tail_params(cur_site_index, parms, h5_archive);
+                    compute_tail_coeffs(cur_site_index);
+                    log_sigma_tails(cur_site_index);
+                    compute_qmc_tail(cur_site_index);
+                    append_qmc_tail(cur_site_index, parms);
+               }
+          }
+     } else {
+          symmetrize_sites(ref_site_index);
+     }
      // precompute some matsubara frequency sums for later use
      // in the Fourier transforms.
      compute_order2_partial_sum();
