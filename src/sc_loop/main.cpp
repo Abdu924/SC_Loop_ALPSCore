@@ -312,11 +312,51 @@ int main(int argc, const char* argv[]) {
 	       }
 	  } else if (computation_type == 2) {
 	       // dump hamiltonian
+               if (world_rank == 0) {
+                    old_chemical_potential = ((*chempot)[0] + (*chempot)[2]) / 2.0;
+                    found_old_mu = 1;
+                    dn_dmu = chempot->get_dn_dmu();
+               }
+               MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
+               MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+               MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	       boost::shared_ptr<Bandstructure> bare_band(
 		    new Bandstructure(parms, world_rank, true));
-	       bare_band->dump_hamilt(parms);
+	       bare_band->dump_hamilt(parms, old_chemical_potential);
 	  } else if (computation_type == 3) {
-	  }
+               // dump lattice gf in Matsubara
+	       alps::hdf5::archive h5_archive(input_file, "r");
+	       boost::shared_ptr<Bandstructure> bare_band(
+		    new Bandstructure(parms, world_rank, true));
+	       string h5_group_name = parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>() ?
+		    Selfenergy::legendre_self_energy_name : Selfenergy::matsubara_self_energy_name;
+	       if (world_rank == 0) {
+		    if (parms["mixing.LEGENDRE_FOR_SC_LOOP"].as<bool>()) {
+			 std::cout << "Using LEGENDRE for SC LOOP " << std::endl << std::endl;
+		    } else {
+			 std::cout << "Using Matsubara for SC LOOP " << std::endl << std::endl;
+		    }
+	       }
+               int ref_site_index = 0;
+	       boost::shared_ptr<Selfenergy> self_energy(
+		    new Selfenergy(parms, world_rank, ref_site_index, h5_archive, h5_group_name, true));
+	       h5_archive.close();
+               // Restrict reading to process 0, then broadcast.
+               if (world_rank == 0) {
+                    old_chemical_potential = ((*chempot)[0] + (*chempot)[2]) / 2.0;
+                    found_old_mu = 1;
+                    dn_dmu = chempot->get_dn_dmu();
+               }
+               MPI_Bcast(&found_old_mu, 1, MPI_INT, 0, MPI_COMM_WORLD);
+               MPI_Bcast(&old_chemical_potential, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+               MPI_Bcast(&dn_dmu, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+               bool compute_bubble(false);
+               boost::shared_ptr<DMFTModel> dmft_model(
+                    new DMFTModel(bare_band, self_energy, parms, old_chemical_potential,
+                                  compute_bubble, world_rank));
+               dmft_model->compute_lattice_gf(old_chemical_potential);
+               MPI_Barrier(MPI_COMM_WORLD);
+	  } 
 	  MPI_Finalize();
 	  return 0;
      }

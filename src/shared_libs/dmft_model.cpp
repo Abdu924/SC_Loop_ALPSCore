@@ -530,12 +530,8 @@ void DMFTModel::compute_lattice_gf(double chemical_potential) {
      size_t N_max = sigma_->get_n_matsubara_freqs();
      vector<vector<Eigen::MatrixXcd> > k_resolved_gf;
      vector<vector<Eigen::MatrixXcd> > world_k_resolved_gf;
-     occupation_matrix = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
-     world_occupation_matrix = Eigen::MatrixXcd::Zero(orbital_size, orbital_size);
      k_resolved_gf.clear();
      world_k_resolved_gf.clear();
-     Eigen::MatrixXcd from_zero_plus_to_zero_minus = Eigen::VectorXcd::Constant(
-	  orbital_size, 1.0).asDiagonal();
      Eigen::MatrixXcd greens_function(orbital_size, orbital_size);
      Eigen::MatrixXcd inverse_gf(orbital_size, orbital_size);
      std::complex<double> mu = std::complex<double>(chemical_potential);

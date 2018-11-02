@@ -8,6 +8,11 @@
 #include <cmath>
 #include <alps/params.hpp>
 #include <tuple>
+#include <boost/multi_array.hpp>
+#include <boost/range/algorithm.hpp>
+#include <alps/hdf5/archive.hpp>
+#include <alps/hdf5/complex.hpp>
+#include <alps/hdf5/multi_array.hpp>
 
 using namespace std;
 
@@ -33,7 +38,7 @@ public:
      int get_n_points_per_proc();
      int get_real_n_points();
      void display_hoppings();
-     void dump_hamilt(const alps::params& parms);
+     void dump_hamilt(const alps::params& parms, double chemical_potential);
      Eigen::MatrixXcd get_k_basis_matrix(Eigen::Ref<Eigen::VectorXd> k_point);
      Eigen::VectorXd get_k_point(int k_index) {return proc_k_lattice_[k_index];};
      std::vector<double> get_world_k_point(int k_index) {return k_lattice_[k_index];};

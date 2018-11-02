@@ -905,6 +905,22 @@ void Selfenergy::display_asymptotics() {
 				      per_site_orbital_size,
 				      per_site_orbital_size) << endl << endl;
 	  }
+          for (size_t site_index = 0; site_index < n_sites; site_index++) {
+               int freq_index = 0;
+               Eigen::MatrixXcd denominator =
+                    Eigen::MatrixXcd::Constant(per_site_orbital_size, per_site_orbital_size,
+                                               std::imag(get_matsubara_frequency(0)));
+               Eigen::MatrixXcd z_weight =
+                     - values_[freq_index].block(site_index * per_site_orbital_size,
+                                                 site_index * per_site_orbital_size,
+                                                 per_site_orbital_size,
+                                                 per_site_orbital_size).imag().array() /
+                     denominator.array();
+                z_weight = Eigen::MatrixXcd::Constant(per_site_orbital_size, per_site_orbital_size, 1.0) - z_weight;
+	       cout << "QP weight Z for site " <<
+		    site_index << ": " << endl << endl;
+               cout << z_weight.diagonal().array().inverse().real() << endl << endl;
+	  }
 	  cout.precision(old_precision);
      }
 }

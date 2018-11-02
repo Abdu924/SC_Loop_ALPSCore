@@ -365,7 +365,8 @@ void Bubble::get_local_legendre_representation() {
                                    if (sampling_type == 0)
                                         tmp_mat_leg = get_legendre_representation(tmp_mat, neg_tmp_mat);
                                    else
-                                        tmp_mat_leg = get_shifted_legendre_representation(tmp_mat, neg_tmp_mat, boson_index);
+                                        tmp_mat_leg = get_legendre_representation(tmp_mat, neg_tmp_mat);
+                                   //tmp_mat_leg = get_shifted_legendre_representation(tmp_mat, neg_tmp_mat, boson_index);
                                    for (int l1 = 0; l1 < n_legendre; l1++) {
                                         for (int l2 = 0; l2 < n_legendre; l2++) {
                                              local_legendre_values_[orb1][orb2][orb3][orb4][l1][l2][boson_index] =
@@ -563,7 +564,8 @@ void Bubble::get_lattice_legendre_representation() {
                                    if (sampling_type == 0)
                                         tmp_mat_leg = get_legendre_representation(tmp_mat, neg_tmp_mat);
                                    else
-                                        tmp_mat_leg = get_shifted_legendre_representation(tmp_mat, neg_tmp_mat, boson_index);
+                                        tmp_mat_leg = get_legendre_representation(tmp_mat, neg_tmp_mat);
+                                   //tmp_mat_leg = get_shifted_legendre_representation(tmp_mat, neg_tmp_mat, boson_index);
                                    for (int l1 = 0; l1 < n_legendre; l1++) {
                                         for (int l2 = 0; l2 < n_legendre; l2++) {
                                              lattice_legendre_values_[orb1][orb2][orb3][orb4]
